@@ -66,12 +66,22 @@ data class ThreadUiState(
     val error: CodeBanner? = null,
     // The newest message from the other side: the screen shows "New message" when it changes while scrolled up.
     val newestIncoming: Long? = null,
+    // CHAT-05: a PDF opened in the app, over the thread as a photo is.
+    val pdf: PdfPreview? = null,
 ) {
     val canSend: Boolean get() = draft.isNotBlank() && messages != null
 
     // An attachment is uploading (the strip above the composer, flow 07/03 §3).
     val uploading: Boolean get() = pending.any { it.file != null && !it.failed }
 }
+
+/** A PDF from the thread in the viewer: loading while [bytes] is null, [failed] when it couldn't be read. */
+data class PdfPreview(
+    val url: String,
+    val name: String?,
+    val bytes: ByteArray? = null,
+    val failed: Boolean = false,
+)
 
 /**
  * One conversation (CHAT-03, 07 §1.2–1.3, flow 07/02): every message read on open, then every 5 s after each answer
@@ -174,6 +184,30 @@ class ThreadViewModel(
     }
 
     fun draft(text: String) = _state.update { it.copy(draft = text) }
+
+    private var pdfLoad: Job? = null
+
+    /** CHAT-05: a PDF opens in the app (as a photo does): read, then shown; Retry reads it again. */
+    fun openPdf(
+        url: String,
+        name: String?,
+    ) {
+        pdfLoad?.cancel()
+        _state.update { it.copy(pdf = PdfPreview(url, name)) }
+        pdfLoad =
+            viewModelScope.launch {
+                val result = repo.file(url)
+                _state.update { s ->
+                    val shown = s.pdf?.takeIf { it.url == url } ?: return@update s
+                    s.copy(pdf = result.fold({ shown.copy(bytes = it) }, { shown.copy(failed = true) }))
+                }
+            }
+    }
+
+    fun closePdf() {
+        pdfLoad?.cancel()
+        _state.update { it.copy(pdf = null) }
+    }
 
     /**
      * Send: the trimmed text shows at once with its spinner and the field clears (a second tap has nothing to send);

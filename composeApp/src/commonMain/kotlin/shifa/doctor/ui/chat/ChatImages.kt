@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -24,6 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.kamel.image.KamelImage
@@ -36,6 +39,7 @@ import shifa.doctor.generated.resources.attachFile
 import shifa.doctor.generated.resources.chatFileUnavailable
 import shifa.doctor.generated.resources.chatPhoto
 import shifa.doctor.generated.resources.close
+import shifa.doctor.generated.resources.couldNotLoad
 import shifa.doctor.generated.resources.document
 import shifa.doctor.generated.resources.failedToLoadImage
 import shifa.doctor.generated.resources.ic_camera_20
@@ -46,6 +50,7 @@ import shifa.doctor.generated.resources.ic_image_24
 import shifa.doctor.generated.resources.ic_mic_20
 import shifa.doctor.generated.resources.ic_x_22
 import shifa.doctor.generated.resources.imageNotAvailable
+import shifa.doctor.generated.resources.openDocument
 import shifa.doctor.generated.resources.recordVoice
 import shifa.doctor.generated.resources.selectDocument
 import shifa.doctor.generated.resources.selectImage
@@ -54,17 +59,22 @@ import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
+import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.OptionItem
 import shifa.doctor.ui.widgets.ReceivedShape
 import shifa.doctor.ui.widgets.SentShape
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
+import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaOptionList
 import shifa.doctor.ui.widgets.ShifaSkeleton
+import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.ZoomState
 import shifa.doctor.ui.widgets.zoomable
+import shifa.doctor.utils.PdfView
 import shifa.doctor.utils.tr
 
 /**
@@ -194,9 +204,86 @@ internal fun ImageViewer(
 }
 
 /**
+ * CHAT-05: a PDF from the thread in the app, as a photo opens: the dark backdrop, a bar with its name and Close, the pages
+ * below (pinch zoom on the phones; the browser's own viewer on the web, which is why the bar sits above the document and
+ * not over it). While it's read, a spinner; when it can't be, Retry and the old way out (the browser).
+ */
+@Composable
+internal fun PdfViewer(
+    pdf: PdfPreview,
+    onClose: () -> Unit,
+    onRetry: () -> Unit,
+    onOpenOutside: () -> Unit,
+) = Dialog(onClose, DialogProperties(usePlatformDefaultWidth = false)) {
+    PdfViewerContent(pdf, onClose, onRetry, onOpenOutside)
+}
+
+/** [PdfViewer] without its window, for previews. */
+@Composable
+internal fun PdfViewerContent(
+    pdf: PdfPreview,
+    onClose: () -> Unit = {},
+    onRetry: () -> Unit = {},
+    onOpenOutside: () -> Unit = {},
+) {
+    Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Media)) {
+        Row(
+            Modifier.fillMaxWidth().statusBarsPadding().padding(ShifaSize.S12),
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ShifaIconButton(
+                Res.drawable.ic_x_22,
+                tr(Res.string.close),
+                onClose,
+                variant = ShifaIconButtonVariant.OnDark,
+            )
+            Text(
+                pdf.name?.takeIf { it.isNotBlank() } ?: tr(Res.string.document),
+                Modifier.weight(1f),
+                style = ShifaTextStyles.bodyText(),
+                color = ShifaColors.Text.Inverse,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Box(Modifier.weight(1f).fillMaxWidth(), Alignment.Center) {
+            val failed = @Composable {
+                // One white card: the browser link under Retry, readable on the dark backdrop.
+                Column(
+                    Modifier
+                        .padding(ShifaSize.S16)
+                        .background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg)
+                        .padding(bottom = ShifaSpacing.Inset.Lg),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    ShifaLoadError(tr(Res.string.couldNotLoad), onRetry)
+                    ShifaLink(tr(Res.string.openDocument), onOpenOutside)
+                }
+            }
+            val bytes = pdf.bytes
+            when {
+                pdf.failed -> failed()
+                bytes == null -> ShifaSpinner(ShifaColors.Text.Inverse, large = true)
+                else -> {
+                    val zoom = remember(pdf.url) { ZoomState(min = 1f) }
+                    PdfView(bytes, Modifier.fillMaxSize().zoomable(zoom), fallback = failed)
+                }
+            }
+        }
+    }
+}
+
+/** A document a message carries is a PDF: by its name, else by its URL's path. */
+internal fun isPdf(
+    name: String?,
+    url: String,
+) = listOfNotNull(name, url.substringBefore('?')).any { it.trim().lowercase().endsWith(".pdf") }
+
+/**
  * A document message (CHAT-05, flow 07/06 §3, board `DaChat`): an icon tile by its type (PDF, Word, photo, other), the
- * name (2 lines; "Document" without one), its size, and the time and tick. A tap opens it outside the app (no in-app
- * preview: an open question).
+ * name (2 lines; "Document" without one), its size, and the time and tick. A tap opens a PDF in the app ([PdfViewer]),
+ * any other type outside it.
  */
 @Composable
 internal fun DocumentTile(

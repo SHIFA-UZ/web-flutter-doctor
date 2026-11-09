@@ -234,3 +234,11 @@ internal fun ThreadRecordingPreview() =
             ThreadOverlays(recording = true, level = 0.6f, seconds = 7),
         )
     }
+
+// CHAT-05: a PDF from the thread opening in the app, and one that could not be read.
+@Composable
+internal fun PdfLoadingPreview() =
+    PreviewTheme { PdfViewerContent(PdfPreview("https://x/a.pdf", "Blood test results, November 2026.pdf")) }
+
+@Composable
+internal fun PdfFailedPreview() = PreviewTheme { PdfViewerContent(PdfPreview("https://x/a.pdf", null, failed = true)) }

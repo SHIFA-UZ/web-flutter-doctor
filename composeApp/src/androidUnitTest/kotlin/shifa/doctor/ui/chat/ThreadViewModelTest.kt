@@ -48,6 +48,8 @@ class ThreadViewModelTest {
             val path = req.url.encodedPath.substringAfter("/api/")
             asked += req.method.value + " " + path
             when (path) {
+                "/chat-attachments/r.pdf" -> respond(byteArrayOf(37, 80, 68, 70), HttpStatusCode.OK)
+                "/chat-attachments/gone.pdf" -> respond("", HttpStatusCode.NotFound)
                 "messages/upload-attachment" -> {
                     uploads += req.body.toByteArray().size
                     if (failUpload) {
@@ -376,5 +378,28 @@ class ThreadViewModelTest {
         assertThat(cursors.first()).isEqualTo(1L)
         assertThat(cursors.size).isAtLeast(2)
         assertThat(classToTest.state.value.messages!!.map { it.id }).containsAtLeastElementsIn((1L..152L).toList())
+    }
+
+    @Test
+    fun `a PDF opens in the app with its bytes, a missing one fails, close drops it`() {
+        val classToTest = opened()
+        classToTest.openPdf("https://api.shifa.uz/chat-attachments/r.pdf?sig=1", "r.pdf")
+        settle { classToTest.state.value.pdf?.bytes != null }
+        assertThat(classToTest.state.value.pdf!!.bytes!!.decodeToString()).isEqualTo("%PDF")
+        assertThat(classToTest.state.value.pdf!!.name).isEqualTo("r.pdf")
+
+        classToTest.openPdf("https://api.shifa.uz/chat-attachments/gone.pdf?sig=1", null)
+        settle { classToTest.state.value.pdf?.failed == true }
+        assertThat(classToTest.state.value.pdf!!.bytes).isNull()
+
+        classToTest.closePdf()
+        assertThat(classToTest.state.value.pdf).isNull()
+    }
+
+    @Test
+    fun `a document is a PDF by its name, else by its URL's path`() {
+        assertThat(isPdf("Lab.PDF", "https://x/f")).isTrue()
+        assertThat(isPdf(null, "https://x/chat-attachments/a.pdf?sig=1")).isTrue()
+        assertThat(isPdf("a.docx", "https://x/a.docx?x=.pdf")).isFalse()
     }
 }

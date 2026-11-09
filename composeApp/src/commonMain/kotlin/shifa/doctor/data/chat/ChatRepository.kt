@@ -7,6 +7,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.readBytes
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -97,6 +99,10 @@ class ChatRepository(
                 setBody(StartConversationRequest(patientId, doctorId))
             }
         }.usable("conversation") { Conversation.from(it, apiBase()) }
+
+    /** CHAT-05: a document's bytes for the in-app viewer, from the URL the message carries (absolute, 07 §1.5). */
+    suspend fun file(url: String): Result<ByteArray> =
+        apiCall<HttpResponse> { client().get(url) }.map { it.readBytes() }
 
     /** `POST /messages/conversations/{id}/read`; on success the shell's Chat badge reads its count again ([ChatReads]). */
     suspend fun markRead(id: Long): Result<Unit> =

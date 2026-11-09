@@ -40,4 +40,10 @@ class ChatScreenshotTest {
 
     @Test
     fun threadRecording() = captureRoboImage("screenshots/Chat_threadRecording.png") { ThreadRecordingPreview() }
+
+    @Test
+    fun pdfLoading() = captureRoboImage("screenshots/Chat_pdfLoading.png") { PdfLoadingPreview() }
+
+    @Test
+    fun pdfFailed() = captureRoboImage("screenshots/Chat_pdfFailed.png") { PdfFailedPreview() }
 }
