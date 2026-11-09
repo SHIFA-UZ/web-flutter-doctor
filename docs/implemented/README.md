@@ -424,3 +424,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-09 · UI · Fields with a trailing button (password eye, Paste) are as tall as the others: the 44 touch target reaches into the padding instead of stretching the field (it was 60 against 46).
 - 2026-11-09 · PUSH-01…03 · Push: device tokens on the doctor's account, foreground pushes, every tap opens its screen; debug push checks.
 - 2026-11-09 · PUSH-WEB · Push on the web: Firebase JS bridge in index.html, service worker, taps over Home.
+- 2026-11-09 · CHAT-05 · A PDF in a chat opens inside the app (like a photo) instead of the browser; Retry and "Open document" when it can't be read.

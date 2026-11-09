@@ -138,11 +138,18 @@ Built 2026-11-05. Spec 07 §1.3–1.4, ticket CHAT-05, flow 07/06, board `DaChat
   content type (`mimeOf`), sent with name and size, retry as for photos (only the send once uploaded).
 - **Bubble:** an icon tile by type (PDF/Word, photo, other), the name (2 lines, "Document" without one), "242.2 KB ·
   08:31" and my tick, in the bubble's colours, at most 280 wide. Read out as "Patient, 08:31, Document,
-  blood_test_results.pdf". A tap opens the URL outside the app (the in-app browser: the system shows the file or hands
-  it on), "Cannot open document URL" when nothing can; without a URL the card is off with "File unavailable". No
-  in-app preview (flow open question).
+  blood_test_results.pdf". A tap on a PDF (by name, else by the URL's path: `isPdf`) opens it in the app, the way a
+  photo opens (2026-11-09, the user's call): `PdfViewer`, a dark full-screen dialog with Close and the name on top and
+  the pages below (`PdfView`: PdfRenderer with pinch zoom on Android, PDFKit on iOS, the browser's viewer in an iframe
+  on the web, which is why the bar sits above the document). The bytes come through `ChatRepository.file` (the signed
+  URL, no token); a spinner while they load; on failure "Could not load" with Retry and "Open document", the old way
+  out. Any other type opens outside the app (the in-app browser: the system shows the file or hands it on), "Cannot
+  open document URL" when nothing can; without a URL the card is off with "File unavailable". The viewer is not in the
+  design (built in the photo viewer's style).
 - **Tests:** `ThreadViewModelTest` (a PDF goes as a document with name and size, a PNG as an image, an .exe is refused
   without uploading, an unreadable pick says so), `ChatRulesTest` (B/KB/MB with one decimal). Screenshot `Chat_thread` now shows the PDF bubble.
+  The viewer: `ThreadViewModelTest` (a PDF opens with its bytes, a missing one fails, close drops it; `isPdf`),
+  screenshots `Chat_pdfLoading`, `Chat_pdfFailed`.
 - **Emulator (demo):** Select Document showed only pdf/jpg/png (the CSVs in Downloads hidden); the PDF went out as
   "Document, Uchrashuv hujjatlari - 2026-07-21 00_00.pdf". Opening it needs a real URL (demo files stay on the phone).
   Demo mode is off again.

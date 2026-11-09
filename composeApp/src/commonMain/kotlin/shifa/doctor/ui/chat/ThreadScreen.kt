@@ -145,9 +145,12 @@ class ThreadActions(
     // CHAT-04: the attach sheet's photo rows, and a photo to view full screen.
     val pickImage: () -> Unit = {},
     val takePhoto: () -> Unit = {},
-    // CHAT-05: "Select Document", and a document message opened by the system (browser or the app for its type).
+    // CHAT-05: "Select Document"; a PDF opens in the app over the thread (as a photo does), any other document in the
+    // system (browser or the app for its type).
     val pickDocument: () -> Unit = {},
     val openFile: (String) -> Unit = {},
+    val openPdf: (String, String?) -> Unit = { _, _ -> },
+    val closePdf: () -> Unit = {},
     // The attach sheet, the photo viewer and the camera-refused strip (their state is the host's).
     val attach: (Boolean) -> Unit = {},
     val view: (String?) -> Unit = {},
@@ -267,6 +270,8 @@ fun ThreadScreen(
             pickDocument = pickDocument,
             // Nothing could open it (no browser, a URL it can't take): say so (flow 07/06 §9).
             openFile = { if (!browser(it)) ShellNotice.pending.value = Notice(Res.string.cannotOpenDocumentUrl) },
+            openPdf = viewModel::openPdf,
+            closePdf = viewModel::closePdf,
             attach = { attaching = it },
             view = { viewing = it },
             dismissCamera = { denied = null },
@@ -374,6 +379,12 @@ internal fun ThreadContent(
     }
     if (overlays.attaching) AttachSheet(actions, !overlays.held) { actions.attach(false) }
     overlays.viewing?.let { url -> ImageViewer(url) { actions.view(null) } }
+    state.pdf?.let { pdf ->
+        PdfViewer(pdf, onClose = actions.closePdf, onRetry = { actions.openPdf(pdf.url, pdf.name) }) {
+            actions.closePdf()
+            actions.openFile(pdf.url)
+        }
+    }
 }
 
 /** Back, the photo, the name and "Patient"/"Doctor"; a patient's name is a link to their record (flow 07/02 §7). */
@@ -509,6 +520,7 @@ private fun Messages(
                         clock,
                         onView,
                         actions.openFile,
+                        actions.openPdf,
                         playback,
                         actions.togglePlay,
                     )
@@ -573,6 +585,7 @@ private fun MessageRow(
     clock: PracticeClock,
     onView: (String) -> Unit,
     onOpenFile: (String) -> Unit,
+    onOpenPdf: (String, String?) -> Unit,
     playback: Playback?,
     onTogglePlay: (String) -> Unit,
 ) {
@@ -656,7 +669,9 @@ private fun MessageRow(
                 if (m.isMine) tick(m.status) else null,
                 max,
                 // Without a URL the card is there but off, saying "File unavailable" (flow 07/06 §6).
-                m.fileUrl?.let { url -> { onOpenFile(url) } },
+                m.fileUrl?.let { url ->
+                    { if (isPdf(m.fileName, url)) onOpenPdf(url, m.fileName) else onOpenFile(url) }
+                },
             )
         }
         Bubble(m.isMine, max) {
