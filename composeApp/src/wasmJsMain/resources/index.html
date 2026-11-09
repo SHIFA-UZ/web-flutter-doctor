@@ -30,6 +30,9 @@
         @keyframes breathe { to { opacity: .7; } }
         @media (prefers-reduced-motion: reduce) { #boot img { animation: none; } }
     </style>
+    <!-- Phones of 3x and more draw at 2x: the app paints its whole canvas each frame, and 3x is 2.25 times the pixels of
+         2x for text hardly anyone can tell apart. -->
+    <script>if (window.devicePixelRatio > 2) Object.defineProperty(window, 'devicePixelRatio', { get: function () { return 2 } });</script>
     <!-- A module: since Kotlin 2.4 the production bundle contains import.meta, which a classic script can't parse
          (a blank page). Modules also run after the body is parsed. -->
     <script type="module" src="composeApp.js"></script>

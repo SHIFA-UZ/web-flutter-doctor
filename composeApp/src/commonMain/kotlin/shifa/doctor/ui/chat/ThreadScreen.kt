@@ -601,11 +601,12 @@ private fun MessageRow(
             MessageType.Document -> listOfNotNull(tr(Res.string.document), m.fileName).joinToString(", ")
             MessageType.System -> ""
         }
+    // No emoji in front: the web has no emoji font and drew them as nothing; the words say what it is.
     val body =
         when (m.type) {
-            MessageType.Image -> "🖼 " + (m.text ?: tr(Res.string.chatPhoto))
-            MessageType.Voice -> "🎤 " + tr(Res.string.voiceMessage)
-            MessageType.Document -> "📄 " + (m.fileName ?: tr(Res.string.document))
+            MessageType.Image -> m.text ?: tr(Res.string.chatPhoto)
+            MessageType.Voice -> tr(Res.string.voiceMessage)
+            MessageType.Document -> m.fileName ?: tr(Res.string.document)
             else -> spoken
         }
     val status = if (m.isMine) statusLabel(m.status) else null

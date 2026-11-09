@@ -8,8 +8,9 @@ Built 2026-11-04. Flow `docs/ux-flows/01-launch-auth-shell/01-splash.md`; board 
 (teal splash) and `showBoot` (force-update / maintenance frame).
 
 - **`SplashViewModel`** runs the session restore (local, 01 §2.9) and the boot check in parallel with the animation;
-  a returning doctor leaves when the 1 s animation ends (2026-11-09; it was 0.8 s), sooner with a tap (§7), or after 5 s
-  if the animation never plays. `Finished(session)` goes to the shell, `Finished(null)` to sign-in.
+  a returning doctor leaves when the 1 s animation ends (2026-11-09; it was 0.8 s), sooner with a tap (§7), or after 10 s
+  if the animation never plays. On the web the animation starts once the fonts and icons have loaded
+  (`resourcesReady`). `Finished(session)` goes to the shell, `Finished(null)` to sign-in.
 - **Boot check** (`data/config/PublicConfigRepository`, `GET /public/config`, no token): reads BE-04's `doctorApp` block
   leniently. Maintenance (`active`) wins and shows the backend's message in the app language, else the app's copy;
   an older build than `minVersion.<platform>` shows "Update required" and opens `storeUrl`. No block, a failure or no

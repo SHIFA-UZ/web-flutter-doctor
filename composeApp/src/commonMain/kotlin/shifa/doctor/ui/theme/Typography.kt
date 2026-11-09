@@ -18,14 +18,17 @@ import shifa.doctor.generated.resources.manrope_medium
 import shifa.doctor.generated.resources.manrope_regular
 import shifa.doctor.generated.resources.manrope_semibold
 
-@Composable
-fun manropeFontFamily() =
-    FontFamily(
-        Font(Res.font.manrope_regular, weight = FontWeight.Normal),
-        Font(Res.font.manrope_medium, weight = FontWeight.Medium),
-        Font(Res.font.manrope_semibold, weight = FontWeight.SemiBold),
-        Font(Res.font.manrope_bold, weight = FontWeight.Bold),
+/** The app's font files and the weight each one is. The web preloads exactly these (`ResourceWarmup`). */
+val manropeFonts =
+    listOf(
+        Res.font.manrope_regular to FontWeight.Normal,
+        Res.font.manrope_medium to FontWeight.Medium,
+        Res.font.manrope_semibold to FontWeight.SemiBold,
+        Res.font.manrope_bold to FontWeight.Bold,
     )
+
+@Composable
+fun manropeFontFamily() = FontFamily(manropeFonts.map { (font, weight) -> Font(font, weight = weight) })
 
 private fun manrope(
     family: FontFamily,

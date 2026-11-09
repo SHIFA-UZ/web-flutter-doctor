@@ -401,20 +401,21 @@ fun ShifaSpinner(
     modifier: Modifier = Modifier,
     large: Boolean = false,
 ) {
-    // Static in previews and screenshot tests, where an infinite animation never lets the UI idle.
+    // Static in previews and screenshot tests, where an infinite animation never lets the UI idle. The angle is read
+    // in the layer, so a frame only turns it; nothing recomposes.
     val angle =
         if (LocalInspectionMode.current) {
-            0f
+            null
         } else {
             rememberInfiniteTransition().animateFloat(
                 initialValue = 0f,
                 targetValue = 360f,
                 animationSpec = infiniteRepeatable(tween(800, easing = LinearEasing)),
-            ).value
+            )
         }
     val size: Dp = if (large) ShifaSize.S28 else ShifaSize.S16
     val stroke: Dp = if (large) ShifaSize.S3 else ShifaSize.S2
-    Canvas(modifier.size(size).graphicsLayer { rotationZ = angle }) {
+    Canvas(modifier.size(size).graphicsLayer { rotationZ = angle?.value ?: 0f }) {
         val w = stroke.toPx()
         drawArc(
             color = color,

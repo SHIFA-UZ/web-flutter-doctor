@@ -89,4 +89,5 @@ class SplashViewModel(
     }
 }
 
-private const val SPLASH_LIMIT_MS = 5_000L
+// The animation waits for the web's fonts and icons (resourcesReady), so the backstop is as long as index.html's.
+private const val SPLASH_LIMIT_MS = 10_000L

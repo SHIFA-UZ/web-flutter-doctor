@@ -2,6 +2,8 @@ package shifa.doctor
 
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Test
+import shifa.doctor.utils.UzbekCyrillic
+import java.awt.Font
 import java.io.File
 
 // Unit tests run from the module dir. uz and ru never fall back to English (strings/README.md), so every key and
@@ -68,6 +70,35 @@ class StringsTest {
                 assertWithMessage("$dir/$file").that(text).doesNotContain("\\'")
                 assertWithMessage("$dir/$file").that(text).doesNotContain("\\\"")
             }
+        }
+    }
+
+    @Test
+    fun `every letter of every language, Uzbek Cyrillic too, is in the app's fonts`() {
+        // The web has no system font to fall back to: a letter Manrope lacks is drawn as nothing (Ўзбекча's Қ Ғ Ҳ were).
+        val fonts =
+            File("$res/font").listFiles {
+                    f ->
+                f.extension == "ttf"
+            }!!.map { Font.createFont(Font.TRUETYPE_FONT, it) }
+        assertWithMessage("fonts").that(fonts).isNotEmpty()
+        val texts =
+            (listOf("values") + locales).flatMap { dir ->
+                listOf("strings.xml", "strings_kit.xml", "plurals.xml").flatMap { file ->
+                    Regex(""">([^<]*)<""").findAll(File("$res/$dir/$file").readText()).map { it.groupValues[1] }
+                }
+            }
+        val uz =
+            (locales.filter { it == "values-uz" }).flatMap { dir ->
+                listOf("strings.xml", "strings_kit.xml", "plurals.xml").flatMap { file ->
+                    Regex(
+                        """>([^<]*)<""",
+                    ).findAll(File("$res/$dir/$file").readText()).map { UzbekCyrillic.fromLatin(it.groupValues[1]) }
+                }
+            }
+        val letters = (texts + uz).flatMap { it.toList() }.filterNot { it.isWhitespace() }.toSortedSet()
+        fonts.forEach { font ->
+            assertWithMessage(font.fontName).that(letters.filterNot(font::canDisplay).joinToString("")).isEmpty()
         }
     }
 }

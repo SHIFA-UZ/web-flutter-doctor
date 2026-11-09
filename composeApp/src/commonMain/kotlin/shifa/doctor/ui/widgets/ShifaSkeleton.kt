@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,13 +14,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -44,7 +45,14 @@ fun ShifaSkeleton(
     modifier: Modifier = Modifier,
     shape: Shape = ShifaRadius.Sm,
 ) {
-    Box(modifier.background(shimmerBrush(), shape))
+    val shift = shimmerShift()
+    // The sweep is read while drawing: a frame repaints the bars and recomposes nothing (it used to recompose every bar
+    // on every frame, which stuttered each page's first load on phones).
+    Box(
+        modifier.drawBehind {
+            drawOutline(shape.createOutline(size, layoutDirection, this), shimmerBrush(shift?.value ?: 0f))
+        },
+    )
 }
 
 /**
@@ -123,28 +131,27 @@ fun ShifaChipsSkeleton(
     ShifaSkeleton(Modifier.height(ShifaDimens.ChipSkeletonHeight), ShifaRadius.Full)
 }
 
-// `.dr-shimmer`: canvas → disabled → canvas sweeping sideways every 1.4 s; still in previews and screenshot tests.
+// `.dr-shimmer`: canvas → disabled → canvas sweeping sideways every 1.4 s; still (null) in previews and screenshot tests.
 @Composable
-private fun shimmerBrush(): Brush {
-    val x =
-        if (LocalInspectionMode.current) {
-            0f
-        } else {
-            val shift by rememberInfiniteTransition(label = "shimmer").animateFloat(
-                -SHIMMER_TRAVEL_PX,
-                SHIMMER_TRAVEL_PX,
-                infiniteRepeatable(tween(SHIMMER_MS, easing = LinearEasing)),
-                label = "x",
-            )
-            shift
-        }
-    return Brush.linearGradient(
+private fun shimmerShift(): State<Float>? =
+    if (LocalInspectionMode.current) {
+        null
+    } else {
+        rememberInfiniteTransition(label = "shimmer").animateFloat(
+            -SHIMMER_TRAVEL_PX,
+            SHIMMER_TRAVEL_PX,
+            infiniteRepeatable(tween(SHIMMER_MS, easing = LinearEasing)),
+            label = "x",
+        )
+    }
+
+private fun shimmerBrush(x: Float) =
+    Brush.linearGradient(
         listOf(ShifaColors.Bg.Canvas, ShifaColors.Bg.Disabled, ShifaColors.Bg.Canvas),
         start = Offset(x, 0f),
         end = Offset(x + 2 * SHIMMER_TRAVEL_PX, 0f),
         tileMode = TileMode.Mirror,
     )
-}
 
 private val LINE_WIDTHS = listOf(0.6f, 0.85f, 0.45f)
 private val CHAT_WIDTHS = listOf(0.7f, 0.55f, 0.8f, 0.45f)
