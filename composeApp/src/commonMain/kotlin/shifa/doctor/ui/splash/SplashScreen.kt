@@ -1,11 +1,10 @@
 package shifa.doctor.ui.splash
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseInOutCubic
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,31 +13,41 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.lerp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.session.Session
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.appName
@@ -46,13 +55,12 @@ import shifa.doctor.generated.resources.loading
 import shifa.doctor.generated.resources.maintenanceBody
 import shifa.doctor.generated.resources.maintenanceTitle
 import shifa.doctor.generated.resources.retry
+import shifa.doctor.generated.resources.shifa_mark
 import shifa.doctor.generated.resources.updateNow
 import shifa.doctor.generated.resources.updateRequiredBody
 import shifa.doctor.generated.resources.updateRequiredTitle
-import shifa.doctor.ui.theme.ShifaBlur
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
-import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
@@ -72,11 +80,21 @@ fun SplashScreen(
     LaunchedEffect(state) { (state as? SplashUiState.Finished)?.let { finished(it.session) } }
     // Back from the store (or from anywhere) while the update frame shows: check the version again (flow §7).
     if (state is SplashUiState.UpdateRequired) LifecycleResumeEffect(Unit) { onPauseOrDispose { viewModel.retry() } }
+    // Plays once the splash can draw its name (on the web, as index.html's frame lifts), so a slow first load doesn't
+    // hide it; its end lets the app go on.
+    val progress = remember { Animatable(0f) }
+    val ready = tr(Res.string.appName).isNotEmpty()
+    LaunchedEffect(ready) {
+        if (!ready) return@LaunchedEffect
+        progress.animateTo(1f, tween(SPLASH_MS, easing = EaseInOutCubic))
+        viewModel.skip()
+    }
     SplashScreenContent(
         state,
         onUpdate = { url -> url?.let { runCatching { uri.openUri(it) } } },
         onRetry = viewModel::retry,
         onSkip = viewModel::skip,
+        progress = progress.value,
     )
 }
 
@@ -86,8 +104,9 @@ fun SplashScreenContent(
     onUpdate: (storeUrl: String?) -> Unit,
     onRetry: () -> Unit,
     onSkip: () -> Unit = {},
+    progress: Float = 0f,
 ) = when (state) {
-    SplashUiState.Loading, is SplashUiState.Finished -> Splash(onSkip)
+    SplashUiState.Loading, is SplashUiState.Finished -> Splash(progress, onSkip)
     is SplashUiState.UpdateRequired ->
         Boot(tr(Res.string.updateRequiredTitle), tr(Res.string.updateRequiredBody), tr(Res.string.updateNow), false) {
             onUpdate(state.storeUrl)
@@ -102,66 +121,68 @@ fun SplashScreenContent(
         )
 }
 
-// DaApp "splash": teal, two drifting blurred blobs, the glass "S" tile and the name. Nothing is focusable; a screen
-// reader hears "Shifa Doctor, Loading…" once.
+// The patient app's splash (Figma 1614:12212 → 1614:12237): two teal blobs part to show white, the glass tile's border
+// fades in and the mark turns from white to teal. No name under it: it would cross the blobs. [progress] 0 is the start, 1 the end. Nothing is focusable;
+// a screen reader hears "Shifa Doctor, Loading…" once.
 @Composable
-private fun Splash(onSkip: () -> Unit) {
+private fun Splash(
+    progress: Float,
+    onSkip: () -> Unit,
+) {
     val label = "${tr(Res.string.appName)}, ${tr(Res.string.loading)}"
-    // Previews and screenshots hold the blobs still (an endless animation never lets a capture settle).
-    val drift =
-        if (LocalInspectionMode.current) {
-            0f
-        } else {
-            rememberInfiniteTransition().animateFloat(
-                0f,
-                1f,
-                infiniteRepeatable(tween(BLOB_MS), RepeatMode.Reverse),
-            ).value
-        }
+    val tile = RoundedCornerShape(ShifaDimens.SplashTileRadius)
     Box(
         Modifier
             .fillMaxSize()
-            .background(ShifaColors.Interactive.Primary)
-            .pointerInput(Unit) { detectTapGestures { onSkip() } }
+            .background(ShifaColors.Bg.Surface)
+            .drawBehind {
+                blob(lerp(ShifaDimens.SplashBlobAStart, ShifaDimens.SplashBlobAEnd, progress))
+                blob(lerp(ShifaDimens.SplashBlobBStart, ShifaDimens.SplashBlobBEnd, progress))
+            }.pointerInput(Unit) { detectTapGestures { onSkip() } }
             .clearAndSetSemantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        Blob(ShifaSize.S320, Alignment.BottomStart, -ShifaSize.S120, ShifaSize.S80, drift)
-        Blob(ShifaSize.S280, Alignment.TopEnd, ShifaSize.S100, -ShifaSize.S60, 1f - drift)
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(ShifaSize.S16),
+        // Figma also blurs the backdrop; skipped, as in the patient app (blur froze low-end Android GPUs).
+        Box(
+            Modifier
+                .size(ShifaDimens.SplashTile)
+                .clip(tile)
+                .background(ShifaColors.Raw.GlassTile)
+                .border(ShifaSize.S2, ShifaColors.Raw.GlassTileBorder.copy(alpha = progress), tile),
+            contentAlignment = Alignment.Center,
         ) {
-            ShifaAppIcon(ShifaSize.S96)
-            Text(
-                tr(Res.string.appName),
-                style = MaterialTheme.typography.headlineSmall,
-                color = ShifaColors.Text.Inverse,
+            Icon(
+                painterResource(Res.drawable.shifa_mark),
+                contentDescription = null,
+                tint = lerp(ShifaColors.Icon.Inverse, ShifaColors.Raw.SplashLogo, progress),
             )
         }
     }
 }
 
-@Composable
-private fun Blob(
-    size: androidx.compose.ui.unit.Dp,
-    alignment: Alignment,
-    x: androidx.compose.ui.unit.Dp,
-    y: androidx.compose.ui.unit.Dp,
-    drift: Float,
-) = Box(Modifier.fillMaxSize(), contentAlignment = alignment) {
-    Box(
-        Modifier
-            .offset(x, y)
-            .size(size)
-            .graphicsLayer {
-                val scale = 1f + BLOB_GROWTH * drift
-                scaleX = scale
-                scaleY = scale
-                rotationZ = BLOB_TURN * drift
-            }.blur(ShifaBlur.Glow)
-            .background(ShifaColors.Raw.SplashBlob, ShifaRadius.Full),
-    )
+// Figma's blurred ellipse, rotated 45°. A radial gradient fades the edge over ±2σ instead of a real blur (Figma's blur
+// value is 2σ). index.html draws the same blobs at the start while the app downloads.
+private fun DrawScope.blob(offset: DpOffset) {
+    val color = ShifaColors.Raw.SplashBlob
+    val rx = ShifaDimens.SplashBlobWidth.toPx() / 2
+    val fade = ShifaDimens.SplashBlobBlur.toPx()
+    val radius = rx + fade
+    val c = center + Offset(offset.x.toPx(), offset.y.toPx())
+    rotate(45f, c) {
+        scale(1f, ShifaDimens.SplashBlobHeight / ShifaDimens.SplashBlobWidth, c) {
+            drawCircle(
+                Brush.radialGradient(
+                    (rx - fade) / radius to color,
+                    rx / radius to color.copy(alpha = color.alpha / 2),
+                    1f to color.copy(alpha = 0f),
+                    center = c,
+                    radius = radius,
+                ),
+                radius,
+                c,
+            )
+        }
+    }
 }
 
 // DaApp "boot": the force-update and maintenance frames. No way past them but the one button. It scrolls, so a long
@@ -212,6 +233,4 @@ private fun BootContent(
     )
 }
 
-private const val BLOB_MS = 2_000
-private const val BLOB_GROWTH = 0.12f
-private const val BLOB_TURN = 18f
+private const val SPLASH_MS = 1_600 // as in the patient app

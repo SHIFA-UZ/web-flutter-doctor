@@ -8,6 +8,19 @@ AddType application/javascript .js .mjs
 # no directory listings.
 Options -Indexes -MultiViews
 RewriteEngine On
+
+# The deploy leaves a Brotli copy beside the code (*.wasm, about 22 MB, 5 MB compressed) and the strings (*.cvr): send
+# it. The host's nginx doesn't compress these, and may pass Apache no Accept-Encoding at all; an empty one gets Brotli
+# too, as every browser that runs this app (WebAssembly GC) reads it.
+RewriteCond %{HTTP:Accept-Encoding} \bbr\b [OR]
+RewriteCond %{HTTP:Accept-Encoding} ^$
+RewriteCond %{REQUEST_FILENAME}.br -f
+RewriteRule ^(.+\.(wasm|cvr))$ $1.br [L]
+RemoveType .br
+AddEncoding br .br
+<FilesMatch "\.wasm\.br$">
+    ForceType application/wasm
+</FilesMatch>
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 RewriteCond %{REQUEST_URI} !^/\.well-known/
@@ -15,11 +28,18 @@ RewriteCond %{REQUEST_URI} !^/composeResources/
 RewriteCond %{REQUEST_URI} !\.(js|mjs|wasm|json|map|png|webp|svg|ico|ttf|otf|woff2?)$ [NC]
 RewriteRule ^ index.html [L]
 
-# The code, strings (*.cvr) and icons (*.xml) aren't versioned by name: browsers check them again on each start, so a
-# deploy reaches every doctor at once. Pictures and fonts change rarely.
+# The strings (*.cvr) and icons (*.xml) aren't versioned by name: browsers check them again on each start, so a deploy
+# reaches every doctor at once. The .wasm files are named by their content (index.html fingerprints composeApp.js,
+# which names them): kept for a year. Pictures and fonts change rarely.
 <IfModule mod_headers.c>
-    <FilesMatch "\.(html|js|mjs|wasm|json|cvr|xml)$">
+    <FilesMatch "\.(html|js|mjs|json|cvr|cvr\.br|xml)$">
         Header set Cache-Control "no-cache"
+    </FilesMatch>
+    <FilesMatch "\.wasm(\.br)?$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.(wasm|cvr)(\.br)?$">
+        Header merge Vary Accept-Encoding
     </FilesMatch>
     <FilesMatch "\.(png|webp|svg|ico|ttf|otf|woff2?)$">
         Header set Cache-Control "public, max-age=86400"

@@ -15,6 +15,9 @@ class SplashScreenshotTest {
     fun loading() = captureRoboImage("screenshots/Splash_loading.png") { SplashLoadingPreview() }
 
     @Test
+    fun `loading end`() = captureRoboImage("screenshots/Splash_loading_end.png") { SplashLoadingEndPreview() }
+
+    @Test
     fun update() = captureRoboImage("screenshots/Splash_update.png") { SplashUpdatePreview() }
 
     @Test

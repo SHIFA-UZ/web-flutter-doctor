@@ -38,14 +38,14 @@ sealed interface SplashUiState {
 
 /**
  * AUTH-01 (flow 01/01, 01 §2.9). The session restore (local) and the force-update / maintenance check (BE-04) run in
- * parallel with the animation; a returning doctor leaves after [minSplashMs] instead of Flutter's fixed 1.8 s. The
- * gate check never blocks launch for more than its own 5 s timeout.
+ * parallel with the animation; a returning doctor leaves when it ends ([skip]), or after [splashLimitMs] if it never
+ * plays. The gate check never blocks launch for more than its own 5 s timeout.
  */
 class SplashViewModel(
     private val bootGate: suspend (language: String) -> Result<BootGate> = PublicConfigRepository()::bootGate,
     private val sessions: SessionRepository = sessionRepository,
     private val language: () -> String = { languageStorage.language.value.backendCode },
-    private val minSplashMs: Long = MIN_SPLASH_MS,
+    private val splashLimitMs: Long = SPLASH_LIMIT_MS,
 ) : ViewModel() {
     private val _state = MutableStateFlow<SplashUiState>(SplashUiState.Loading)
     val state: StateFlow<SplashUiState> = _state.asStateFlow()
@@ -57,7 +57,7 @@ class SplashViewModel(
         check(firstRun = true)
     }
 
-    /** A tap skips what's left of the brand moment, never the checks (flow §7). */
+    /** The animation's end, or a tap that skips what's left of it; never the checks (flow §7). */
     fun skip() {
         skipped.complete(Unit)
     }
@@ -76,7 +76,7 @@ class SplashViewModel(
                 coroutineScope {
                     // Launch is never blocked by the check: a failure or timeout counts as no gate (flow §6).
                     val gate = async { bootGate(language()).getOrDefault(BootGate.None) }
-                    if (firstRun) withTimeoutOrNull(minSplashMs) { skipped.await() }
+                    if (firstRun) withTimeoutOrNull(splashLimitMs) { skipped.await() }
                     gate.await()
                 }
             _state.value =
@@ -87,9 +87,6 @@ class SplashViewModel(
                 }
         }
     }
-
-    private companion object {
-        // Enough for the logo to read as a brand moment, short enough that a returning doctor is in within 2 s.
-        const val MIN_SPLASH_MS = 800L
-    }
 }
+
+private const val SPLASH_LIMIT_MS = 5_000L

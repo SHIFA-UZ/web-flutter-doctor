@@ -28,7 +28,8 @@ suspend inline fun <reified T> apiCall(request: () -> HttpResponse): Result<T> {
             throw e
         } catch (e: ApiException) {
             return Result.failure(e) // the pre-flight expiry check
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // not Exception: on the web a failed fetch is a kotlin.Error
             httpLogger.log("FAILED no response: ${e::class.simpleName}")
             return Result.failure(ApiException.NetworkError(timeout = isTimeout(e)))
         }
@@ -37,7 +38,7 @@ suspend inline fun <reified T> apiCall(request: () -> HttpResponse): Result<T> {
         Result.success(response.body<T>())
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         logFailure(response, null, "unreadable body")
         Result.failure(ApiException.ServerError(response.status.value, null, null))
     }
@@ -80,7 +81,7 @@ internal fun endsSession(
     }
 
 @PublishedApi
-internal fun isTimeout(e: Exception) =
+internal fun isTimeout(e: Throwable) =
     e is HttpRequestTimeoutException || e is ConnectTimeoutException || e is SocketTimeoutException
 
 // HIPAA (CLAUDE.md "Logging"): status, method, path with ids masked, code and requestId. Never the server's message

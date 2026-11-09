@@ -45,7 +45,8 @@ suspend fun HttpClient.streamEvents(
         throw e
     } catch (e: ApiException) {
         Result.failure(e)
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
+        // not Exception: on the web a failed fetch is a kotlin.Error
         httpLogger.log("FAILED stream, no response: ${e::class.simpleName}")
         Result.failure(ApiException.NetworkError(timeout = isTimeout(e)))
     }
