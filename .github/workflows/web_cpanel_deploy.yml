@@ -67,8 +67,13 @@ jobs:
           sed -i "s|src=\"composeApp.js\"|src=\"composeApp.js?v=$V\"|" "$DIST/index.html"
           grep -q "src=\"composeApp.js?v=$V\"" "$DIST/index.html"
 
-      - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+      # The code is about 22 MB and the host sends it as is: .htaccess sends these Brotli copies instead (about 5 MB).
+      - name: Compress the code and strings
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq brotli lftp
+          find composeApp/build/dist/wasmJs/productionExecutable \( -name '*.wasm' -o -name '*.cvr' \) -exec brotli -q 11 {} +
+          ls -la composeApp/build/dist/wasmJs/productionExecutable/*.br
 
       # --delete removes files of the previous build that this one no longer has. It only runs on a folder that is
       # empty or carries the marker an earlier deploy left, so an FTP account pointed at the wrong folder (home,

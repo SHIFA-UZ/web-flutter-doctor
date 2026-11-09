@@ -96,7 +96,6 @@ object ShifaBreakpoint {
 object ShifaBlur {
     val Glass = 24.dp
     val Soft = 20.dp
-    val Glow = 30.dp
 }
 
 // Sizes the design sets per component, named <Component><Part>; `Layout` and `Basis` are the stylesheet's
@@ -117,6 +116,18 @@ object ShifaDimens {
     val CalendarGutter = 56.dp
     val CalendarEventMin = 18.dp
     val CalendarEventTwoLines = 36.dp
+
+    // The splash, copied from the patient app (Figma 1614:12212 → 1614:12237). Blob centres are offsets from the
+    // screen centre; index.html repeats the start frame.
+    val SplashTile = 178.dp
+    val SplashTileRadius = 37.dp
+    val SplashBlobWidth = 891.563.dp
+    val SplashBlobHeight = 609.879.dp
+    val SplashBlobBlur = 25.dp
+    val SplashBlobAStart = DpOffset((-99.61).dp, 139.6.dp)
+    val SplashBlobAEnd = DpOffset((-81.16).dp, 388.84.dp)
+    val SplashBlobBStart = DpOffset((-10.16).dp, (-233.16).dp)
+    val SplashBlobBEnd = DpOffset(107.84.dp, (-376.16).dp)
 
     object Layout {
         val Sidebar = 260.dp

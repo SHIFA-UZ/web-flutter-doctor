@@ -11,6 +11,11 @@ internal fun SplashLoadingPreview() = PreviewTheme { SplashScreenContent(SplashU
 
 @Preview(widthDp = 402, heightDp = 874)
 @Composable
+internal fun SplashLoadingEndPreview() =
+    PreviewTheme { SplashScreenContent(SplashUiState.Loading, {}, {}, progress = 1f) }
+
+@Preview(widthDp = 402, heightDp = 874)
+@Composable
 internal fun SplashUpdatePreview() =
     PreviewTheme {
         SplashScreenContent(SplashUiState.UpdateRequired("market://x"), {}, {})

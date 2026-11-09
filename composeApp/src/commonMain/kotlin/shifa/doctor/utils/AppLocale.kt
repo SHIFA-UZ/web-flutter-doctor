@@ -6,7 +6,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import org.jetbrains.compose.resources.PluralStringResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.pluralStringResource
-import org.jetbrains.compose.resources.stringResource
 
 /**
  * Points the platform locale at [code] for [content] (CMP has no runtime locale switch). Resources re-resolve
@@ -32,7 +31,11 @@ val LocalUzbekCyrillic = staticCompositionLocalOf { false }
 fun tr(
     resource: StringResource,
     vararg args: Any,
-): String = localized(stringResource(resource), args)
+): String = localized(stringOf(resource), args)
+
+/** The string in the current language: CMP's `stringResource` on the phones, an in-memory table on the web. */
+@Composable
+internal expect fun stringOf(resource: StringResource): String
 
 /** [tr] for `<plurals>`: [quantity] picks the form, [args] fill it (usually the quantity first). */
 @Composable

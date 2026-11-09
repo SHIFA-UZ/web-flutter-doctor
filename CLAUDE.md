@@ -51,6 +51,9 @@ fixed and identical to the patient app's. Follow them for every new feature.
 - Web resources: Compose Multiplatform 1.10 leaves a string or icon blank for good when the first composable that asked
   for it leaves mid-load (its `AsyncCache` load belongs to that caller). `utils/ResourceWarmup` (web only) loads every
   resource once from the app's root; delete it when upgrading to Compose Multiplatform 1.12.2 or later (fixed there).
+  Strings are the exception: CMP 1.10 reads each one separately on the web (the whole language file per string), so
+  `AppLocale.wasmJs.kt` reads each language's `strings` and `strings_kit` .cvr once and `tr` looks keys up there. A
+  new `values/*.xml` string file goes into its `STRING_FILES`.
 - The **admin panel** (`/admin`, hostname-based) is **not** part of the KMP app (`ADMIN-*` tickets are parked); it
   stays a web product.
 - Doctor roles in the JWT (`DOCTOR`, `CLINIC_STAFF`, …) and clinic workspace mode are in scope; a clinic-staff user

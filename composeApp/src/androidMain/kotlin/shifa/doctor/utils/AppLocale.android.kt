@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import java.util.Locale
 
 @Composable
@@ -22,3 +24,6 @@ actual fun ProvideAppLocale(
         }
     CompositionLocalProvider(LocalConfiguration provides configuration, LocalAppLocale provides code, content = content)
 }
+
+@Composable
+internal actual fun stringOf(resource: StringResource): String = stringResource(resource)

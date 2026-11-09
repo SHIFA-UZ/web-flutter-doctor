@@ -8,16 +8,19 @@ Built 2026-11-04. Flow `docs/ux-flows/01-launch-auth-shell/01-splash.md`; board 
 (teal splash) and `showBoot` (force-update / maintenance frame).
 
 - **`SplashViewModel`** runs the session restore (local, 01 §2.9) and the boot check in parallel with the animation;
-  a returning doctor leaves after 0.8 s instead of Flutter's fixed 1.8 s (flow §5 step 2, §12), sooner with a tap (§7). `Finished(session)`
-  goes to the shell, `Finished(null)` to sign-in.
+  a returning doctor leaves when the 1.6 s animation ends (2026-11-09; it was 0.8 s), sooner with a tap (§7), or after 5 s
+  if the animation never plays. `Finished(session)` goes to the shell, `Finished(null)` to sign-in.
 - **Boot check** (`data/config/PublicConfigRepository`, `GET /public/config`, no token): reads BE-04's `doctorApp` block
   leniently. Maintenance (`active`) wins and shows the backend's message in the app language, else the app's copy;
   an older build than `minVersion.<platform>` shows "Update required" and opens `storeUrl`. No block, a failure or no
   answer within 5 s (Ktor request timeout) means no gate, so launch is never blocked (flow §6). Dev today has no block
   (`{googleMapsApiKey, transcriptionFeedbackEnabled}`); `googleMapsApiKey` is ignored (D-06). The version check ignores
   a `-debug` suffix.
-- **Frames:** `SplashScreenContent(state)`: teal splash with two drifting blurred blobs, the glass "S" tile and
-  "Shifa Doctor" (one screen-reader label, "Shifa Doctor, Loading..."); the boot frame with the solid "S" tile, title,
+- **Frames:** `SplashScreenContent(state, progress)`: since 2026-11-09 the patient app's animation (the user's call):
+  two teal blobs part to show white, the glass tile's border fades in and the Shifa mark turns from white to teal, over
+  1.6 s (EaseInOutCubic), no name under the tile (one screen-reader label, "Shifa Doctor, Loading..."). It starts once
+  the name string has loaded, so on the web it plays as index.html's loading frame (the same first frame, drawn in CSS)
+  lifts. Screenshots `Splash_loading.png` (start) and `Splash_loading_end.png`. The boot frame with the solid "S" tile, title,
   body and one button ("Update", or "Retry" with a busy state). Neither frame has a way past it. "Update" re-checks on
   return. Screenshots: `Splash_{loading,update,maintenance,maintenance_retrying}.png`.
 - **Top-level navigation** (`App.kt`): Splash → SignIn or Shell; a session that ends anywhere (sign-out, 401, expiry,

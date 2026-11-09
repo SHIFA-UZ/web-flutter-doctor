@@ -33,7 +33,7 @@ class SplashViewModelTest {
 
     private var gate: BootGate = BootGate.None
 
-    private fun vm() = SplashViewModel({ Result.success(gate) }, sessions, { "en" }, minSplashMs = 800)
+    private fun vm() = SplashViewModel({ Result.success(gate) }, sessions, { "en" }, splashLimitMs = 800)
 
     @Test
     fun `a returning doctor goes to the shell after the short brand moment, not 1_8 s`() =
@@ -82,7 +82,8 @@ class SplashViewModelTest {
     @Test
     fun `a tap skips the brand moment, and a failed check never blocks launch`() =
         runTest(dispatcher) {
-            val vm = SplashViewModel({ Result.failure(IllegalStateException()) }, sessions, { "en" }, minSplashMs = 800)
+            val vm =
+                SplashViewModel({ Result.failure(IllegalStateException()) }, sessions, { "en" }, splashLimitMs = 800)
             advanceTimeBy(100)
             vm.skip()
             advanceUntilIdle()
