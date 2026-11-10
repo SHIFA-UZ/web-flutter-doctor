@@ -108,4 +108,22 @@ class ProphylaxisViewModelTest {
         Thread.sleep(50)
         assertThat(sent.size).isEqualTo(before)
     }
+
+    @Test
+    fun `a save is tracked by its outcome`() {
+        val tracker = shifa.doctor.data.tracking.RecordingTracker()
+        val classToTest = ProphylaxisViewModel(15, 2, repo, tracker).also { created += it }
+        settle { classToTest.state.value.loaded }
+        classToTest.interval(6)
+        classToTest.save()
+        settle { classToTest.state.value.banner != null }
+        putStatus = HttpStatusCode.BadRequest
+        classToTest.save()
+        settle { classToTest.state.value.banner?.error == true }
+        assertThat(tracker.events)
+            .containsExactly(
+                shifa.doctor.data.tracking.events.PatientsEvents.ProphylaxisSaved(true, 6),
+                shifa.doctor.data.tracking.events.PatientsEvents.ProphylaxisSaveFailed("validation"),
+            ).inOrder()
+    }
 }

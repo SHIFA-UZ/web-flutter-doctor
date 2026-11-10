@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.care.CarePartnershipsRepository
 import shifa.doctor.data.care.PartnershipAction
@@ -21,6 +22,11 @@ import shifa.doctor.data.model.CarePartnership
 import shifa.doctor.data.model.CareProgress
 import shifa.doctor.data.model.PartnerInvite
 import shifa.doctor.data.model.PartnershipStatus
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.PatientsEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.careAccepted
 import shifa.doctor.generated.resources.careActionFailed
@@ -69,6 +75,7 @@ class FindPartnerViewModel(
     private val patientId: Long,
     private val country: () -> String? = { null },
     private val repo: CarePartnershipsRepository = carePartnershipsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(FindPartnerUiState())
     val state: StateFlow<FindPartnerUiState> = _state.asStateFlow()
@@ -119,6 +126,15 @@ class FindPartnerViewModel(
         viewModelScope.launch {
             val result = repo.search(s.query, s.specialty, country())
             if (gen != generation) return@launch
+            // Only a search the doctor typed (not the list on open); the count as a range, never the text.
+            val typed = s.query.isNotBlank() || s.specialty.isNotBlank()
+            result.onSuccess { hits ->
+                if (typed) {
+                    tracker.track(
+                        PatientsEvents.CarePartnerSearched(countBucket(hits.size), s.specialty.isNotBlank()),
+                    )
+                }
+            }
             _state.update { st ->
                 result.fold(
                     { hits ->
@@ -177,8 +193,12 @@ class FindPartnerViewModel(
                     s.message.trim().ifEmpty { null },
                 ),
             ).fold(
-                { created -> _state.update { it.copy(sending = false, sent = created) } },
+                { created ->
+                    tracker.track(PatientsEvents.CareInviteSent(s.message.isNotBlank()))
+                    _state.update { it.copy(sending = false, sent = created) }
+                },
                 { e ->
+                    tracker.track(PatientsEvents.CareInviteFailed(e.toFailureReason()))
                     val text =
                         if (e is ApiException.Conflict) Res.string.careInviteExists else Res.string.careInviteFailed
                     _state.update { it.copy(sending = false, banner = e.banner(text)) }
@@ -229,6 +249,7 @@ class PartnershipsViewModel(
     private val patientId: Long?,
     private val me: () -> Long?,
     private val repo: CarePartnershipsRepository = carePartnershipsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PartnershipsUiState())
     val state: StateFlow<PartnershipsUiState> = _state.asStateFlow()
@@ -249,7 +270,11 @@ class PartnershipsViewModel(
         }
     }
 
-    fun filter(f: PartnershipFilter) = _state.update { it.copy(filter = f) }
+    fun filter(f: PartnershipFilter) {
+        if (f == _state.value.filter) return
+        _state.update { it.copy(filter = f) }
+        tracker.track(PatientsEvents.CarePartnershipsFiltered(f.trackName()))
+    }
 
     fun showAll() = _state.update { it.copy(showAll = true) }
 
@@ -302,6 +327,7 @@ data class PartnershipUiState(
 class PartnershipViewModel(
     private val id: Long,
     private val repo: CarePartnershipsRepository = carePartnershipsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PartnershipUiState())
     val state: StateFlow<PartnershipUiState> = _state.asStateFlow()
@@ -360,6 +386,7 @@ class PartnershipViewModel(
         viewModelScope.launch {
             repo.act(id, action).fold(
                 { p ->
+                    tracker.track(PatientsEvents.CarePartnershipActed(action.trackName()))
                     val done =
                         when (action) {
                             PartnershipAction.Accept -> Res.string.careAccepted
@@ -378,6 +405,7 @@ class PartnershipViewModel(
                     if (action == PartnershipAction.Accept) loadProgress()
                 },
                 { e ->
+                    tracker.track(PatientsEvents.CarePartnershipActFailed(action.trackName(), e.toFailureReason()))
                     _state.update {
                         it.copy(
                             acting = false,
@@ -402,11 +430,15 @@ class PartnershipViewModel(
         viewModelScope.launch {
             repo.addProgress(id, body).fold(
                 { p ->
+                    tracker.track(PatientsEvents.CareProgressPosted)
                     progressGeneration++
                     _state.update { it.copy(posting = false, draft = "", progress = it.progress.orEmpty() + p) }
                 },
                 // The text stays for another try.
-                { e -> _state.update { it.copy(posting = false, banner = e.banner(Res.string.carePostFailed)) } },
+                { e ->
+                    tracker.track(PatientsEvents.CareProgressPostFailed(e.toFailureReason()))
+                    _state.update { it.copy(posting = false, banner = e.banner(Res.string.carePostFailed)) }
+                },
             )
         }
     }

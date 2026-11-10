@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.Patient
@@ -37,6 +38,9 @@ import shifa.doctor.data.model.PatientRequest
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.Gender
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addPhoneNumber
 import shifa.doctor.generated.resources.address
@@ -205,6 +209,7 @@ class CreatePatientViewModel(
     private val repo: PatientsRepository = patientsRepository,
     // PAT-06 "Edit details": the same sheet, filled, saving with a PATCH of the changed fields.
     private val editing: Patient? = null,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(
@@ -277,7 +282,10 @@ class CreatePatientViewModel(
     fun create(confirmed: Boolean = false) {
         val s = _state.value
         if (s.saving) return
-        if (!s.valid) return _state.update { it.copy(tried = true) }
+        if (!s.valid) {
+            failed("invalid_fields")
+            return _state.update { it.copy(tried = true) }
+        }
         val removesPhones =
             s.initial?.phones?.any(String::isNotBlank) == true && s.form.phones.none { PhoneE164.normalize(it) != null }
         if (removesPhones && !confirmed) return _state.update { it.copy(askRemovePhones = true) }
@@ -300,9 +308,17 @@ class CreatePatientViewModel(
                 }
             result.fold(
                 onSuccess = { patient ->
+                    tracker.track(
+                        if (editing != null) {
+                            PatientsEvents.PatientDetailsEdited
+                        } else {
+                            PatientsEvents.PatientCreated(s.form.phones.any { PhoneE164.normalize(it) != null })
+                        },
+                    )
                     _state.update { it.copy(saving = false, created = patient) }
                 },
                 onFailure = { e ->
+                    failed(e.toFailureReason())
                     // 409 is the known phone (the server's text is never shown); 400 means the details; else retry.
                     val status = (e as? ApiException)?.status
                     _state.update {
@@ -330,6 +346,15 @@ class CreatePatientViewModel(
             )
         }
     }
+
+    private fun failed(reason: String) =
+        tracker.track(
+            if (editing != null) {
+                PatientsEvents.PatientDetailsEditFailed(reason)
+            } else {
+                PatientsEvents.PatientCreateFailed(reason)
+            },
+        )
 }
 
 /**
