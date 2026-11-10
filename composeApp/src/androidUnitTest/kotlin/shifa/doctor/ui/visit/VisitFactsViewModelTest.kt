@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.ai.AiRepository
 import shifa.doctor.data.api.createHttpClient
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.notesSaveFailed
 import shifa.doctor.generated.resources.visitFactsDocumentFailed
@@ -184,5 +186,30 @@ class VisitFactsViewModelTest {
         assertThat(classToTest.state.value.timeline!!.facts).hasSize(1)
         assertThat(classToTest.state.value.error).isNull()
         assertThat(asked.last()).isEqualTo("GET ai/visit-facts/patient/11/timeline")
+    }
+
+    @Test
+    fun `documenting is tracked as ranges, a notes failure by its reason`() {
+        answers += drafts
+        answers += HttpStatusCode.OK to """{"committedFacts":[${fact(
+            1,
+            "MEDICATION",
+            "COMMITTED",
+        )}],"createdTaskIds":[9],"patterns":[]}"""
+        answers += drafts
+        val tracker = RecordingTracker()
+        val classToTest = VisitFactsViewModel(101, AiRepository { client }, tracker).also { created += it }
+        classToTest.load()
+        settle { classToTest.state.value.facts != null }
+        classToTest.toggle(2)
+        classToTest.document(flushNotes = { false })
+        settle { classToTest.state.value.documentError != null }
+        classToTest.document()
+        settle { classToTest.state.value.done != null }
+        assertThat(tracker.events)
+            .containsExactly(
+                VisitEvents.VisitFactsDocumentFailed("notes_not_saved"),
+                VisitEvents.VisitFactsDocumented("1", "1", "1"),
+            ).inOrder()
     }
 }

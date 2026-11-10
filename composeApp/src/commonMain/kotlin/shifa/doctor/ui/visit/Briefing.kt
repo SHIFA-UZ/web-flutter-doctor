@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.appointments.BRIEFING_SLOW_AFTER
 import shifa.doctor.data.appointments.appointmentsRepository
@@ -34,6 +35,9 @@ import shifa.doctor.data.documents.documentsRepository
 import shifa.doctor.data.model.AppointmentBriefing
 import shifa.doctor.data.model.BriefingStatus
 import shifa.doctor.data.model.PatientDocument
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.attachedDocuments
 import shifa.doctor.generated.resources.copied
@@ -88,12 +92,31 @@ class BriefingViewModel(
     private val appointments: AppointmentsRepository = appointmentsRepository,
     private val documents: DocumentsRepository = documentsRepository,
     private val now: () -> Instant = ::currentInstant,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BriefingUiState())
     val state: StateFlow<BriefingUiState> = _state.asStateFlow()
     private var reading: Job? = null
 
+    // Ready is tracked once per sheet, a failure once until it recovers (the reads repeat every few seconds).
+    private var readySent = false
+    private var failing = false
+
+    private fun outcome(
+        status: BriefingStatus?,
+        error: Throwable?,
+    ) {
+        val failed = error != null || status == BriefingStatus.Failed
+        if (failed && !failing) {
+            tracker.track(VisitEvents.VisitBriefingFailed(error?.toFailureReason() ?: "generation_failed"))
+        }
+        failing = failed
+        if (status == BriefingStatus.Ready && !readySent) tracker.track(VisitEvents.VisitBriefingReady)
+        readySent = readySent || status == BriefingStatus.Ready
+    }
+
     fun start() {
+        tracker.track(VisitEvents.VisitBriefingOpened)
         follow()
         patientId ?: return
         viewModelScope.launch {
@@ -109,6 +132,7 @@ class BriefingViewModel(
         reading =
             viewModelScope.launch {
                 appointments.briefingUpdates(appointmentId).collect { r ->
+                    outcome(r.getOrNull()?.state, r.exceptionOrNull())
                     _state.update {
                         it.copy(
                             briefing = r.getOrNull() ?: it.briefing,
@@ -136,6 +160,7 @@ class BriefingViewModel(
         retrying =
             viewModelScope.launch {
                 val result = appointments.retryBriefing(appointmentId)
+                outcome(result.getOrNull()?.state, result.exceptionOrNull())
                 _state.update {
                     it.copy(
                         retrying = false,
@@ -148,7 +173,10 @@ class BriefingViewModel(
             }
     }
 
-    fun copied() = _state.update { it.copy(copied = true) }
+    fun copied() {
+        tracker.track(VisitEvents.VisitBriefingCopied)
+        _state.update { it.copy(copied = true) }
+    }
 }
 
 /** The sheet over the appointment details; [onOpenDocument] opens an attached original. */

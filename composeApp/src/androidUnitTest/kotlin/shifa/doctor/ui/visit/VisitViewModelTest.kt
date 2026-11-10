@@ -24,7 +24,10 @@ import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.consultation.ConsultationRepository
 import shifa.doctor.data.forms.FormsRepository
 import shifa.doctor.data.model.SignatureState
+import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.patients.PatientsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
 import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
@@ -152,6 +155,7 @@ class VisitViewModelTest {
             }
         }
     private val created = mutableListOf<VisitViewModel>()
+    private val tracker = RecordingTracker()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -199,6 +203,7 @@ class VisitViewModelTest {
                     com.russhwolf.settings.MapSettings(),
                     { "u1" },
                 ),
+            tracker = tracker,
         ).also {
             created += it
             it.load()
@@ -640,5 +645,106 @@ class VisitViewModelTest {
         assertThat(classToTest.state.value.banner?.requestId).isEqualTo("r-ns")
         assertThat(classToTest.state.value.askNoShow).isFalse()
         assertThat(classToTest.state.value.left).isNull()
+    }
+
+    @Test
+    fun `a visit is tracked from opening through End to its saved summary`() {
+        val classToTest = opened()
+        classToTest.notes.edit { it.copy(free = "Filling of 36") }
+        notesList = """[{"id":1,"body":"Filling of 36","source":"MANUAL"}]"""
+        classToTest.end()
+        ended(classToTest)
+        assertThat(tracker.events)
+            .containsExactly(
+                VisitEvents.VisitOpened(VisitKind.InPerson, isDental = false, isCompleted = false),
+                VisitEvents.VisitEndStarted(VisitKind.InPerson, false, false, false),
+                VisitEvents.VisitCompleted(VisitKind.InPerson, "general", hasScribe = false, hasPhotos = false),
+                VisitEvents.VisitSummarySaved(isRetry = false, hasDental = false, hasPhotos = false, hasPlan = false),
+            ).inOrder()
+    }
+
+    @Test
+    fun `a failed complete is visit_end_failed, a failed summary and its retry are tracked apart`() {
+        completeStatus = HttpStatusCode.InternalServerError
+        completeBody = """{"status":500}"""
+        val classToTest = opened()
+        classToTest.notes.edit { it.copy(free = "Pain") }
+        classToTest.end()
+        ended(classToTest)
+        completeStatus = HttpStatusCode.OK
+        completeBody = """{"status":"COMPLETED"}"""
+        documentStatus = HttpStatusCode.InternalServerError
+        notesList = """[{"id":1,"body":"Pain","source":"MANUAL"}]"""
+        classToTest.end()
+        ended(classToTest)
+        documentStatus = HttpStatusCode.OK
+        classToTest.retrySummary()
+        ended(classToTest)
+        assertThat(tracker.events).containsAtLeast(
+            VisitEvents.VisitEndFailed("server", "complete"),
+            VisitEvents.VisitSummaryFailed("server", isRetry = false),
+            VisitEvents.VisitSummarySaved(isRetry = true, hasDental = false, hasPhotos = false, hasPlan = false),
+        ).inOrder()
+    }
+
+    @Test
+    fun `the plan lines, a refused and a recorded payment are tracked as a range and a method`() {
+        planOn = true
+        val classToTest = opened(profession = "Dentist")
+        settle { classToTest.plan.state.value.candidates != null }
+        classToTest.plan.toggle(1)
+        classToTest.plan.amount("100 000")
+        payStatus = HttpStatusCode.InternalServerError
+        classToTest.end()
+        ended(classToTest)
+        payStatus = HttpStatusCode.OK
+        classToTest.end()
+        ended(classToTest)
+        assertThat(tracker.events).containsAtLeast(
+            VisitEvents.VisitPlanLinesCompleted("1"),
+            VisitEvents.VisitEndFailed("payment_not_recorded", "payment"),
+            VisitEvents.VisitPaymentRecorded("cash", "100k-500k"),
+        ).inOrder()
+    }
+
+    @Test
+    fun `the scribe's upload, its retry and a skipped wait are tracked`() {
+        scribePending = true
+        completeBody = """{"status":"COMPLETED","scribePending":true}"""
+        val classToTest = opened()
+        uploadStatus = HttpStatusCode.TooManyRequests
+        runBlocking { classToTest.uploadScribe(byteArrayOf(1, 2, 3), "rec-1") }
+        uploadStatus = HttpStatusCode.Accepted
+        classToTest.retryScribe()
+        settle { classToTest.state.value.awaitingScribe }
+        classToTest.end()
+        settle { classToTest.state.value.end.at == EndStep.Scribe }
+        classToTest.skipScribe()
+        ended(classToTest)
+        assertThat(tracker.events).containsAtLeast(
+            VisitEvents.ScribeFailed("rate_limited", "upload"),
+            VisitEvents.ScribeUploaded(isRetry = true),
+            VisitEvents.ScribeWaitSkipped,
+            VisitEvents.VisitSummarySkipped("ai_later"),
+        ).inOrder()
+    }
+
+    @Test
+    fun `a no-show and the signature request are tracked by their outcome`() {
+        noShowStatus = HttpStatusCode.Conflict
+        val classToTest = opened()
+        classToTest.requestSignature()
+        settle { classToTest.state.value.signature == SignatureState.Waiting && !classToTest.state.value.signing }
+        classToTest.noShow()
+        settle { classToTest.state.value.banner?.requestId == "r-ns" }
+        noShowStatus = HttpStatusCode.OK
+        classToTest.noShow()
+        settle { classToTest.state.value.left != null }
+        shifa.doctor.ui.navigation.ShellNotice.pending.value = null
+        assertThat(tracker.events).containsAtLeast(
+            VisitEvents.VisitSignatureRequested,
+            VisitEvents.VisitNoShowFailed("not_allowed"),
+            VisitEvents.VisitNoShowMarked(isPatientNotified = true),
+        ).inOrder()
     }
 }
