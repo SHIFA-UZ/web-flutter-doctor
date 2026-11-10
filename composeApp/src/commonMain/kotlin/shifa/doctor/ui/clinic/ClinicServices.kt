@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.clinics.clinicsRepository
@@ -46,6 +47,9 @@ import shifa.doctor.data.model.MyClinic
 import shifa.doctor.data.model.NewCatalogItem
 import shifa.doctor.data.model.PlanServiceOption
 import shifa.doctor.data.model.mayEditRevenueShare
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.data.treatmentplans.treatmentPlansRepository
 import shifa.doctor.generated.resources.Res
@@ -225,6 +229,7 @@ class ClinicServicesViewModel(
     private val currency: String = "UZS",
     private val repo: TreatmentPlansRepository = treatmentPlansRepository,
     private val clinics: ClinicsRepository = clinicsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ClinicServicesUiState())
     val state: StateFlow<ClinicServicesUiState> = _state.asStateFlow()
@@ -314,7 +319,10 @@ class ClinicServicesViewModel(
             }
         }
 
-    fun discard() = _state.update { it.copy(editor = null) }
+    fun discard() {
+        tracker.track(ClinicEvents.ServiceEditDiscarded)
+        _state.update { it.copy(editor = null) }
+    }
 
     fun keepEditing() = _state.update { s -> s.copy(editor = s.editor?.copy(askDiscard = false)) }
 
@@ -324,6 +332,8 @@ class ClinicServicesViewModel(
         if (e.busy) return
         val price = e.priceMinor
         if (!e.titleOk || price == null || s.codeTaken(e) || !e.doctorsOk) {
+            val reason = if (e.titleOk && price != null && e.doctorsOk) "code_taken" else "invalid"
+            tracker.track(ClinicEvents.ServiceSaveFailed(isNew = e.catalogItemId == null, reason = reason))
             _state.update { it.copy(editor = e.copy(tried = true)) }
             return
         }
@@ -363,11 +373,13 @@ class ClinicServicesViewModel(
                 }
             result.fold(
                 {
+                    tracker.track(ClinicEvents.ServiceSaved(isNew = id == null, isAllDoctors = e.all))
                     val done = if (id == null) Res.string.clinicServiceAdded else Res.string.serviceSaved
                     _state.update { it.copy(editor = null, banner = CodeBanner(done, error = false)) }
                     load()
                 },
                 { err ->
+                    tracker.track(ClinicEvents.ServiceSaveFailed(isNew = id == null, reason = err.toFailureReason()))
                     _state.update { st ->
                         st.copy(
                             editor =
@@ -392,12 +404,14 @@ class ClinicServicesViewModel(
         viewModelScope.launch {
             repo.patchCatalogItem(id, CatalogItemPatch(active = !option.active)).fold(
                 {
+                    tracker.track(ClinicEvents.ServiceToggled(isActive = !option.active))
                     val done =
                         if (option.active) Res.string.clinicServiceDeactivated else Res.string.clinicServiceReactivated
                     _state.update { s -> s.copy(toggling = false, banner = CodeBanner(done, error = false)) }
                     load()
                 },
                 { e ->
+                    tracker.track(ClinicEvents.ServiceToggleFailed(e.toFailureReason()))
                     _state.update { it.copy(toggling = false, banner = failure(e, Res.string.clinicServiceSaveFailed)) }
                 },
             )

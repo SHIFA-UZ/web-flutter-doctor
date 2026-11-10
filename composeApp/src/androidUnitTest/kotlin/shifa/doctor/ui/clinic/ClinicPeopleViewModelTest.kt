@@ -21,6 +21,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.model.MembershipRole
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicDefaultShareCleared
 import shifa.doctor.generated.resources.clinicInviteInviteSent
@@ -192,5 +194,42 @@ class ClinicPeopleViewModelTest {
         classToTest.revoke()
         settle { classToTest.state.value.revoking == null }
         assertThat(calls.any { it.first == "DELETE clinics/2/invitations/5" }).isTrue()
+    }
+
+    @Test
+    fun `invitations and shares are tracked by their outcome, never the address or the share`() {
+        val tracker = RecordingTracker()
+        val classToTest = ClinicPeopleViewModel(2, repo, tracker).also { created += it }
+        classToTest.loadInvitations()
+        settle { classToTest.state.value.invitations != null }
+        classToTest.openInvite()
+        classToTest.inviteEmail("not-an-email")
+        classToTest.sendInvite()
+        classToTest.inviteEmail("anna@clinic.uz")
+        classToTest.sendInvite()
+        classToTest.inviteEmail("new@clinic.uz")
+        classToTest.sendInvite()
+        settle { classToTest.state.value.invite == null }
+        classToTest.askRevoke(classToTest.state.value.invitations!!.first())
+        classToTest.revoke()
+        settle { classToTest.state.value.revoking == null }
+        classToTest.openShare(null, 50)
+        classToTest.shareText("40")
+        classToTest.saveShare()
+        settle { classToTest.state.value.share == null }
+        shareStatus = HttpStatusCode.InternalServerError
+        classToTest.openShare(null, 40)
+        classToTest.shareText("30")
+        classToTest.saveShare()
+        settle { classToTest.state.value.share?.error != null }
+        assertThat(tracker.events)
+            .containsExactly(
+                ClinicEvents.InvitationFailed("invalid_email"),
+                ClinicEvents.InvitationFailed("already_pending"),
+                ClinicEvents.InvitationSent,
+                ClinicEvents.InvitationRevoked,
+                ClinicEvents.RevenueShareSaved("default", isCleared = false),
+                ClinicEvents.RevenueShareFailed("default", "server"),
+            ).inOrder()
     }
 }

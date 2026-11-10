@@ -36,6 +36,10 @@ import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.clinics.clinicsRepository
 import shifa.doctor.data.model.ClinicPatient
 import shifa.doctor.data.model.MyClinic
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicFinanceLoadMore
 import shifa.doctor.generated.resources.clinicPatientsEmpty
@@ -80,6 +84,7 @@ data class ClinicPatientsUiState(
 class ClinicPatientsViewModel(
     private val clinicId: Long,
     private val repo: ClinicsRepository = clinicsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ClinicPatientsUiState())
     val state: StateFlow<ClinicPatientsUiState> = _state.asStateFlow()
@@ -105,6 +110,10 @@ class ClinicPatientsViewModel(
                     { p ->
                         if (gen == generation) {
                             _state.update { it.copy(rows = p.rows, total = p.total, page = 0, last = p.last) }
+                            // A search's answer (never its text): how much it found.
+                            if (query.isNotEmpty()) {
+                                tracker.track(ClinicEvents.PatientsSearched(countBucket(p.total.toInt())))
+                            }
                         }
                     },
                     { e -> if (gen == generation) _state.update { it.copy(error = failure(e)) } },

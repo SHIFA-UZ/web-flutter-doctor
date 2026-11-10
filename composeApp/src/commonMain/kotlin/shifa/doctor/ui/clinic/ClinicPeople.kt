@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.clinics.clinicsRepository
@@ -37,6 +38,9 @@ import shifa.doctor.data.model.MembershipRole
 import shifa.doctor.data.model.MyClinic
 import shifa.doctor.data.model.mayEditRevenueShare
 import shifa.doctor.data.model.mayManageFinanceSettings
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.all
 import shifa.doctor.generated.resources.cancel
@@ -186,6 +190,7 @@ data class ClinicPeopleUiState(
 class ClinicPeopleViewModel(
     private val clinicId: Long,
     private val repo: ClinicsRepository = clinicsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ClinicPeopleUiState())
     val state: StateFlow<ClinicPeopleUiState> = _state.asStateFlow()
@@ -251,8 +256,10 @@ class ClinicPeopleViewModel(
                 } else {
                     repo.updateDefaultShare(clinicId, percent)
                 }
+            val target = if (member?.doctorProfileId != null) "member" else "default"
             result.fold(
                 {
+                    tracker.track(ClinicEvents.RevenueShareSaved(target, isCleared = clear))
                     val done =
                         when {
                             !clear -> Res.string.clinicShareSaved
@@ -266,6 +273,7 @@ class ClinicPeopleViewModel(
                 },
                 {
                         e ->
+                    tracker.track(ClinicEvents.RevenueShareFailed(target, e.toFailureReason()))
                     _state.update {
                         it.copy(
                             share = sheet.copy(busy = false, error = failure(e, Res.string.clinicShareFailed)),
@@ -287,12 +295,15 @@ class ClinicPeopleViewModel(
         val sheet = _state.value.invite ?: return
         if (sheet.busy) return
         if (!EMAIL.matches(sheet.email.trim()) || pendingTo(sheet.email)) {
+            val reason = if (EMAIL.matches(sheet.email.trim())) "already_pending" else "invalid_email"
+            tracker.track(ClinicEvents.InvitationFailed(reason))
             return _state.update { it.copy(invite = sheet.copy(tried = true)) }
         }
         _state.update { it.copy(invite = sheet.copy(busy = true, tried = true, error = null)) }
         viewModelScope.launch {
             repo.invite(clinicId, sheet.email).fold(
                 {
+                    tracker.track(ClinicEvents.InvitationSent)
                     _state.update {
                         it.copy(
                             invite = null,
@@ -303,6 +314,7 @@ class ClinicPeopleViewModel(
                 },
                 {
                         e ->
+                    tracker.track(ClinicEvents.InvitationFailed(e.toFailureReason()))
                     _state.update {
                         it.copy(
                             invite = sheet.copy(busy = false, error = failure(e, Res.string.clinicInviteFailed)),
@@ -324,6 +336,10 @@ class ClinicPeopleViewModel(
         _state.update { it.copy(revokeBusy = true) }
         viewModelScope.launch {
             val result = repo.revokeInvitation(clinicId, invitation.id)
+            tracker.track(
+                result.exceptionOrNull()?.let { ClinicEvents.InvitationRevokeFailed(it.toFailureReason()) }
+                    ?: ClinicEvents.InvitationRevoked,
+            )
             _state.update {
                 it.copy(
                     revoking = null,

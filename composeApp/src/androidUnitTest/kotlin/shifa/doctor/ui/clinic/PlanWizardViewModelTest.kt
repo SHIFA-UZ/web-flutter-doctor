@@ -22,6 +22,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.finance.FinanceRepository
 import shifa.doctor.data.model.ClinicPatient
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.stopAll
 
@@ -93,18 +95,21 @@ class PlanWizardViewModelTest {
         }
     }
 
-    private fun wizard(patient: ClinicPatient? = null) =
-        PlanWizardViewModel(
-            2,
-            patient,
-            "UZS",
-            LocalDate(2026, 11, 6),
-            ownDoctorId = 21,
-            initialMemo = "Initial payment at desk",
-            plans = TreatmentPlansRepository { client },
-            clinics = ClinicsRepository({ client }, com.russhwolf.settings.MapSettings(), { "u1" }),
-            finance = FinanceRepository { client },
-        ).also { created += it }
+    private fun wizard(
+        patient: ClinicPatient? = null,
+        tracker: RecordingTracker = RecordingTracker(),
+    ) = PlanWizardViewModel(
+        2,
+        patient,
+        "UZS",
+        LocalDate(2026, 11, 6),
+        ownDoctorId = 21,
+        initialMemo = "Initial payment at desk",
+        plans = TreatmentPlansRepository { client },
+        clinics = ClinicsRepository({ client }, com.russhwolf.settings.MapSettings(), { "u1" }),
+        finance = FinanceRepository { client },
+        tracker = tracker,
+    ).also { created += it }
 
     private fun posts() = calls.filter { !it.startsWith("GET") }
 
@@ -285,5 +290,42 @@ class PlanWizardViewModelTest {
         assertThat(other.state.value.askDiscard).isTrue()
         other.keepEditing()
         assertThat(other.state.value.askDiscard).isFalse()
+    }
+
+    @Test
+    fun `steps, a failed save by its stage, the plan made and leaving without one are tracked`() {
+        linesFail = true
+        val tracker = RecordingTracker()
+        val vm = wizard(ClinicPatient(12, "Jasur"), tracker)
+        settle { vm.state.value.doctors != null && vm.state.value.services != null }
+        vm.basics { it.copy(title = "Canal") }
+        vm.next()
+        vm.addLine()
+        vm.next()
+        vm.next()
+        vm.payment { it.copy(activate = false) }
+        vm.next()
+        settle { vm.state.value.error != null }
+        linesFail = false
+        vm.next()
+        settle { vm.state.value.saved }
+        wizard(tracker = tracker).close()
+        assertThat(tracker.events)
+            .containsExactly(
+                ClinicEvents.PlanWizardStepReached(3),
+                ClinicEvents.PlanWizardStepReached(4),
+                ClinicEvents.PlanWizardStepReached(5),
+                ClinicEvents.PlanSaveFailed("lines", "server"),
+                ClinicEvents.PlanCreated(
+                    linesBucket = "1",
+                    doctorsBucket = "1",
+                    totalBucket = "500k-1m",
+                    hasInitialPayment = false,
+                    hasInstallments = false,
+                    isActivated = false,
+                    isFromPatient = true,
+                ),
+                ClinicEvents.PlanWizardAbandoned(1),
+            ).inOrder()
     }
 }

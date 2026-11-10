@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -126,5 +128,16 @@ class ClinicPatientsViewModelTest {
         assertThat(classToTest.state.value.rows!!.size).isEqualTo(2)
         assertThat(classToTest.state.value.loadingMore).isFalse()
         assertThat(classToTest.state.value.page).isEqualTo(0)
+    }
+
+    @Test
+    fun `a search is tracked by how much it found, never its text, the plain list is not`() {
+        val tracker = RecordingTracker()
+        val classToTest = ClinicPatientsViewModel(2, repo, tracker).also { created += it }
+        settle { classToTest.state.value.rows != null }
+        classToTest.type("Gul")
+        dispatcher.scheduler.advanceTimeBy(ClinicPatientsViewModel.DEBOUNCE.inWholeMilliseconds + 1)
+        settle { tracker.events.isNotEmpty() }
+        assertThat(tracker.events).containsExactly(ClinicEvents.PatientsSearched("1"))
     }
 }

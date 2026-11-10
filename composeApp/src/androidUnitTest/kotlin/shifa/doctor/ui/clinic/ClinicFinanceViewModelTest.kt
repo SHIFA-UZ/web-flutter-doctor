@@ -26,6 +26,8 @@ import shifa.doctor.data.finance.FinanceMonth
 import shifa.doctor.data.finance.FinanceRepository
 import shifa.doctor.data.model.ClinicPatient
 import shifa.doctor.data.model.MyClinic
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicFinanceInstallStatusUpdated
 import shifa.doctor.generated.resources.clinicFinancePaymentRecorded
@@ -39,6 +41,7 @@ class ClinicFinanceViewModelTest {
     private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var hold: kotlinx.coroutines.CompletableDeferred<Unit>? = null
     private var ledgerFails = false
+    private var writesFail = false
     private val client =
         createHttpClient(
             { null },
@@ -51,6 +54,8 @@ class ClinicFinanceViewModelTest {
 
                 fun ok(s: String) = respond(s, HttpStatusCode.OK, json)
                 when {
+                    writesFail && req.method.value != "GET" ->
+                        respond("""{"status":500,"code":"INTERNAL"}""", HttpStatusCode.InternalServerError, json)
                     path == "/api/treatment-plans" ->
                         ok(
                             """[{"id":501,"title":"Molar restoration","patientName":"Dilnoza","owedMinor":30000000,"currency":"UZS"},{"id":502,"title":"Paid off","patientName":"Jasur","owedMinor":0,"currency":"UZS"}]""",
@@ -204,7 +209,7 @@ class ClinicFinanceViewModelTest {
         val vm = opened()
         vm.view(FinanceView.Installments)
         settle { vm.state.value.installments != null }
-        assertThat(calls.last()).isEqualTo("GET finance/installment-items?filter=all")
+        assertThat(calls).contains("GET finance/installment-items?filter=all")
         vm.chip(2)
         settle { calls.last() == "GET finance/installment-items?filter=overdue" }
         val row = vm.state.value.installments!!.single()
@@ -292,5 +297,47 @@ class ClinicFinanceViewModelTest {
         assertThat(
             bytes.drop(3).toByteArray().decodeToString(),
         ).isEqualTo("a,\"b,c\"\r\n\"say \"\"hi\"\"\",\"x\ny\"\r\n")
+    }
+
+    @Test
+    fun `payments, installments and records are tracked by outcome, amounts only as ranges`() {
+        val tracker = RecordingTracker()
+        val vm =
+            ClinicFinanceViewModel(
+                clinic,
+                LocalDate(2026, 11, 6),
+                FinanceRepository { client },
+                ClinicsRepository({ client }, MapSettings(), { "u1" }),
+                shifa.doctor.data.treatmentplans.TreatmentPlansRepository { client },
+                tracker,
+            ).also { created += it }
+        vm.view(FinanceView.Ledger)
+        settle { vm.state.value.ledger != null }
+        val visit = vm.state.value.ledger!![0]
+        vm.payFull(visit, PayMethod.Transfer)
+        settle { tracker.events.size == 1 }
+        writesFail = true
+        vm.payFull(visit, PayMethod.Cash)
+        settle { tracker.events.size == 2 }
+        writesFail = false
+        vm.view(FinanceView.Installments)
+        settle { vm.state.value.installments != null }
+        val row = vm.state.value.installments!!.single()
+        vm.remind(row)
+        settle { tracker.events.size == 3 }
+        vm.setStatus(row, "WAIVED")
+        settle { tracker.events.size == 4 }
+        vm.openRecord()
+        vm.editRecord { it.copy(patient = ClinicPatient(15, "Gulnora"), amount = "250 000") }
+        vm.saveRecord()
+        settle { tracker.events.size == 5 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ClinicEvents.PaymentRecorded("ledger_full", "transfer", "100k-500k"),
+                ClinicEvents.PaymentFailed("ledger_full", "cash", "server"),
+                ClinicEvents.InstallmentReminderSent,
+                ClinicEvents.InstallmentStatusChanged("waived", null, "100k-500k"),
+                ClinicEvents.FinancialRecordCreated("invoice", hasPlan = false, amountBucket = "100k-500k"),
+            ).inOrder()
     }
 }
