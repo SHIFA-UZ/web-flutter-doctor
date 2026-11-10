@@ -31,6 +31,8 @@ import shifa.doctor.data.appointments.CancelReason
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.DayKey
 import shifa.doctor.data.model.CalendarEntry
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.appointmentCancelled
 import shifa.doctor.generated.resources.appointmentMoved
@@ -49,6 +51,8 @@ class AppointmentPanelViewModelTest {
     private val read = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val writes = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failWrites = false
+    private var failCode = "SLOT_TAKEN"
+    private val tracker = RecordingTracker()
     private var failDay: String? = null
     private var empty = false
     private val doctors = java.util.concurrent.CopyOnWriteArrayList<String>()
@@ -77,7 +81,7 @@ class AppointmentPanelViewModelTest {
             }
             writes += "${req.method.value} ${req.url.encodedPath} ${req.body.toByteArray().decodeToString()}"
             if (failWrites) {
-                respond("""{"status":409,"code":"SLOT_TAKEN","requestId":"req-appt"}""", HttpStatusCode.Conflict, json)
+                respond("""{"status":409,"code":"$failCode","requestId":"req-appt"}""", HttpStatusCode.Conflict, json)
             } else {
                 respond("", HttpStatusCode.OK)
             }
@@ -115,7 +119,7 @@ class AppointmentPanelViewModelTest {
                 DayKey(today),
             ).filterIsInstance<CalendarEntry.Appointment>().single()
         // The screen runs follow() while it is shown.
-        return AppointmentPanelViewModel(entry, clock, calendar, appointments).also {
+        return AppointmentPanelViewModel(entry, clock, calendar, appointments, tracker = tracker).also {
                 vm ->
             created += vm
             screen.launch { vm.follow() }
@@ -267,5 +271,57 @@ class AppointmentPanelViewModelTest {
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.noShowMarked)
         // The day is read again: the calendar (and this panel, which follows it) shows the backend's NO_SHOW.
         assertThat(read).contains(today.toString())
+    }
+
+    @Test
+    fun `cancel, duration and payment reminder are tracked by their outcome`() {
+        val classToTest = opened()
+        settle { classToTest.state.value.day.isNotEmpty() }
+        failWrites = true
+        classToTest.ui { it.copy(minutes = 60) }
+        classToTest.applyDuration()
+        settle { !classToTest.state.value.busy && classToTest.state.value.banner != null }
+        classToTest.cancel()
+        settle { !classToTest.state.value.busy && classToTest.state.value.cancelError != null }
+        failWrites = false
+        classToTest.applyDuration()
+        settle { !classToTest.state.value.busy && classToTest.state.value.banner?.error == false }
+        classToTest.remindPayment()
+        settle { tracker.events.size == 4 }
+        classToTest.ui { it.copy(cancelReason = CancelReason.PATIENT_REQUEST) }
+        classToTest.cancel()
+        settle { classToTest.state.value.closed }
+        assertThat(tracker.events)
+            .containsExactly(
+                CalendarEvents.AppointmentDurationChangeFailed("conflict", isOnBehalf = false),
+                CalendarEvents.AppointmentCancelFailed("conflict", isOnBehalf = false),
+                CalendarEvents.AppointmentDurationChanged(60, isOnBehalf = false),
+                CalendarEvents.PaymentReminderSent,
+                CalendarEvents.AppointmentCancelled(CancelReason.PATIENT_REQUEST, isVideo = false, isOnBehalf = false),
+            ).inOrder()
+    }
+
+    @Test
+    fun `a move and a no-show are tracked, a refused no-show as not_allowed`() {
+        val classToTest = opened()
+        failWrites = true
+        failCode = "NO_SHOW_NOT_ALLOWED"
+        classToTest.noShow()
+        settle { !classToTest.state.value.busy && classToTest.state.value.banner != null }
+        failWrites = false
+        classToTest.ui { it.copy(notifyNoShow = true) }
+        classToTest.noShow()
+        settle { !classToTest.state.value.busy && classToTest.state.value.banner?.error == false }
+        classToTest.rescheduleOn(LocalDate(2026, 11, 5))
+        settle { classToTest.state.value.rescheduleSlots != null }
+        classToTest.ui { it.copy(target = it.rescheduleSlots!!.first()) }
+        classToTest.move()
+        settle { classToTest.state.value.closed }
+        assertThat(tracker.events)
+            .containsExactly(
+                CalendarEvents.AppointmentNoShowFailed("not_allowed"),
+                CalendarEvents.AppointmentNoShowMarked(isPatientNotified = true, isVideo = false),
+                CalendarEvents.AppointmentRescheduled(isVideo = false, isOnBehalf = false),
+            ).inOrder()
     }
 }
