@@ -32,12 +32,16 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.documents.DocumentsRepository
 import shifa.doctor.data.documents.documentsRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.DocumentCategory
 import shifa.doctor.data.model.PatientDocument
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.DocumentsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.anotherUser
 import shifa.doctor.generated.resources.doctor
@@ -112,6 +116,7 @@ class PatientDocumentsViewModel(
     private val patientId: Long,
     private val clinicId: Long? = null,
     private val repo: DocumentsRepository = documentsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PatientDocumentsUiState())
     val state: StateFlow<PatientDocumentsUiState> = _state.asStateFlow()
@@ -168,6 +173,13 @@ class PatientDocumentsViewModel(
         viewModelScope.launch {
             repo.edit(patientId, e.document.id, e.effectiveTitle, category.name, clinicId).fold(
                 { updated ->
+                    tracker.track(
+                        DocumentsEvents.DocumentEdited(
+                            category,
+                            e.effectiveTitle != e.document.title,
+                            category != e.document.kind,
+                        ),
+                    )
                     _state.update { s ->
                         s.copy(
                             edit = null,
@@ -178,7 +190,10 @@ class PatientDocumentsViewModel(
                     // A read still out (an upload's, a refresh) left before the change: one after it replaces it.
                     if (reading?.isActive == true) load()
                 },
-                { err -> fail(err, Res.string.saveFailed) },
+                { err ->
+                    tracker.track(DocumentsEvents.DocumentEditFailed(err.toFailureReason()))
+                    fail(err, Res.string.saveFailed)
+                },
             )
         }
     }
@@ -191,7 +206,12 @@ class PatientDocumentsViewModel(
         viewModelScope.launch {
             val result = repo.delete(patientId, e.document.id, clinicId)
             val gone = result.isSuccess || result.exceptionOrNull() is ApiException.NotFound
-            if (!gone) return@launch fail(result.exceptionOrNull(), Res.string.documentDeleteFailed)
+            if (!gone) {
+                val err = result.exceptionOrNull()
+                tracker.track(DocumentsEvents.DocumentDeleteFailed(err?.toFailureReason() ?: "client"))
+                return@launch fail(err, Res.string.documentDeleteFailed)
+            }
+            tracker.track(DocumentsEvents.DocumentDeleted(e.document.kind))
             _state.update { s ->
                 s.copy(
                     edit = null,
@@ -229,6 +249,7 @@ class PatientDocumentsViewModel(
         _state.update { it.copy(requesting = it.requesting + document.id, banner = null) }
         viewModelScope.launch {
             val result = repo.requestAccess(patientId, document.id, clinicId)
+            tracker.track(accessRequestEvent("list", result.exceptionOrNull()))
             _state.update { s ->
                 s.copy(
                     requesting = s.requesting - document.id,
@@ -247,6 +268,16 @@ class PatientDocumentsViewModel(
             }
         }
     }
+}
+
+/** A request for a locked document's access, from the [from] place (`list` / `viewer`), by its outcome. */
+internal fun accessRequestEvent(
+    from: String,
+    e: Throwable?,
+) = when (e) {
+    null -> DocumentsEvents.DocumentAccessRequested(from)
+    is ApiException.Conflict -> DocumentsEvents.DocumentAccessRequestFailed(from, "already_requested")
+    else -> DocumentsEvents.DocumentAccessRequestFailed(from, e.toFailureReason())
 }
 
 data class DocumentsActions(

@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.documents.DocumentsRepository
 import shifa.doctor.data.documents.UploadFile
@@ -39,6 +40,11 @@ import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.DocumentCategory
 import shifa.doctor.data.model.DocumentFile
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.DocumentsEvents
+import shifa.doctor.data.tracking.events.documentKind
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.add
 import shifa.doctor.generated.resources.addAnotherPage
@@ -145,10 +151,14 @@ class DocumentUploadViewModel(
     private val clinicId: Long? = null,
     private val appointmentId: Long? = null,
     private val repo: DocumentsRepository = documentsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(UploadUiState())
     val state: StateFlow<UploadUiState> = _state.asStateFlow()
     private var job: Job? = null
+
+    // The draft whose upload is running, for the cancel event.
+    private var sending: UploadDraft? = null
 
     fun ui(change: (UploadUiState) -> UploadUiState) = _state.update(change)
 
@@ -163,6 +173,7 @@ class DocumentUploadViewModel(
         val mime = DocumentFile.mime(bytes, null, null)
         // (An empty or too large file says so first, in offer.)
         if (bytes.isNotEmpty() && bytes.size <= MAX_FILE && mime != DocumentFile.PDF && mime !in IMAGES) {
+            tracker.track(DocumentsEvents.DocumentUploadFailed(null, null, "unsupported_type"))
             return _state.update { it.copy(banner = CodeBanner(Res.string.onlyPdfOrImages)) }
         }
         offer(UploadFile(bytes, name, mime), name.substringBeforeLast('.'))
@@ -200,7 +211,11 @@ class DocumentUploadViewModel(
         val pages = _state.value.pages
         _state.update { it.copy(askMore = false, pages = emptyList()) }
         if (pages.isEmpty()) return
-        val pdf = imagesToPdf(pages) ?: return _state.update { it.copy(banner = CodeBanner(Res.string.scanFailed)) }
+        val pdf = imagesToPdf(pages)
+        if (pdf == null) {
+            tracker.track(DocumentsEvents.DocumentUploadFailed("pdf", null, "scan_failed"))
+            return _state.update { it.copy(banner = CodeBanner(Res.string.scanFailed)) }
+        }
         offer(UploadFile(pdf, fileName, DocumentFile.PDF), suggested, pages.size)
     }
 
@@ -209,6 +224,13 @@ class DocumentUploadViewModel(
         suggested: String,
         pages: Int = 0,
     ) {
+        val refused =
+            when {
+                file.bytes.isEmpty() -> "empty_file"
+                file.bytes.size > MAX_FILE -> "too_large"
+                else -> null
+            }
+        refused?.let { tracker.track(DocumentsEvents.DocumentUploadFailed(documentKind(file.mime), null, it)) }
         when {
             file.bytes.isEmpty() -> _state.update { it.copy(banner = CodeBanner(Res.string.noFileData)) }
             file.bytes.size > MAX_FILE ->
@@ -249,15 +271,21 @@ class DocumentUploadViewModel(
         // One upload at a time: the draft stays until the running one ends.
         if (_state.value.uploading != null) return
         _state.update { it.copy(draft = null) }
-        send(draft)
+        send(draft, retry = false)
     }
 
     fun retry() {
         val draft = _state.value.failed ?: return
-        send(draft)
+        send(draft, retry = true)
     }
 
     fun cancelUpload() {
+        sending?.let {
+            tracker.track(
+                DocumentsEvents.DocumentUploadCancelled(documentKind(it.file.mime), it.category!!),
+            )
+        }
+        sending = null
         job?.cancel()
         job = null
         _state.update {
@@ -265,8 +293,12 @@ class DocumentUploadViewModel(
         }
     }
 
-    private fun send(draft: UploadDraft) {
+    private fun send(
+        draft: UploadDraft,
+        retry: Boolean,
+    ) {
         if (_state.value.uploading != null) return
+        sending = draft
         val title = draft.effectiveTitle
         _state.update { it.copy(uploading = title, progress = null, failed = null, banner = null) }
         job =
@@ -280,6 +312,22 @@ class DocumentUploadViewModel(
                         clinicId,
                         appointmentId,
                     ) { p -> _state.update { if (it.uploading != null) it.copy(progress = p) else it } }
+                sending = null
+                val kind = documentKind(draft.file.mime)
+                tracker.track(
+                    result.fold(
+                        {
+                            DocumentsEvents.DocumentUploaded(
+                                kind,
+                                draft.category!!,
+                                draft.pages > 0,
+                                draft.pages.takeIf { it > 0 }?.let(::countBucket),
+                                retry,
+                            )
+                        },
+                        { DocumentsEvents.DocumentUploadFailed(kind, draft.category, it.toFailureReason()) },
+                    ),
+                )
                 _state.update { s ->
                     result.fold(
                         {

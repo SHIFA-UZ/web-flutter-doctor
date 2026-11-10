@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.documents.DocumentsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.DocumentsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.documentsLoadFailed
 import shifa.doctor.generated.resources.requestAccessSent
@@ -54,6 +56,7 @@ class PatientDocumentsViewModelTest {
             }
         }
     private val created = mutableListOf<PatientDocumentsViewModel>()
+    private val tracker = RecordingTracker()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -70,7 +73,7 @@ class PatientDocumentsViewModelTest {
     }
 
     private fun opened() =
-        PatientDocumentsViewModel(14, null, DocumentsRepository { createHttpClient({ null }, engine) }).also {
+        PatientDocumentsViewModel(14, null, DocumentsRepository { createHttpClient({ null }, engine) }, tracker).also {
             created += it
             it.load()
             settle { it.state.value.documents != null || it.state.value.error != null }
@@ -135,5 +138,26 @@ class PatientDocumentsViewModelTest {
         classToTest.requestAccess(locked)
         settle { classToTest.state.value.banner?.requestId == "req-d" }
         assertThat(classToTest.state.value.banner?.error).isTrue()
+    }
+
+    @Test
+    fun `access requests from the list are tracked by their outcome`() {
+        val classToTest = opened()
+        val locked = classToTest.state.value.documents!!.last()
+        classToTest.requestAccess(locked)
+        settle { locked.id !in classToTest.state.value.requesting }
+        requestStatus = HttpStatusCode.Conflict
+        classToTest.requestAccess(locked)
+        settle { classToTest.state.value.banner?.text == Res.string.requestAlreadySent }
+        requestStatus = HttpStatusCode.InternalServerError
+        classToTest.requestAccess(locked)
+        settle { classToTest.state.value.banner?.requestId == "req-d" }
+
+        assertThat(tracker.events)
+            .containsExactly(
+                DocumentsEvents.DocumentAccessRequested("list"),
+                DocumentsEvents.DocumentAccessRequestFailed("list", "already_requested"),
+                DocumentsEvents.DocumentAccessRequestFailed("list", "server"),
+            ).inOrder()
     }
 }

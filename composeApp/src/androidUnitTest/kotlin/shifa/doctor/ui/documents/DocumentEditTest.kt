@@ -21,6 +21,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.documents.DocumentsRepository
 import shifa.doctor.data.model.DocumentCategory
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.DocumentsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.documentDeleteFailed
 import shifa.doctor.generated.resources.documentDeletedNamed
@@ -65,6 +67,7 @@ class DocumentEditTest {
             }
         }
     private val created = mutableListOf<PatientDocumentsViewModel>()
+    private val tracker = RecordingTracker()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -81,7 +84,7 @@ class DocumentEditTest {
     }
 
     private fun opened() =
-        PatientDocumentsViewModel(14, 3, DocumentsRepository { createHttpClient({ null }, engine) }).also {
+        PatientDocumentsViewModel(14, 3, DocumentsRepository { createHttpClient({ null }, engine) }, tracker).also {
             created += it
             it.load()
             settle { it.state.value.documents != null }
@@ -135,5 +138,28 @@ class DocumentEditTest {
         assertThat(classToTest.state.value.documents!!.map { it.id }).containsExactly(5L, 8L).inOrder()
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.documentDeletedNamed)
         assertThat(sent.last()).isEqualTo("DELETE /api/patients/14/documents/7?clinicId=3")
+    }
+
+    @Test
+    fun `edits and removals are tracked by their outcome, never the title`() {
+        val classToTest = opened()
+        classToTest.startEdit(classToTest.doc(7))
+        classToTest.editDraft { it.copy(title = "MRI knee", category = DocumentCategory.MRI) }
+        classToTest.saveEdit()
+        settle { classToTest.state.value.edit == null }
+        deleteStatus = HttpStatusCode.InternalServerError
+        classToTest.startEdit(classToTest.doc(7))
+        classToTest.delete()
+        settle { classToTest.state.value.edit?.busy == false }
+        deleteStatus = HttpStatusCode.NoContent
+        classToTest.delete()
+        settle { classToTest.state.value.edit == null }
+
+        assertThat(tracker.events)
+            .containsExactly(
+                DocumentsEvents.DocumentEdited(DocumentCategory.MRI, true, true),
+                DocumentsEvents.DocumentDeleteFailed("server"),
+                DocumentsEvents.DocumentDeleted(DocumentCategory.MRI),
+            ).inOrder()
     }
 }
