@@ -55,6 +55,9 @@ RewriteRule ^ index.html [L]
     Header always set Strict-Transport-Security "max-age=31536000"
     Header always set X-Frame-Options "DENY"
     Header always set X-Content-Type-Options "nosniff"
+    # Report-only for now: the browser console lists what an enforced policy would block (Skia, Daily, Firebase and
+    # pdf.js are untested under one). Once a release shows no reports, rename it to Content-Security-Policy.
+    Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com https://*.daily.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https://api.shifa.uz https://api-dev.shifa.uz https://cdn.jsdelivr.net https://www.gstatic.com https://*.googleapis.com https://*.daily.co wss://*.daily.co https://tile.openstreetmap.org; worker-src 'self' blob: https://cdn.jsdelivr.net; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
