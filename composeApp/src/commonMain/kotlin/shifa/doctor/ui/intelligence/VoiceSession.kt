@@ -9,14 +9,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.ai.AiRepository
 import shifa.doctor.data.ai.aiCode
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.intelligence.ChatTitles
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.speech.TranscriptionRepository
 import shifa.doctor.data.storage.AppLanguage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
 import shifa.doctor.generated.resources.intelCouldNotStartMicMobile
@@ -133,6 +136,7 @@ class VoiceSession(
     // A typed question's reply is being written ("Reviewing…" without the voice).
     private val busy: () -> Boolean,
     private val clock: () -> Long,
+    private val tracker: Tracker = Tracking,
 ) {
     private val _state = MutableStateFlow(VoiceUiState())
     val state: StateFlow<VoiceUiState> = _state.asStateFlow()
@@ -152,10 +156,14 @@ class VoiceSession(
     }
 
     /** Below PRO the mic and the record button only say so (flow 03/04 §9). */
-    fun locked() = banner(CodeBanner(Res.string.intelSpeechRequiresPro))
+    fun locked() {
+        tracker.track(ChatEvents.IntelligenceVoiceFailed("pro_required", null))
+        banner(CodeBanner(Res.string.intelSpeechRequiresPro))
+    }
 
     /** The microphone was refused: say so, and hands-free stops. */
     fun denied() {
+        tracker.track(ChatEvents.IntelligenceVoiceFailed("mic_denied", null))
         _state.update { it.copy(handsFree = false) }
         banner(CodeBanner(Res.string.intelMicPermissionRetry))
     }
@@ -216,6 +224,7 @@ class VoiceSession(
     /** The dictation pill's ✕ (flow 03/05 target): the take is dropped, nothing is sent. */
     fun discard() {
         if (!_state.value.recording) return
+        tracker.track(ChatEvents.IntelligenceVoiceDiscarded)
         take?.cancel()
         recorder?.cancel()
         _state.update { VoiceUiState() }
@@ -298,6 +307,7 @@ class VoiceSession(
      */
     fun paused() {
         val wasRecording = _state.value.recording
+        if (wasRecording) tracker.track(ChatEvents.IntelligenceVoiceFailed("background", mode(_state.value.dictating)))
         leave()
         if (wasRecording) banner(CodeBanner(Res.string.intelRecordingStoppedBackground, error = false))
     }
@@ -325,6 +335,7 @@ class VoiceSession(
         take?.cancel()
         player().stop()
         if (!rec.start()) {
+            tracker.track(ChatEvents.IntelligenceVoiceFailed("mic_unavailable", mode(dictation)))
             _state.update { VoiceUiState() }
             return banner(CodeBanner(Res.string.intelCouldNotStartMicMobile))
         }
@@ -363,6 +374,7 @@ class VoiceSession(
 
     // Nothing heard in 20 s: the take goes, hands-free stops (flow 03/04 §5).
     private fun giveUp() {
+        tracker.track(ChatEvents.IntelligenceVoiceFailed("no_speech", mode(false)))
         recorder?.cancel()
         _state.update { VoiceUiState() }
         banner(CodeBanner(Res.string.intelNoSpeech))
@@ -386,7 +398,7 @@ class VoiceSession(
         work =
             scope.launch {
                 val audio = rec.stop()
-                if (audio == null) noSpeech(emptyMessage(dictation)) else transcribeAndAsk(audio, id, dictation)
+                if (audio == null) noSpeech(dictation) else transcribeAndAsk(audio, id, dictation)
             }
     }
 
@@ -415,11 +427,13 @@ class VoiceSession(
                 // Kept for "Retry" unless the plan or the mic refuses it (flow 03/05 §6 target).
                 val e = result.exceptionOrNull()
                 kept = Triple(audio, id, dictation).takeUnless { e is ApiException.Forbidden }
+                tracker.track(ChatEvents.IntelligenceVoiceFailed(e?.toFailureReason() ?: "client", mode(dictation)))
                 failed(e)
             }
-            transcript.empty -> noSpeech(emptyMessage(dictation))
+            transcript.empty -> noSpeech(dictation)
             isSignOff(transcript.text) -> signOff(transcript.text)
             else -> {
+                tracker.track(ChatEvents.IntelligenceVoiceTranscribed(mode(dictation)))
                 _state.update { it.copy(transcribing = false) }
                 // The words decide the reply language, else what the server heard, else the conversation's.
                 val language =
@@ -430,7 +444,9 @@ class VoiceSession(
         }
     }
 
-    private fun noSpeech(message: StringResource) {
+    private fun noSpeech(dictation: Boolean) {
+        tracker.track(ChatEvents.IntelligenceVoiceFailed("no_speech", mode(dictation)))
+        val message = emptyMessage(dictation)
         val handsFree = _state.value.handsFree
         _state.update { VoiceUiState(handsFree = handsFree) }
         banner(CodeBanner(message))
@@ -452,6 +468,7 @@ class VoiceSession(
     // "That's it", "rahmat", "хватит"…: the loop ends here, nothing goes to Shifa (flow 03/04 §7 target; Flutter ran
     // this on the web only and asked the doctor to say "Hey Shifa").
     private fun signOff(text: String) {
+        tracker.track(ChatEvents.IntelligenceVoiceSignedOff)
         _state.update { VoiceUiState() }
         val thanks = listOf("thank", "спасибо", "rahmat").any { text.lowercase().contains(it) }
         banner(CodeBanner(if (thanks) Res.string.intelSignOffThanks else Res.string.intelSignOffReply, error = false))
@@ -470,6 +487,8 @@ class VoiceSession(
                 if (_state.value.handsFree && _state.value.phase == VoicePhase.Idle) listen()
             }
     }
+
+    private fun mode(dictation: Boolean) = if (dictation) "dictation" else "hands_free"
 
     private fun banner(banner: CodeBanner) = _state.update { it.copy(banner = banner) }
 

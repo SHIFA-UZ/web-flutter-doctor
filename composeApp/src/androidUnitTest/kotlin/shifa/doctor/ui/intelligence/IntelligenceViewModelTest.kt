@@ -16,6 +16,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.intelligence.ChatMessage
 import shifa.doctor.data.intelligence.ChatSessionStore
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.intelDownloadEmpty
 import shifa.doctor.stopAll
@@ -121,6 +123,35 @@ class IntelligenceViewModelTest {
         assertThat(text).contains("--- [0] USER @ ")
         assertThat(text).contains("toolName: search_patients")
         assertThat(text).contains("--- JSON (machine-readable) ---")
+    }
+
+    @Test
+    fun `rename, delete and export are tracked by outcome`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            IntelligenceViewModel(
+                store,
+                { clock },
+                tracker = tracker,
+            ).also { created += it }.also { it.load() }
+        classToTest.export()
+        talk("Find Ada")
+        classToTest.export()
+        classToTest.exported()
+        classToTest.exportFailed()
+        classToTest.askRename(classToTest.state.value.active)
+        classToTest.renameText("Ada booking")
+        classToTest.rename()
+        classToTest.askDelete(classToTest.state.value.active)
+        classToTest.delete()
+        assertThat(tracker.events)
+            .containsExactly(
+                ChatEvents.IntelligenceConversationExportFailed("empty"),
+                ChatEvents.IntelligenceConversationExported,
+                ChatEvents.IntelligenceConversationExportFailed("share_failed"),
+                ChatEvents.IntelligenceConversationRenamed,
+                ChatEvents.IntelligenceConversationDeleted,
+            ).inOrder()
     }
 
     @Test

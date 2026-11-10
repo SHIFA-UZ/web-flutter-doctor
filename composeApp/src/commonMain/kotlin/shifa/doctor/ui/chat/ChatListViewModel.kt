@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.chat.ChatRepository
 import shifa.doctor.data.chat.ConversationSort
@@ -19,6 +20,10 @@ import shifa.doctor.data.chat.chatRepository
 import shifa.doctor.data.chat.sortedFor
 import shifa.doctor.data.model.Conversation
 import shifa.doctor.data.model.UserSearchResult
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.couldNotLoadConversations
 import shifa.doctor.generated.resources.failedToStartConversation
@@ -57,6 +62,7 @@ class ChatListViewModel(
     private val repo: ChatRepository = chatRepository,
     private val every: Duration = 5.seconds,
     private val debounce: Duration = 300.milliseconds,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChatListUiState())
 
@@ -102,7 +108,10 @@ class ChatListViewModel(
             }
     }
 
-    fun sort(sort: ConversationSort) = _state.update { it.copy(sort = sort, choosingSort = false) }
+    fun sort(sort: ConversationSort) {
+        if (sort != _state.value.sort) tracker.track(ChatEvents.ChatListSorted(sort))
+        _state.update { it.copy(sort = sort, choosingSort = false) }
+    }
 
     fun choosingSort(open: Boolean) = _state.update { it.copy(choosingSort = open) }
 
@@ -118,7 +127,14 @@ class ChatListViewModel(
             viewModelScope.launch {
                 if (!now) delay(debounce)
                 repo.search(text.trim()).fold(
-                    { found -> _state.update { if (it.typed == text) it.copy(results = found) else it } },
+                    { found ->
+                        if (_state.value.typed == text) {
+                            tracker.track(
+                                ChatEvents.ChatUsersSearched(countBucket(found.size)),
+                            )
+                        }
+                        _state.update { if (it.typed == text) it.copy(results = found) else it }
+                    },
                     {
                         _state.update {
                             if (it.typed == text) {
@@ -150,6 +166,7 @@ class ChatListViewModel(
     fun startWith(user: UserSearchResult) {
         if (_state.value.starting) return
         _state.value.conversations?.firstOrNull { it.participantId == user.id && it.isDoctor == user.isDoctor }?.let {
+            tracker.track(ChatEvents.ChatConversationStarted(user.isDoctor))
             type("")
             return open(it)
         }
@@ -159,6 +176,7 @@ class ChatListViewModel(
             _state.update { it.copy(starting = false) }
             started.fold(
                 { c ->
+                    tracker.track(ChatEvents.ChatConversationStarted(user.isDoctor))
                     type("")
                     _state.update {
                             s ->
@@ -167,6 +185,7 @@ class ChatListViewModel(
                     open(c)
                 },
                 { e ->
+                    tracker.track(ChatEvents.ChatConversationStartFailed(e.toFailureReason(), "search"))
                     ShellNotice.pending.value = Notice(Res.string.failedToStartConversation, requestId = e.requestId)
                 },
             )

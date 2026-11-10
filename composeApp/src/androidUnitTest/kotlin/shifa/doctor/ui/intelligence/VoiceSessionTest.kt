@@ -20,6 +20,8 @@ import org.junit.Test
 import shifa.doctor.data.ai.AiRepository
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.speech.TranscriptionRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.intelCouldNotStartMicMobile
 import shifa.doctor.generated.resources.intelNoSpeech
@@ -108,6 +110,7 @@ class VoiceSessionTest {
     private var cancelled = 0
     private var typedReply = false
     private val player = FakePlayer()
+    private val tracker = RecordingTracker()
 
     private fun TestScope.session(
         recorder: FakeRecorder,
@@ -125,6 +128,7 @@ class VoiceSessionTest {
             cancelTurn = { cancelled++ },
             busy = { typedReply },
             clock = { testScheduler.currentTime },
+            tracker = tracker,
         ).also { it.attach(recorder) }
 
     private fun TestScope.recorder() = FakeRecorder { testScheduler.currentTime }
@@ -162,6 +166,27 @@ class VoiceSessionTest {
             advanceTimeBy(VoiceSession.RELISTEN_MS + 10)
             assertThat(classToTest.state.value.phase).isEqualTo(VoicePhase.Listening)
             assertThat(rec.takes).isEqualTo(2)
+        }
+
+    @Test
+    fun `takes are tracked by mode and outcome, never the words`() =
+        runTest {
+            val classToTest = session(recorder())
+            classToTest.locked()
+            classToTest.record()
+            classToTest.record()
+            settle { asked.isNotEmpty() }
+            classToTest.turnFailed()
+            transcript = HttpStatusCode.Forbidden to """{"status":403}"""
+            classToTest.record()
+            classToTest.record()
+            settle { tracker.events.size == 3 }
+            assertThat(tracker.events)
+                .containsExactly(
+                    ChatEvents.IntelligenceVoiceFailed("pro_required", null),
+                    ChatEvents.IntelligenceVoiceTranscribed("dictation"),
+                    ChatEvents.IntelligenceVoiceFailed("forbidden", "dictation"),
+                ).inOrder()
         }
 
     @Test

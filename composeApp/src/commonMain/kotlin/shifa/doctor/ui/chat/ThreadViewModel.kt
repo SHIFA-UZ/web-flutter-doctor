@@ -14,12 +14,16 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.chat.ChatRepository
 import shifa.doctor.data.chat.chatRepository
 import shifa.doctor.data.model.Conversation
 import shifa.doctor.data.model.Message
 import shifa.doctor.data.model.SendMessageRequest
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chatFileTypeNotAllowed
 import shifa.doctor.generated.resources.chatLoadFailed
@@ -55,6 +59,16 @@ data class PendingMessage(
     val durationSeconds: Int? = null,
 ) {
     val file: ByteArray? get() = image ?: document ?: voice
+
+    // For tracking: what kind of message this is (never its text or file name).
+    val kind: String
+        get() =
+            when {
+                image != null -> "image"
+                voice != null -> "voice"
+                document != null -> "document"
+                else -> "text"
+            }
 }
 
 data class ThreadUiState(
@@ -95,6 +109,7 @@ class ThreadViewModel(
     private val repo: ChatRepository = chatRepository,
     private val every: Duration = 5.seconds,
     private val now: () -> Instant = { currentInstant() },
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ThreadUiState())
     val state: StateFlow<ThreadUiState> = _state.asStateFlow()
@@ -227,10 +242,7 @@ class ThreadViewModel(
      */
     fun sendImage(photo: PickedImage) {
         if (_state.value.messages == null) return
-        if (photo.bytes.size > MAX_ATTACHMENT_BYTES) {
-            ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
-            return
-        }
+        if (photo.bytes.size > MAX_ATTACHMENT_BYTES) return rejected("image", "too_large", tooLarge())
         val pending = PendingMessage(++lastLocalId, "", now(), image = photo.bytes, fileName = photo.fileName)
         _state.update { it.copy(pending = it.pending + pending) }
         deliver(pending)
@@ -243,11 +255,11 @@ class ThreadViewModel(
     fun sendDocument(file: DocumentPickerResult) {
         if (_state.value.messages == null) return
         val ext = file.fileName.substringAfterLast('.', "").lowercase()
+        val kind = if (ext in IMAGE_EXTENSIONS) "image" else "document"
         when {
-            file.readFailed -> ShellNotice.pending.value = Notice(Res.string.errorUploadingFile)
-            ext !in CHAT_DOCUMENT_EXTENSIONS -> ShellNotice.pending.value = Notice(Res.string.chatFileTypeNotAllowed)
-            file.fileBytes.size > MAX_ATTACHMENT_BYTES ->
-                ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+            file.readFailed -> rejected(kind, "read_failed", Notice(Res.string.errorUploadingFile))
+            ext !in CHAT_DOCUMENT_EXTENSIONS -> rejected(kind, "file_type", Notice(Res.string.chatFileTypeNotAllowed))
+            file.fileBytes.size > MAX_ATTACHMENT_BYTES -> rejected(kind, "too_large", tooLarge())
             ext in IMAGE_EXTENSIONS ->
                 enqueue(
                     PendingMessage(++lastLocalId, "", now(), image = file.fileBytes, fileName = file.fileName),
@@ -270,10 +282,9 @@ class ThreadViewModel(
     ) {
         if (_state.value.messages == null) return
         when {
-            seconds < 1 -> ShellNotice.pending.value = Notice(Res.string.chatRecordingTooShort)
-            audio == null || audio.isEmpty() -> ShellNotice.pending.value = Notice(Res.string.errorRecordingVoice)
-            audio.size > MAX_ATTACHMENT_BYTES ->
-                ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+            seconds < 1 -> rejected("voice", "too_short", Notice(Res.string.chatRecordingTooShort))
+            audio == null || audio.isEmpty() -> rejected("voice", "read_failed", Notice(Res.string.errorRecordingVoice))
+            audio.size > MAX_ATTACHMENT_BYTES -> rejected("voice", "too_large", tooLarge())
             else -> {
                 val at = now()
                 enqueue(
@@ -290,6 +301,18 @@ class ThreadViewModel(
         }
     }
 
+    // An attachment that isn't sent: the banner says why.
+    private fun rejected(
+        kind: String,
+        reason: String,
+        notice: Notice,
+    ) {
+        tracker.track(ChatEvents.ChatMessageFailed(kind, reason))
+        ShellNotice.pending.value = notice
+    }
+
+    private fun tooLarge() = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+
     private fun enqueue(p: PendingMessage) {
         _state.update { it.copy(pending = it.pending + p) }
         deliver(p)
@@ -302,7 +325,7 @@ class ThreadViewModel(
                 s ->
             s.copy(pending = s.pending.map { if (it.localId == localId) it.copy(failed = false) else it })
         }
-        deliver(p.copy(failed = false))
+        deliver(p.copy(failed = false), retry = true)
     }
 
     // A text as it is; a photo uploaded first, then sent with its URL, name and size (07 §1.4).
@@ -338,10 +361,14 @@ class ThreadViewModel(
     // One send at a time, so texts arrive in the order they were written.
     private val sending = Mutex()
 
-    private fun deliver(p: PendingMessage) {
+    private fun deliver(
+        p: PendingMessage,
+        retry: Boolean = false,
+    ) {
         viewModelScope.launch {
             sending.withLock { request(p).mapCatching { repo.send(it).getOrThrow() } }.fold(
                 { sent ->
+                    tracker.track(ChatEvents.ChatMessageSent(p.kind, retry))
                     sentIds += sent.id
                     _state.update { s ->
                         val messages = s.messages.orEmpty()
@@ -351,7 +378,8 @@ class ThreadViewModel(
                         )
                     }
                 },
-                {
+                { e ->
+                    tracker.track(ChatEvents.ChatMessageFailed(p.kind, e.toFailureReason()))
                     _state.update {
                             s ->
                         s.copy(pending = s.pending.map { if (it.localId == p.localId) it.copy(failed = true) else it })

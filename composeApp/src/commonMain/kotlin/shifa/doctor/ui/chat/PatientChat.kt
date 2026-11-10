@@ -17,9 +17,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.chat.ChatRepository
 import shifa.doctor.data.model.Conversation
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.failedToStartConversation
 import shifa.doctor.ui.navigation.Notice
@@ -40,6 +44,7 @@ data class PatientChatUiState(
 class PatientChatViewModel(
     private val patientId: Long,
     private val repo: ChatRepository = ChatRepository(),
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PatientChatUiState())
     val state: StateFlow<PatientChatUiState> = _state.asStateFlow()
@@ -49,6 +54,7 @@ class PatientChatViewModel(
             repo.start(patientId = patientId).fold(
                 { c -> _state.update { it.copy(conversation = c) } },
                 { e ->
+                    tracker.track(ChatEvents.ChatConversationStartFailed(e.toFailureReason(), "patient"))
                     val text = e.toUserMessage(Res.string.failedToStartConversation)
                     _state.update { it.copy(failed = Notice(text, requestId = e.requestId)) }
                 },

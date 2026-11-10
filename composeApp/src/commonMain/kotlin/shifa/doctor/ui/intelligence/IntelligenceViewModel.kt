@@ -14,6 +14,9 @@ import shifa.doctor.data.intelligence.ChatStoreState
 import shifa.doctor.data.intelligence.chatSessionStore
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.intelDownloadEmpty
 import shifa.doctor.generated.resources.intelDownloadFailed
@@ -63,6 +66,7 @@ class IntelligenceViewModel(
     private val store: ChatSessionStore = chatSessionStore,
     private val now: () -> Instant = ::currentInstant,
     profile: ProfileRepository = profileRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(IntelligenceUiState())
     val state: StateFlow<IntelligenceUiState> = _state.asStateFlow()
@@ -116,6 +120,7 @@ class IntelligenceViewModel(
         val target = s.renaming ?: return
         if (!s.canRename) return
         store.rename(target.id, s.renameText)
+        tracker.track(ChatEvents.IntelligenceConversationRenamed)
         _state.update { it.copy(renaming = null, renameText = "") }
     }
 
@@ -124,6 +129,7 @@ class IntelligenceViewModel(
     fun delete() {
         val target = _state.value.deleting ?: return
         store.delete(target.id)
+        tracker.track(ChatEvents.IntelligenceConversationDeleted)
         _state.update { it.copy(deleting = null) }
     }
 
@@ -134,6 +140,7 @@ class IntelligenceViewModel(
         _state.update { it.copy(menu = false) }
         val active = _state.value.active
         if (active == null || active.messages.isEmpty()) {
+            tracker.track(ChatEvents.IntelligenceConversationExportFailed("empty"))
             _state.update { it.copy(banner = CodeBanner(Res.string.intelDownloadEmpty)) }
             return null
         }
@@ -143,8 +150,14 @@ class IntelligenceViewModel(
         return ChatExport("shifa-intelligence-$safeId-$stamp.txt", active.exportText(at).encodeToByteArray())
     }
 
+    /** The share sheet opened with the export. */
+    fun exported() = tracker.track(ChatEvents.IntelligenceConversationExported)
+
     /** The share sheet couldn't open. */
-    fun exportFailed() = _state.update { it.copy(banner = CodeBanner(Res.string.intelDownloadFailed)) }
+    fun exportFailed() {
+        tracker.track(ChatEvents.IntelligenceConversationExportFailed("share_failed"))
+        _state.update { it.copy(banner = CodeBanner(Res.string.intelDownloadFailed)) }
+    }
 
     fun dismissBanner() = _state.update { it.copy(banner = null) }
 }
