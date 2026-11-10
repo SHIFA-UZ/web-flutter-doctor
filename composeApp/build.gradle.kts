@@ -169,8 +169,9 @@ val generateWebBuildInfo =
         val build = appVersionCode.toString()
         // The debug menu and the console logger only in the development build (wasmJsBrowserDevelopmentRun/-Webpack).
         val debug = gradle.startParameter.taskNames.any { it.contains("Development") }
-        // The PostHog key (postHogProdKey above). Without one the web never starts tracking (main.kt).
-        val postHogKey = postHogProdKey
+        // The PostHog key (postHogProdKey above), never in a development bundle. Without one the web never starts
+        // tracking (main.kt).
+        val postHogKey = if (debug) "" else postHogProdKey
         require(postHogKey.matches(Regex("[A-Za-z0-9_-]*"))) { "posthog.apiKey.prod is not a PostHog project key" }
         inputs.property("version", version)
         inputs.property("build", build)

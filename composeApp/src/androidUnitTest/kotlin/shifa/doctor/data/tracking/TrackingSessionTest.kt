@@ -61,7 +61,16 @@ class TrackingSessionTest {
     }
 
     private fun TestScope.running(launchToken: String? = null): TrackingSession {
-        val classToTest = TrackingSession(session, ended, profile, zone, clinics, language, launchToken)
+        val classToTest =
+            TrackingSession(
+                session,
+                ended,
+                profile,
+                zone,
+                clinics,
+                language,
+                launchToken,
+            ) { setOf("Dentist", "Orthodontist") }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { classToTest.run() }
         return classToTest
     }
@@ -160,6 +169,34 @@ class TrackingSessionTest {
                 "capture session_started {role=staff, restored=false} {} {}",
                 "identify staff_9 {app=doctor, role=staff, time_zone=Asia/Tashkent, language=uz, has_clinic=true} {}",
             ).inOrder()
+        }
+
+    @Test
+    fun `a profession outside the catalogue is sent as other`() {
+        val catalogue = setOf("Dentist", "Orthodontist")
+        assertThat(professionKey("Dentist,  Orthodontist", catalogue)).isEqualTo("Dentist, Orthodontist")
+        assertThat(professionKey("Dentist, tooth fairy for Aziza", catalogue)).isEqualTo("other")
+        assertThat(professionKey("Dr. Karimov's own words", catalogue)).isEqualTo("other")
+        assertThat(professionKey(" , ", catalogue)).isNull()
+    }
+
+    @Test
+    fun `an identity left by a process that died before its reset goes at the next launch without a session`() =
+        runTest {
+            Tracking.settings.identified = "doctor_7"
+            running(launchToken = null)
+
+            assertThat(sink.calls).containsExactly("reset", "register {app=doctor, app_language=uz}").inOrder()
+            assertThat(Tracking.settings.identified).isNull()
+        }
+
+    @Test
+    fun `a launch with a saved session keeps its identity`() =
+        runTest {
+            Tracking.settings.identified = "doctor_7"
+            running(launchToken = doctor7.token)
+
+            assertThat(sink.calls).isEmpty()
         }
 
     @Test

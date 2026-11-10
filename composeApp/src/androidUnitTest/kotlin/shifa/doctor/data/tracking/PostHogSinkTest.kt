@@ -23,6 +23,45 @@ class PostHogSinkTest {
     }
 
     @Test
+    fun `an exception keeps its type and frames, never its message`() {
+        val frames = mapOf("type" to "raw", "frames" to listOf(mapOf("function" to "load", "in_app" to true)))
+        val exception =
+            PostHogEvent(
+                "\$exception",
+                "anon",
+                mutableMapOf(
+                    "\$exception_level" to "error",
+                    "\$exception_message" to "GET https://api.shifa.uz/api/patients/12 failed",
+                    "\$exception_list" to
+                        listOf(
+                            mapOf(
+                                "type" to "SerializationException",
+                                "value" to "Unexpected JSON token at offset 3: {\"name\":\"Aziza\"}",
+                                "module" to "kotlinx.serialization",
+                                "stacktrace" to frames,
+                            ),
+                        ),
+                ),
+            )
+
+        val sent = withApp(exception).properties!!
+
+        assertThat(sent).doesNotContainKey("\$exception_message")
+        assertThat(sent["\$exception_list"])
+            .isEqualTo(
+                listOf(
+                    mapOf(
+                        "type" to "SerializationException",
+                        "module" to "kotlinx.serialization",
+                        "stacktrace" to frames,
+                    ),
+                ),
+            )
+        assertThat(sent["\$exception_level"]).isEqualTo("error")
+        assertThat(sent["app"]).isEqualTo(TRACKING_APP)
+    }
+
+    @Test
     fun `the sdk still has the queue field reset clears`() {
         val field = postHogQueueField
 

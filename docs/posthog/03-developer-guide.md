@@ -245,13 +245,16 @@ applies the rule again). That list is how to check a feature's events by hand: d
   to `ENDPOINT_WORDS` in `data/api/ApiHelper.kt`, or the `endpoint` label of its `api_error` / `api_slow` shows
   `{id}` where the word should be (`ApiTrackingTest` covers the existing ones). Ids are masked whatever you do.
 - **Identity and sessions belong to `TrackingSession`** (A5, `data/tracking/TrackingSession.kt`, started once from
-  `App()`): it sends `session_started` / `session_ended`, calls `Tracking.identify` (`doctor_<sub>` / `staff_<sub>`,
-  again when a person property changes) and `Tracking.reset()` at every session end. Features never call `identify`,
-  `reset` or `register`; a usage fact about the doctor rides on an event as a person property instead.
+  `App()`, then running for the process): it sends `session_started` / `session_ended`, calls `Tracking.identify`
+  (`doctor_<sub>` / `staff_<sub>`, again when a person property changes) and `Tracking.reset()` at every session end.
+  Features never call `identify`, `reset` or `register`; a usage fact about the doctor rides on an event as a person
+  property instead.
 - **`reset(dropQueue)`:** a session end calls `reset()` (keeps the SDK's queue, so the `session_ended` captured just
   before, under the old identity, still goes out); tracking turning off (`refresh()`: demo data, the development
   backend, an opt-out) resets with `dropQueue = true`, so nothing collected before is sent later. Either way the
-  identity goes and `Tracking` registers the super properties again.
+  identity goes and `Tracking` registers the super properties again. Only Android can drop its queue; iOS
+  (`flushAt = 1`) and the web (`request_batching: false`) send each event at once instead, so all that can outlive an
+  opt-out there is a request that failed offline and waits in the SDK's retry queue, which neither SDK lets us drop.
 
 ## 6. For the platform and shell chunks
 

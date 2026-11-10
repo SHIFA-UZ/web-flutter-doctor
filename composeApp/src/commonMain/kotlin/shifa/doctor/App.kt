@@ -98,7 +98,7 @@ fun App() {
         }
     }
     // Tracking (A5): identify, session_started / session_ended and the reset; the language on every event.
-    LaunchedEffect(Unit) { trackingSession.run() }
+    LaunchedEffect(Unit) { trackingSession.start() }
     LaunchedEffect(language) { Tracking.register("app_language", language.tag) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
         sessionRepository.onForeground() // LOCK-02: expiry and 30 days of inactivity, before the lock asks for a PIN

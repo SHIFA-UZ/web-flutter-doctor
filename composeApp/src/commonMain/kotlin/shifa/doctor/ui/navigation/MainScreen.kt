@@ -244,10 +244,10 @@ fun MainScreen(
     LaunchedEffect(path) { showBrowserPath(path) }
     DisposableEffect(Unit) { onDispose { showBrowserPath("/") } }
     // A6: one screen view each time a screen comes to the front, keyed on the stack under it: More or a sheet over it
-    // sends nothing, coming back to it (Back, another tab and back) sends it again.
-    shellScreen(
-        state,
-    )?.let { TrackScreenView(it, step = if (state.intelligence) state.overIntelligence else state.stack) }
+    // sends nothing, coming back to it (Back, another tab and back) sends it again. None before the start tab is set.
+    shellScreen(state)
+        ?.takeIf { state.startApplied }
+        ?.let { TrackScreenView(it, step = if (state.intelligence) state.overIntelligence else state.stack) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }

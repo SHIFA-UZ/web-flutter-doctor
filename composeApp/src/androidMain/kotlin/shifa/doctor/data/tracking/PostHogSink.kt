@@ -42,8 +42,24 @@ fun startTracking(app: Application) {
     Tracking.start(PostHogSink(PostHogAndroid.with(app, config)))
 }
 
-internal fun withApp(event: PostHogEvent): PostHogEvent =
-    event.copy(properties = (event.properties.orEmpty() + ("app" to TRACKING_APP)).toMutableMap())
+/**
+ * `app` on every event, and an exception's messages dropped: a Ktor or serialization message can hold a URL with ids,
+ * JSON input or the backend's text. Each `$exception_list` entry keeps its type, module, mechanism and stack frames.
+ */
+internal fun withApp(event: PostHogEvent): PostHogEvent {
+    val props = event.properties.orEmpty().toMutableMap()
+    props["app"] = TRACKING_APP
+    props -= EXCEPTION_TEXT
+    (props[EXCEPTION_LIST] as? List<*>)?.let { list ->
+        props[EXCEPTION_LIST] = list.map { entry -> (entry as? Map<*, *>)?.filterKeys { it != "value" } ?: entry }
+    }
+    return event.copy(properties = props)
+}
+
+private const val EXCEPTION_LIST = "\$exception_list"
+
+// posthog-android 3.75.1 sends neither (steps only from `addExceptionStep`, which the app never calls); dropped in case.
+private val EXCEPTION_TEXT = setOf("\$exception_message", "\$exception_steps")
 
 // ponytail: posthog-android has no public way to drop its queue (reset keeps it, close sends it), so the private
 // `queue` field is read by reflection; PostHogSinkTest fails if an SDK update renames it.

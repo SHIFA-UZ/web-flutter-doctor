@@ -19,12 +19,13 @@ object ShellEvents {
     ) : TrackEvent("tab_refused", "tab" to tab)
 
     /**
-     * A tapped push, once its target is found. [type]: the push's `type` as the backend spells it (`unknown` without
-     * one), and nothing else from its data (it names patients); [target]: `appointment` / `patient` / `document` /
-     * `chat` / `partnership` / `task` / `inbox`, or `home` when its appointment is gone.
+     * A tapped push, once its target is found; the patient app's event and property names (one PostHog project).
+     * [type]: the push's `type` as the backend spells it (`APPOINTMENT_REMINDER`), `other` when it isn't a backend code,
+     * left out without one; nothing else from its data (it names patients). [routedTo]: `appointment` / `patient` /
+     * `document` / `chat` / `partnership` / `task` / `inbox`, or `home` when its appointment is gone.
      */
     data class PushOpened(
-        val type: String,
-        val target: String,
-    ) : TrackEvent("push_opened", "type" to type, "target" to target)
+        val type: String?,
+        val routedTo: String,
+    ) : TrackEvent("push_opened", "type" to type, "routed_to" to routedTo)
 }
