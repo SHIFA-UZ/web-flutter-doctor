@@ -218,7 +218,14 @@ object VisitEvents {
     data class VideoCallEnded(
         val endedBy: String,
         val hasPatientJoined: Boolean,
-    ) : TrackEvent("video_call_ended", "ended_by" to endedBy, "has_patient_joined" to hasPatientJoined)
+        /** Since the doctor joined, through `durationBucket`; null when the join time is unknown. */
+        val durationBucket: String? = null,
+    ) : TrackEvent(
+            "video_call_ended",
+            "ended_by" to endedBy,
+            "has_patient_joined" to hasPatientJoined,
+            "duration_bucket" to durationBucket,
+        )
 
     // Dictation (Dictation, every mic on a text field: visit notes, dental notes, 025-2 forms).
 

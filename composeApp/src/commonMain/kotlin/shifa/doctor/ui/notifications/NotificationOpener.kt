@@ -98,8 +98,7 @@ class NotificationOpener(
 }
 
 /**
- * Where a tapped notification led, as the `target` word of `notification_opened` (and the shell's `push_opened`, which
- * keeps its own copy for now). A null [NotificationOpener.go] result is the caller's word: nothing opened.
+ * Where a tapped notification led, as the `target` word of `notification_opened` (and the shell's `push_opened`). A null [NotificationOpener.go] result is the caller's word: nothing opened.
  */
 val NotificationGo.trackTarget: String
     get() =

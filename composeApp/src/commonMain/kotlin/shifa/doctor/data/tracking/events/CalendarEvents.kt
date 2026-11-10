@@ -51,17 +51,19 @@ object CalendarEvents {
             "is_on_behalf" to isOnBehalf,
         )
 
-    /** Moved to another free slot from the appointment panel. */
+    /** Moved to another free slot. [entry]: `calendar` (the appointment panel) / `intelligence` (a Shifa Intelligence card). */
     data class AppointmentRescheduled(
         val isVideo: Boolean,
         val isOnBehalf: Boolean,
-    ) : TrackEvent("appointment_rescheduled", "is_video" to isVideo, "is_on_behalf" to isOnBehalf)
+        val entry: String = "calendar",
+    ) : TrackEvent("appointment_rescheduled", "is_video" to isVideo, "is_on_behalf" to isOnBehalf, "entry" to entry)
 
     /** [reason]: a `toFailureReason()` word (`conflict` / `validation`: the slot was taken meanwhile). */
     data class AppointmentRescheduleFailed(
         val reason: String,
         val isOnBehalf: Boolean,
-    ) : TrackEvent("appointment_reschedule_failed", "reason" to reason, "is_on_behalf" to isOnBehalf)
+        val entry: String = "calendar",
+    ) : TrackEvent("appointment_reschedule_failed", "reason" to reason, "is_on_behalf" to isOnBehalf, "entry" to entry)
 
     /** "Adjust duration" applied; [minutes]: the new length. */
     data class AppointmentDurationChanged(

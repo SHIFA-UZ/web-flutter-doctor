@@ -45,6 +45,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
 import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.notifications.NotificationOpener
+import shifa.doctor.ui.notifications.trackTarget
 import shifa.doctor.ui.profile.ProfileSection
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.browserPath
@@ -379,20 +380,6 @@ private val ShellTab.screen: TrackScreen
             ShellTab.Reports -> TrackScreen.Reports
             ShellTab.Notifications -> TrackScreen.Notifications
             ShellTab.Profile -> TrackScreen.Profile
-        }
-
-// `push_opened`'s target: what a tapped push opened, as fixed words (never its ids).
-private val NotificationGo?.trackTarget: String
-    get() =
-        when (this) {
-            null -> "home" // its appointment is gone: Home, under the shell's notice
-            is NotificationGo.Appointment -> "appointment"
-            is NotificationGo.Patient -> "patient"
-            is NotificationGo.Document -> "document"
-            NotificationGo.Chat, is NotificationGo.Conversation -> "chat"
-            NotificationGo.Partnerships, is NotificationGo.Partnership -> "partnership"
-            is NotificationGo.Task -> "task"
-            NotificationGo.Inbox -> "inbox"
         }
 
 /**
@@ -813,7 +800,7 @@ class ShellViewModel(
                 }
             val go = opener.go(n, staff, PracticeClock(zone)) ?: NotificationGo.Inbox.takeIf { !opener.slow(n, staff) }
             if (mine != pushTaps) return@launch
-            tracker.track(ShellEvents.PushOpened(type, go.trackTarget))
+            tracker.track(ShellEvents.PushOpened(type, go?.trackTarget ?: "home")) // home: its appointment is gone
             // A gone appointment: Home, under the notice the opener left.
             if (go == null) pushOpened() else _state.update { it.copy(pushGo = go) }
         }

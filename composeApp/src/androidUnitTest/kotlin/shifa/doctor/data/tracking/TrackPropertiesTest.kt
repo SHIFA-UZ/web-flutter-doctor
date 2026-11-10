@@ -52,6 +52,25 @@ class TrackPropertiesTest {
     }
 
     @Test
+    fun `durations become ranges`() {
+        assertThat(listOf(0L, 59, 60, 299, 300, 899, 900, 1799, 1800, 3599, 3600).map(::durationBucket))
+            .containsExactly(
+                "<1m",
+                "<1m",
+                "1-5m",
+                "1-5m",
+                "5-15m",
+                "5-15m",
+                "15-30m",
+                "15-30m",
+                "30-60m",
+                "30-60m",
+                ">60m",
+            )
+            .inOrder()
+    }
+
+    @Test
     fun `counts become ranges`() {
         assertThat(listOf(-1, 0, 1, 2, 5, 6, 20, 21, 100, 101).map(::countBucket))
             .containsExactly("0", "0", "1", "2-5", "2-5", "6-20", "6-20", "21-100", "21-100", ">100")

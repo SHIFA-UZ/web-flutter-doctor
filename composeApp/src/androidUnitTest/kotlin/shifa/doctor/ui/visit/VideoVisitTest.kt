@@ -375,6 +375,7 @@ class VideoVisitTest {
         settle { made.last().log.any { it.startsWith("join") } }
         made.last().state.value = VideoCallState(phase = VideoCallState.Phase.Joined, patientJoined = true)
         classToTest.toggleMic()
+        now += 12.minutes
         classToTest.leave()
         assertThat(tracker.events)
             .containsExactly(
@@ -383,7 +384,7 @@ class VideoVisitTest {
                 VisitEvents.VideoJoinFailed("daily_failed"),
                 VisitEvents.VideoJoined(isRejoin = false),
                 VisitEvents.VideoControlToggled("mic", false),
-                VisitEvents.VideoCallEnded("doctor", hasPatientJoined = true),
+                VisitEvents.VideoCallEnded("doctor", hasPatientJoined = true, durationBucket = "5-15m"),
             ).inOrder()
     }
 }

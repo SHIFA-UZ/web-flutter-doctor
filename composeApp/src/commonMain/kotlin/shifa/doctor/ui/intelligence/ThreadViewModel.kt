@@ -248,7 +248,11 @@ class ThreadViewModel(
                 {
                     tracker.track(
                         if (card.move) {
-                            CalendarEvents.AppointmentRescheduled(card.isVideo, isOnBehalf = false)
+                            CalendarEvents.AppointmentRescheduled(
+                                card.isVideo,
+                                isOnBehalf = false,
+                                entry = "intelligence",
+                            )
                         } else {
                             CalendarEvents.AppointmentBooked("intelligence", card.isVideo, false, slot.minutes)
                         },
@@ -265,7 +269,11 @@ class ThreadViewModel(
                 { e ->
                     tracker.track(
                         if (card.move) {
-                            CalendarEvents.AppointmentRescheduleFailed(e.toFailureReason(), isOnBehalf = false)
+                            CalendarEvents.AppointmentRescheduleFailed(
+                                e.toFailureReason(),
+                                isOnBehalf = false,
+                                entry = "intelligence",
+                            )
                         } else {
                             // As the booking form: 400 / 409 is the slot taken meanwhile.
                             val taken = e is ApiException && e.status in setOf(400, HTTP_CONFLICT)

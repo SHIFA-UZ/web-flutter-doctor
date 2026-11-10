@@ -43,6 +43,17 @@ fun countBucket(count: Int): String =
         else -> ">100"
     }
 
+/** A duration as a range (a call, a recording): the exact seconds say nothing more. */
+fun durationBucket(seconds: Long): String =
+    when {
+        seconds < 60 -> "<1m"
+        seconds < 5 * 60 -> "1-5m"
+        seconds < 15 * 60 -> "5-15m"
+        seconds < 30 * 60 -> "15-30m"
+        seconds < 60 * 60 -> "30-60m"
+        else -> ">60m"
+    }
+
 /**
  * Money as a range (D2: never the exact amount). [minor] is the amount in minor units, as `utils/Money` takes it.
  * The ranges are in sums; another currency is only `foreign` (send the currency code beside it when it matters).

@@ -14,6 +14,7 @@ import shifa.doctor.data.api.endpointMissing
 import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.tracking.Tracker
 import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.durationBucket
 import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.data.video.JOIN_AFTER
 import shifa.doctor.data.video.JOIN_BEFORE
@@ -140,12 +141,18 @@ class VideoVisit(
                     val dropped = before.stage == VideoStage.InCall && after.stage == VideoStage.Left
                     val ended = refused || dropped
                     when {
-                        before.stage == VideoStage.Joining && after.stage == VideoStage.InCall ->
+                        before.stage == VideoStage.Joining && after.stage == VideoStage.InCall -> {
+                            joinedAt = now()
                             tracker.track(VisitEvents.VideoJoined(wasLeft))
+                        }
                         refused -> tracker.track(VisitEvents.VideoJoinFailed("daily_failed"))
                         dropped ->
                             tracker.track(
-                                VisitEvents.VideoCallEnded(if (c.failed) "error" else "remote", after.patientSeen),
+                                VisitEvents.VideoCallEnded(
+                                    if (c.failed) "error" else "remote",
+                                    after.patientSeen,
+                                    callDuration(),
+                                ),
                             )
                     }
                     if (ended) {
@@ -258,8 +265,13 @@ class VideoVisit(
     /** The call ended from this side: tracked only when the doctor was in it. */
     private fun ended(by: String) {
         val s = _state.value
-        if (s.stage == VideoStage.InCall) tracker.track(VisitEvents.VideoCallEnded(by, s.patientSeen))
+        if (s.stage == VideoStage.InCall) tracker.track(VisitEvents.VideoCallEnded(by, s.patientSeen, callDuration()))
     }
+
+    // When the doctor last got into the call, for `video_call_ended`'s duration.
+    private var joinedAt: Instant? = null
+
+    private fun callDuration(): String? = joinedAt?.let { durationBucket((now() - it).inWholeSeconds) }
 
     private fun free() {
         presence?.cancel()
