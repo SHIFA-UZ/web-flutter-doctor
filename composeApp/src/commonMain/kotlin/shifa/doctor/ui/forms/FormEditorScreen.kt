@@ -323,7 +323,6 @@ fun FormEditorContent(
             ) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                        codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
                         // Dictation's messages (AI-06).
                         val dictation = LocalDictation.current
                         dictation?.state?.collectAsStateWithLifecycle()?.value?.banner?.let { b ->
@@ -435,6 +434,22 @@ fun FormEditorContent(
                 }
                 item { ReturnVisits(form, actions) }
                 item { Signature(form, state, actions) }
+            }
+            // Above the action bar, not in the list: a failed save, a sent signature request or a form that can't be
+            // saved yet shows wherever the doctor has scrolled to (in the list it sat off-screen at the top).
+            Column(
+                Modifier.padding(horizontal = ShifaSpacing.Inset.Md),
+                verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+            ) {
+                codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
+                if (state.tried && !state.valid) {
+                    Text(
+                        tr(Res.string.formNeedsDiagnosis),
+                        Modifier.padding(top = ShifaSize.S8),
+                        style = ShifaTextStyles.metaSmall(),
+                        color = ShifaColors.Text.Error,
+                    )
+                }
             }
             // The board's action bar: Cancel and Save Form.
             Row(
