@@ -54,6 +54,12 @@ RewriteRule ^ index.html [L]
     # Browsers that have been here once never ask over http again; no other site may frame the app.
     Header always set Strict-Transport-Security "max-age=31536000"
     Header always set X-Frame-Options "DENY"
+    # The app asks for its strings, icons and fonts with the build's hash (?v=, main.kt): that URL never changes its
+    # content, so it is kept for a year instead of being checked again on every start. Without the hash (a local
+    # build) the rules above stay.
+    <If "%{QUERY_STRING} =~ /(^|&)v=[0-9a-f]+/ && %{REQUEST_URI} =~ m#^/composeResources/#">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </If>
     Header always set X-Content-Type-Options "nosniff"
     # Report-only for now: the browser console lists what an enforced policy would block (Skia, Daily, Firebase and
     # pdf.js are untested under one). Once a release shows no reports, rename it to Content-Security-Policy.
