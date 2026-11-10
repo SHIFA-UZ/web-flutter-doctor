@@ -6,17 +6,13 @@ of every feature; `02-patient-app-recipe.md` is how the patient app does it.
 
 ## 1. State at hand-over
 
-- Repo `web-kmp-doctor-app`, branch `feature/posthog-tracking`, cut from `main` at `08264ed`.
-- **Nothing is committed yet.** The working tree holds `docs/posthog/` (plan, inventory, recipe, guide, this file) and
-  chunk **A1** (the tracking core), built and checked:
-  - `composeApp/src/commonMain/kotlin/shifa/doctor/data/tracking/**` (new)
-  - `composeApp/src/commonMain/kotlin/shifa/doctor/ui/widgets/TrackScreenView.kt` (new)
-  - `composeApp/src/commonMain/kotlin/shifa/doctor/data/api/ErrorMessages.kt` (`toFailureReason()` added)
-  - `composeApp/src/androidUnitTest/kotlin/shifa/doctor/data/tracking/**` (new, 42 tests)
-  - `docs/implemented/tracking/README.md` (new)
-- A1 checks that passed: `ktlintCheck`; `testDebugUnitTest --tests 'shifa.doctor.data.tracking.*'` (42 tests);
-  `compileKotlinIosSimulatorArm64`; `compileKotlinWasmJs`. The full test suite was not run.
-- No SDK is added yet, no ViewModel is instrumented, no build file, workflow, `App.kt` or shell file is changed.
+- **2026-11-11: the run is complete.** Stage A, B1–B9, the review fixes and C1 are committed locally on
+  `feature/posthog-tracking` (not pushed); the commit per chunk is in `docs/implemented/tracking/README.md`.
+- C1's catalogue, generated from the code: `05-event-catalogue.md` (262 events, 71 screen ids, the money-range events).
+- Still open for the owner: the morning report items in section 6 (check results, section 4's open points, above all
+  the UZS money ranges, the push approval and the compare link). C2–C4 (device checks with a real key, doctor
+  dashboards, store forms) are not started.
+- Written 2026-11-10 at hand-over: the branch was cut from `main` at `08264ed` with only the docs and A1 uncommitted.
 
 ## 2. What the owner has allowed, and what not
 

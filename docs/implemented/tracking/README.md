@@ -2,19 +2,30 @@
 
 Plan: `docs/posthog/00-plan.md`. How to instrument a feature: `docs/posthog/03-developer-guide.md`. Each chunk and
 feature group adds its own file in this folder; the coordinator keeps this table and `docs/implemented/README.md`.
+Every event, its properties and where it fires, and every screen id: `docs/posthog/05-event-catalogue.md`.
 
 | Chunk | What | Status |
 |---|---|---|
 | A1 | Core in `data/tracking` | Done 2026-11-10 (`a987f8e`) |
 | A1b | `api_error` / `api_slow` from `apiCall` (`ApiEvents.kt`, `ENDPOINT_WORDS`) | Done 2026-11-10 (`c845d42`) |
-| A2 | Android sink (`PostHogSink`) | Done 2026-11-10 (`8aa3a89`) |
+| A2 | Android sink (`PostHogSink`) | Done 2026-11-10 (`8aa3a89`; key read once for Android and web: `5986db2`) |
 | A3 | iOS sink (Swift over posthog-ios, `TrackingBridge`) | Done 2026-11-10 (`c1833f0`) |
 | A4 | Web sink (`PostHogWebSink`, posthog-js) | Done 2026-11-10 (`6c9a8e0`) |
 | A5 | Identity and session (`TrackingSession`) | Done 2026-11-10 (`f26b6e0`; queue kept on a session end: `6451979`) |
 | A6 | Screen views from the shell and `App.kt`; tab, More and push events | Done 2026-11-10 (`4b4249d`) |
-| A7 | Debug menu: tracking status and recent events | Done 2026-11-10 |
-| B1–B9 | Feature events | Not started |
-| C1–C4 | Catalogue document, device checks, dashboards, store forms | Not started |
+| A7 | Debug menu: tracking status and recent events | Done 2026-11-10 (`e260cc0`) |
+| B1 | Sign-in, registration, app lock: [auth.md](auth.md) | Done 2026-11-10 (`8a2d63b`) |
+| B2 | Home, inbox, Reports, Tasks: [home.md](home.md) | Done 2026-11-10 (`69df016`) |
+| B3 | Calendar, booking, schedule, locations: [calendar.md](calendar.md) | Done 2026-11-10 (`00d34ea`) |
+| B4 | Patients and care: [patients.md](patients.md) | Done 2026-11-10 (`02132c2`) |
+| B5 | Documents, forms, clinical engine: [documents.md](documents.md) | Done 2026-11-10 (`68c8664`) |
+| B6 | Visit, video, scribe, dictation: [visit.md](visit.md) | Done 2026-11-10 (`0ef3e93`) |
+| B7 | Chat and Shifa Intelligence: [chat.md](chat.md) | Done 2026-11-10 (`eaef87d`) |
+| B8 | Clinic workspace: [clinic.md](clinic.md) | Done 2026-11-10 (`d0561db`) |
+| B9 | Profile, billing, the usage-data switch: [profile.md](profile.md) | Done 2026-11-11 (`7d79ef9`); the feature jobs' shared requests (screen ids, shell properties): `b749a8a` |
+| Review fixes | Independent review of the whole diff: real outcomes only, the visit alert, no exception messages or web addresses, catalogue professions, stale identities, start-tab screen views, `push_opened` | Done 2026-11-11 (`15f21fb`, `696c706`, `f56978c`, `dc9cbb5`, `fda6fb4`) |
+| C1 | Event catalogue generated from the code: [05-event-catalogue.md](../../posthog/05-event-catalogue.md) (262 events, 71 screen ids) | Done 2026-11-11 |
+| C2–C4 | Device checks with a real key, doctor dashboards, store privacy forms | Not started (the owner's) |
 
 The three SDKs are attached when a key is present; only a release build on the production backend (and on the web
 `doctor.shifa.uz`) sends. `Tracking` is synchronized (A1b calls it from repository dispatchers).
