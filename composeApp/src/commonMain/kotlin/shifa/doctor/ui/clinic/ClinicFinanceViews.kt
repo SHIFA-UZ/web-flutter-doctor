@@ -279,7 +279,7 @@ internal fun ColumnScope.FinanceContent(
     clinic: MyClinic,
     actions: FinanceActions,
 ) {
-    codeBanner(state.banner) { actions.dismiss() }?.let { it() }
+    SectionBanner(state.banner) { actions.dismiss() }
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
         FinanceView.entries.forEach { v -> ShifaChip(tr(viewLabel(v)), state.view == v, { actions.view(v) }) }
     }

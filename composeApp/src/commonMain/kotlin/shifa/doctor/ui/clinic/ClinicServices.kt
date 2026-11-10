@@ -459,7 +459,7 @@ internal fun ColumnScope.ServicesContent(
     state: ClinicServicesUiState,
     actions: ServicesActions,
 ) {
-    codeBanner(state.banner) { actions.dismiss() }?.let { it() }
+    SectionBanner(state.banner) { actions.dismiss() }
     if (state.doctorHint) {
         ShifaBanner(
             tr(Res.string.clinicServicesDoctorOnlyHint),

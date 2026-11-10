@@ -1,5 +1,6 @@
 package shifa.doctor.ui.clinic
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,6 +105,7 @@ import shifa.doctor.generated.resources.ic_users_16
 import shifa.doctor.generated.resources.ic_users_20
 import shifa.doctor.generated.resources.phone
 import shifa.doctor.ui.emailcode.CodeBanner
+import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
@@ -281,6 +286,7 @@ internal fun ClinicWorkspaceContent(
     section: @Composable ColumnScope.(ClinicSection, MyClinic) -> Unit,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).statusBarsPadding()) {
     val clinic = state.clinic
+    val scroll = rememberScrollState()
     Column(
         Modifier.fillMaxWidth().padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSize.S10),
         verticalArrangement = Arrangement.spacedBy(ShifaSize.S10),
@@ -297,15 +303,17 @@ internal fun ClinicWorkspaceContent(
             Column(
                 Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scroll)
                     .padding(horizontal = ShifaSpacing.Inset.Md)
                     .padding(top = ShifaSize.S4, bottom = ShifaSpacing.Inset.Md + ShifaDimens.FabDockedClear),
                 verticalArrangement = Arrangement.spacedBy(ShifaSize.S12),
             ) {
-                when (state.section) {
-                    ClinicSection.Overview -> Overview(clinic, state, staff, onSection, onRetryStats, actions)
-                    ClinicSection.Settings -> Settings(clinic)
-                    else -> section(state.section, clinic)
+                CompositionLocalProvider(LocalClinicScroll provides scroll) {
+                    when (state.section) {
+                        ClinicSection.Overview -> Overview(clinic, state, staff, onSection, onRetryStats, actions)
+                        ClinicSection.Settings -> Settings(clinic)
+                        else -> section(state.section, clinic)
+                    }
                 }
             }
         state.clinics.known ->
@@ -594,3 +602,20 @@ internal fun sectionLabel(section: ClinicSection): StringResource =
 
 // The backend's default when a clinic has no time zone (flow 09/01 §4).
 private const val UTC = "UTC"
+
+// The workspace's scroll, for [SectionBanner].
+private val LocalClinicScroll = compositionLocalOf<ScrollState?> { null }
+
+/**
+ * A section's message (saved, paid, failed). It sits at the top of the section, so the workspace scrolls back to it
+ * when it appears: an action far down the list (row 20's "Paid by cash") otherwise showed no result at all.
+ */
+@Composable
+internal fun SectionBanner(
+    banner: CodeBanner?,
+    onDismiss: () -> Unit,
+) {
+    val scroll = LocalClinicScroll.current
+    LaunchedEffect(banner) { if (banner != null) scroll?.animateScrollTo(0) }
+    codeBanner(banner, onDismiss)?.let { it() }
+}

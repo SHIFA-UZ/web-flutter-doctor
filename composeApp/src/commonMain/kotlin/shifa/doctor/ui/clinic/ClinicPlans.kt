@@ -456,7 +456,7 @@ internal fun ColumnScope.PlansContent(
     clinic: MyClinic,
     actions: PlansActions,
 ) {
-    codeBanner(state.banner) { actions.dismiss() }?.let { it() }
+    SectionBanner(state.banner) { actions.dismiss() }
     ShifaInputField(state.typed, actions.type, tr(Res.string.clinicTreatmentPlansFilterHint), Modifier.fillMaxWidth())
     actions.newPlan?.let {
         ShifaPrimaryButton(
