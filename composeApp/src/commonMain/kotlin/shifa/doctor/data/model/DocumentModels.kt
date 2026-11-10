@@ -22,6 +22,8 @@ data class PatientDocument(
     val isSharedWithTeam: Boolean = false,
     val uploadedByPatient: Boolean = false,
     val appointmentId: Long? = null,
+    // BE-21: the signed-in doctor uploaded it, so they may rename, recategorise or remove it.
+    val canEdit: Boolean = false,
 ) {
     /** The document's date; a missing or bad one is null (Flutter turned it into "now", 06 §4.3). */
     val day: LocalDate? get() = date?.let { runCatching { LocalDate.parse(it.take(10)) }.getOrNull() }
@@ -32,6 +34,9 @@ data class PatientDocument(
 
     /** Viewable and with a file to fetch (flow 06/06 §9: `canView && url`). */
     val openable: Boolean get() = canView && !url.isNullOrBlank()
+
+    /** Editable here: the doctor's own upload, except a 025-2 form's PDF, which the form editor keeps (title, link). */
+    val editable: Boolean get() = canEdit && kind != DocumentCategory.FORM_025_2
 }
 
 /**

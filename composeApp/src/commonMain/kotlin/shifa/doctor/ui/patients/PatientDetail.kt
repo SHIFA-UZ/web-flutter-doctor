@@ -169,6 +169,7 @@ import shifa.doctor.generated.resources.takeExtraCareForChronicDiseasePatient
 import shifa.doctor.generated.resources.username
 import shifa.doctor.ui.calendar.SlotPickSheet
 import shifa.doctor.ui.calendar.longDate
+import shifa.doctor.ui.documents.DocumentEditSheets
 import shifa.doctor.ui.documents.DocumentUploadViewModel
 import shifa.doctor.ui.documents.DocumentsActions
 import shifa.doctor.ui.documents.PatientDocumentsUiState
@@ -824,6 +825,7 @@ fun PatientDetailScreen(
                     retryUpload = uploads::retry,
                     dismissUpload = { uploads.ui { it.copy(banner = null) } },
                     editForm = onOpenForm,
+                    edit = documents::startEdit,
                 ),
             forms =
                 FormsActions(
@@ -851,6 +853,7 @@ fun PatientDetailScreen(
         prophylaxis = clinicId?.let { c -> { ProphylaxisCard(id, c) } },
     )
     UploadSheets(upload, uploads, sources)
+    DocumentEditSheets(docs.edit, documents)
     if (briefingOpen && briefingAllowed) {
         PatientBriefingSheet(id, state.patient?.name.orEmpty(), onClose = { briefingOpen = false })
     }

@@ -2940,5 +2940,12 @@
   "notificationsOn": "Yoqilgan",
   "notificationsTapToAllow": "O'chiq · ruxsat berish uchun bosing",
   "notificationsBlocked": "Bu brauzerda bloklangan",
-  "notificationsUnsupported": "Bu brauzer bildirishnomalarni ko'rsata olmaydi"
+  "notificationsUnsupported": "Bu brauzer bildirishnomalarni ko'rsata olmaydi",
+  "editDocument": "Hujjatni tahrirlash",
+  "deleteDocument": "Hujjatni o'chirish",
+  "deleteDocumentQuestion": "Bu hujjat o'chirilsinmi?",
+  "deleteDocumentBody": "“{title}” uni ko'ra oladigan barcha uchun bemor kartasidan olib tashlanadi.",
+  "documentUpdated": "Hujjat yangilandi",
+  "documentDeletedNamed": "“{title}” hujjati o'chirildi",
+  "documentDeleteFailed": "Hujjatni o'chirib bo'lmadi. Qaytadan urinib ko'ring."
 }

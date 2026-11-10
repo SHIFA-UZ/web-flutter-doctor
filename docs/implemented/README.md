@@ -112,7 +112,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | DOCS-01 Document models | Done | 27 categories (labels), lenient list, download named by Content-Disposition (RFC 5987) and typed by bytes, request access; a locked download is 404 on dev. See patients.md. |
 | DOCS-02 Pickers & photos to PDF | Done | Existing pickers reused; a shared photos-to-PDF writer that embeds the JPEGs unchanged (48 KB for two photos instead of megabytes). See patients.md. |
 | DOCS-05 Document viewer | Done | Download → zoomable image, PDF in the zoomable PDF view, or "can't preview" with Save to device; 403 request access, 404 gone, Retry. See patients.md. |
-| DOCS-04 Documents tab | Done | Search, cards (lock, chip, shared mark, byline, localised 025-2 title), open in the viewer, request access; read on each showing. See patients.md. |
+| DOCS-04 Documents tab | Done | Search, cards (lock, chip, shared mark, byline, localised 025-2 title), open in the viewer, request access; read on each showing. The doctor's own uploads (`canEdit`, BE-21) get ⋮ → Edit document (title and type, the upload sheet's chips) with Delete document behind a red confirm; a 025-2 form's PDF stays the form editor's. Same on the visit screen. See patients.md. |
 | DOCS-03 Upload | Done | PDF, photo (as JPEG), gallery, multi-page scan → title & required type → multipart upload with progress, Cancel, Retry, 25 MB cap. See patients.md. |
 | FORM-01 Form models + dental codec | Done | `PatientForm` / `FormRequest` (no server fields, one ICD spelling), the 025-2 dental-chart key grammar ported with tests (FDI wins over legacy keys). See patients.md. |
 | FORM-02 Forms repository | Done | Cached list per patient, save (POST/PUT), request signature, link document, replace a document's file, ICD-10 search, latest 025-2. See patients.md. |
@@ -428,3 +428,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-09 · WEB · PDFs on the web drawn by pdf.js (phone browsers only offered "Open"); Settings: 2FA and encrypted-documents switches hidden (nothing acted on them, BE-38), Notifications shows and asks the browser's permission, "Open settings" links on the web say where the browser keeps site permissions.
 - 2026-11-10 · WEB · Emoji show on the web: Noto Color Emoji loads from jsDelivr after the start.
 - 2026-11-10 · WEB-10 · The web address names the screen (tabs, a patient, a conversation, a task): links and reloads open it.
+- 2026-11-10 · DOCS-04 · Doctors rename, retype and delete documents they uploaded (BE-21).

@@ -32,7 +32,7 @@ Flyway migration only, regenerate `docs/api/openapi.json`, then add a "Done (dat
 | BE-18 | PREMIUM checkout; Stripe Connect onboarding state | Medium | M2 SUB-02 | Small |
 | BE-19 | `from/to` on analytics overview, types, engagement | Low | M6 | Small |
 | BE-20 | `followUpOf` on booking | Low | M5 | Small |
-| BE-21 | Document delete/rename/recategorise; HEIC conversion | Low | M4 | Small |
+| BE-21 | Document delete/rename/recategorise; HEIC conversion (done 2026-11-10, `canEdit`) | Low | M4 | Small |
 | BE-22 | `createdAt` on forms | Low | M4 | None |
 | BE-23 | Installment `lastNotifiedAt`; ledger `doctorId` filter | Low | M11 | Small |
 | BE-24 | Clinic self-service and line-level plan edits | Low (product first) | M11 | Medium |
@@ -406,6 +406,11 @@ convert HEIC/HEIF to JPEG on upload so every client can preview.
 
 **App until then:** append-only list; HEIC from other clients shows "can't preview, open externally".
 
+**Done (2026-11-10):** product confirmed doctors may delete their own uploads. The backend had `PATCH`/`DELETE`
+(soft delete: the row keeps `deletedAt`, the file moves under `deleted-…`, which no route serves) and HEIC conversion;
+`canEdit` on each document (the signed-in doctor uploaded it) tells the app where to offer them, and the admin's
+per-doctor upload counts no longer include removed documents. App: DOCS-04's Edit document sheet.
+
 ## BE-22 `createdAt` on forms
 
 **Needed by:** flow `06/09` (two forms on the same date). `PatientFormDto` has `date` and `formNumber` but no creation
@@ -639,6 +644,9 @@ Postgres refuses: with `DISTINCT`, every `ORDER BY` expression must be selected.
 
 **App until then:** the month's ledger and the dashboard's Outstanding list show "Couldn't load finance data." with the
 request id and Retry; "All time" works.
+
+**Done (2026-11-10, branch `fix/subscription-tier-and-ledger`):** both month queries group by the appointment and order
+by its start; an integration test runs them against PostgreSQL.
 
 
 ## BE-38 Two-factor sign-in and encrypted documents are only stored flags

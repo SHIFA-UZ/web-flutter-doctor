@@ -494,6 +494,19 @@ class DemoBackendTest {
             val back = repo.download(12, up.id).getOrThrow()
             assertThat(back.bytes.decodeToString()).isEqualTo("%PDF-1.4")
             assertThat(back.mime).isEqualTo("application/pdf")
+            // BE-21: the demo doctor's upload is renamed and removed; a sample document is someone else's (403).
+            assertThat(up.canEdit).isTrue()
+            assertThat(repo.edit(12, up.id, "Knee scan", "MRI").getOrThrow().title).isEqualTo("Knee scan")
+            assertThat(repo.list(12).getOrThrow().first().category).isEqualTo("MRI")
+            assertThat(repo.edit(12, docs[0].id, "X", "MRI").exceptionOrNull())
+                .isInstanceOf(shifa.doctor.data.model.ApiException::class.java)
+            assertThat(repo.delete(12, up.id).isSuccess).isTrue()
+            assertThat(repo.list(12).getOrThrow().map { it.id }).doesNotContain(up.id)
+            // A removed upload's id is never given again (two rows with one id would break the list).
+            val pdf = shifa.doctor.data.documents.UploadFile("%PDF".encodeToByteArray(), "a.pdf", "application/pdf")
+            val kept = repo.upload(12, pdf, "A", "XRAY").getOrThrow()
+            val next = repo.upload(12, pdf, "B", "XRAY").getOrThrow()
+            assertThat(listOf(up.id, kept.id, next.id)).containsNoDuplicates()
             assertThat(forwarded).isEmpty()
         }
 

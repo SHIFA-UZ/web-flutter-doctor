@@ -376,18 +376,7 @@ internal fun UploadDetailsTray(
             style = ShifaTextStyles.metaSmall(),
             color = ShifaColors.Text.Secondary,
         )
-        listOf(
-            Res.string.documentCategoryGroupMedical to DocumentCategory.entries.filter { it.pickable && it.medical },
-            Res.string.documentCategoryGroupPrivate to DocumentCategory.entries.filter { it.pickable && !it.medical },
-        ).forEach { (group, kinds) ->
-            Text(tr(group), style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
-                verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
-            ) {
-                kinds.forEach { k -> ShifaChip(tr(k.label), draft.category == k, { edit { it.copy(category = k) } }) }
-            }
-        }
+        CategoryChips(draft.category) { k -> edit { it.copy(category = k) } }
         // Add's disabled reason, said where the choice is (flow §8).
         if (draft.category == null) {
             Text(
@@ -400,6 +389,25 @@ internal fun UploadDetailsTray(
     Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
         ShifaSecondaryButton(tr(Res.string.cancel), close, Modifier.weight(1f))
         ShifaPrimaryButton(tr(Res.string.add), add, Modifier.weight(1f), enabled = draft.category != null)
+    }
+}
+
+/** The types a doctor can pick, grouped: results shared with every doctor of the patient, then private ones. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun CategoryChips(
+    selected: DocumentCategory?,
+    pick: (DocumentCategory) -> Unit,
+) = listOf(
+    Res.string.documentCategoryGroupMedical to DocumentCategory.entries.filter { it.pickable && it.medical },
+    Res.string.documentCategoryGroupPrivate to DocumentCategory.entries.filter { it.pickable && !it.medical },
+).forEach { (group, kinds) ->
+    Text(tr(group), style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+    ) {
+        kinds.forEach { k -> ShifaChip(tr(k.label), selected == k, { pick(k) }) }
     }
 }
 
@@ -503,7 +511,7 @@ internal fun UploadStatus(
     }
 }
 
-private const val MAX_TITLE = 120
+internal const val MAX_TITLE = 120
 
 private val IMAGES = setOf("image/jpeg", "image/png")
 

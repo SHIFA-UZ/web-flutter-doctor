@@ -118,6 +118,7 @@ class DemoBackend(
     // Uploaded documents per patient id, newest first, and their files by document id.
     private var uploads: Map<String, List<JsonElement>> = emptyMap()
     private val uploadFiles = mutableMapOf<Long, Pair<ByteArray, String>>()
+    private var lastUploadId = 999L
 
     // APPT-02: when each visit's signature was asked; the demo patient signs 15 s later.
     // APPT-06: when a briefing was asked again; it is ready 6 s later.
@@ -520,7 +521,8 @@ class DemoBackend(
                 // A part's headers (name quoted or not, then any others), a blank line, the value.
                 fun field(name: String) =
                     Regex("name=\"?$name\"?(?:\\r\\n[^\\r\\n]+)*\\r\\n\\r\\n([^\\r]*)").find(body)?.groupValues?.get(1)
-                val id = 1000L + uploadFiles.size
+                // Never reused: a removed upload leaves a gap (BE-21).
+                val id = ++lastUploadId
                 filePart(raw)?.let { uploadFiles[id] = it }
                 val saved =
                     JsonObject(
@@ -534,6 +536,7 @@ class DemoBackend(
                             "category" to JsonPrimitive(field("category")),
                             "creatorLabel" to JsonPrimitive("Demo Doctor"),
                             "creatorType" to JsonPrimitive("DOCTOR"),
+                            "canEdit" to JsonPrimitive(true),
                         ),
                     )
                 val patient = path.split('/')[1]
@@ -564,6 +567,23 @@ class DemoBackend(
                         ),
                     ),
                 )
+            }
+            // BE-21: the demo doctor's own uploads are renamed, recategorised or removed; the sample documents are
+            // someone else's (403, as the backend answers).
+            (request.method == HttpMethod.Patch || request.method == HttpMethod.Delete) &&
+                path.matches(Regex("patients/\\d+/documents/\\d+")) -> {
+                val (patient, id) = path.split('/').let { it[1] to it[3] }
+                val old =
+                    uploads[patient].orEmpty().firstOrNull { it.jsonObject["id"]?.jsonPrimitive?.content == id }
+                        ?: return fail(HttpStatusCode.Forbidden, "FORBIDDEN")
+                if (request.method == HttpMethod.Delete) {
+                    uploads = uploads + (patient to uploads[patient].orEmpty() - old)
+                    uploadFiles.remove(id.toLong())
+                    return Reply(HttpStatusCode.NoContent, "")
+                }
+                val saved = JsonObject(old.jsonObject + apiJson.parseToJsonElement(body).jsonObject)
+                uploads = uploads + (patient to uploads[patient].orEmpty().map { if (it == old) saved else it })
+                ok(saved)
             }
             // Forms (FORM-02) in memory per patient: list, create, update, the signature request, the PDF link.
             get && path.matches(Regex("patients/\\d+/forms")) -> ok(JsonArray(forms[path.split('/')[1]].orEmpty()))

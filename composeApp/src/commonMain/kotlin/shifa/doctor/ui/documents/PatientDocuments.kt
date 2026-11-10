@@ -41,16 +41,21 @@ import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.anotherUser
 import shifa.doctor.generated.resources.doctor
+import shifa.doctor.generated.resources.documentDeleteFailed
+import shifa.doctor.generated.resources.documentDeletedNamed
 import shifa.doctor.generated.resources.documentHistory
+import shifa.doctor.generated.resources.documentUpdated
 import shifa.doctor.generated.resources.documentsEmptyHint
 import shifa.doctor.generated.resources.documentsLoadFailed
 import shifa.doctor.generated.resources.documentsNoMatch
+import shifa.doctor.generated.resources.editDocument
 import shifa.doctor.generated.resources.editForm
 import shifa.doctor.generated.resources.formDocumentTitle
 import shifa.doctor.generated.resources.formsUnavailableNotice
 import shifa.doctor.generated.resources.ic_edit_16
 import shifa.doctor.generated.resources.ic_external_16
 import shifa.doctor.generated.resources.ic_lock_16
+import shifa.doctor.generated.resources.ic_more_v_16
 import shifa.doctor.generated.resources.ic_users_16
 import shifa.doctor.generated.resources.noDocuments
 import shifa.doctor.generated.resources.openDocument
@@ -59,6 +64,7 @@ import shifa.doctor.generated.resources.requestAccess
 import shifa.doctor.generated.resources.requestAccessSent
 import shifa.doctor.generated.resources.requestAlreadySent
 import shifa.doctor.generated.resources.retry
+import shifa.doctor.generated.resources.saveFailed
 import shifa.doctor.generated.resources.search
 import shifa.doctor.generated.resources.sharedWithTeamTooltip
 import shifa.doctor.generated.resources.upload
@@ -90,6 +96,8 @@ data class PatientDocumentsUiState(
     val query: String = "",
     // Documents whose access request is on its way (one at a time per document).
     val requesting: Set<Long> = emptySet(),
+    // BE-21: the doctor's own upload being renamed, recategorised or removed.
+    val edit: DocumentEdit? = null,
 ) {
     /** Title search, instant and case-insensitive (flow 06/06 §3.2); newest first as the server sends them. */
     val shown: List<PatientDocument>
@@ -140,6 +148,81 @@ class PatientDocumentsViewModel(
 
     fun ui(change: (PatientDocumentsUiState) -> PatientDocumentsUiState) = _state.update(change)
 
+    fun startEdit(document: PatientDocument) {
+        if (document.editable) _state.update { it.copy(edit = DocumentEdit(document), banner = null) }
+    }
+
+    /** The sheet's changes; none while a save or a removal runs (what it sends is what the doctor sees). */
+    fun editDraft(change: (DocumentEdit) -> DocumentEdit) =
+        _state.update { s -> if (s.edit?.busy == true) s else s.copy(edit = s.edit?.let(change)) }
+
+    /** Closes the sheet, unless a save or a removal is on its way. */
+    fun closeEdit() = _state.update { if (it.edit?.busy == true) it else it.copy(edit = null) }
+
+    /** Save: the row is replaced by the server's answer; an error stays in the sheet. */
+    fun saveEdit() {
+        val e = _state.value.edit ?: return
+        val category = e.category ?: return _state.update { it.copy(edit = e.copy(tried = true)) }
+        if (e.busy) return
+        _state.update { it.copy(edit = e.copy(busy = true, error = null)) }
+        viewModelScope.launch {
+            repo.edit(patientId, e.document.id, e.effectiveTitle, category.name, clinicId).fold(
+                { updated ->
+                    _state.update { s ->
+                        s.copy(
+                            edit = null,
+                            documents = s.documents?.map { if (it.id == updated.id) updated else it },
+                            banner = CodeBanner(Res.string.documentUpdated, error = false),
+                        )
+                    }
+                    // A read still out (an upload's, a refresh) left before the change: one after it replaces it.
+                    if (reading?.isActive == true) load()
+                },
+                { err -> fail(err, Res.string.saveFailed) },
+            )
+        }
+    }
+
+    /** Delete, once confirmed: gone from the list; already gone on the server (404) counts as done. */
+    fun delete() {
+        val e = _state.value.edit ?: return
+        if (e.busy) return
+        _state.update { it.copy(edit = e.copy(busy = true, error = null)) }
+        viewModelScope.launch {
+            val result = repo.delete(patientId, e.document.id, clinicId)
+            val gone = result.isSuccess || result.exceptionOrNull() is ApiException.NotFound
+            if (!gone) return@launch fail(result.exceptionOrNull(), Res.string.documentDeleteFailed)
+            _state.update { s ->
+                s.copy(
+                    edit = null,
+                    documents = s.documents?.filterNot { it.id == e.document.id },
+                    banner =
+                        CodeBanner(
+                            Res.string.documentDeletedNamed,
+                            error = false,
+                            args = listOf(e.document.title),
+                        ),
+                )
+            }
+            if (reading?.isActive == true) load()
+        }
+    }
+
+    private fun fail(
+        err: Throwable?,
+        fallback: org.jetbrains.compose.resources.StringResource,
+    ) = _state.update { s ->
+        s.copy(
+            edit =
+                s.edit?.copy(
+                    busy = false,
+                    // Back to the sheet, where the error shows.
+                    confirmDelete = false,
+                    error = CodeBanner(err?.toUserMessage(fallback) ?: fallback, requestId = err?.requestId),
+                ),
+        )
+    }
+
     /** The lock stays until the owner approves (a push brings that); a second request may be 409: already sent. */
     fun requestAccess(document: PatientDocument) {
         if (document.id in _state.value.requesting) return
@@ -179,6 +262,8 @@ data class DocumentsActions(
     val dismissUpload: () -> Unit = {},
     // FORM-05: a linked form's PDF opens its form in the editor.
     val editForm: (Long) -> Unit = {},
+    // BE-21: the doctor's own upload opens the edit sheet; null where the screen offers no editing.
+    val edit: ((PatientDocument) -> Unit)? = null,
 )
 
 /** The tab's rows in the record's lazy list (200+ documents stay lazy, flow §8). */
@@ -287,6 +372,7 @@ internal fun DocumentCard(
             d.openable -> ({ actions.open(d) })
             else -> null
         }
+    val onEdit = actions.edit?.takeIf { d.editable }
     // Large text: the wide Request access button goes under the details instead of squeezing them (flow §8).
     val stacked = d.locked && LocalDensity.current.fontScale >= LARGE_TEXT
     val action: (@Composable () -> Unit)? =
@@ -302,9 +388,18 @@ internal fun DocumentCard(
                 }
             }
             // Edit needs the form link and access; Open needs the file too (flow §3.3).
-            d.openable || formId != null -> {
+            d.openable || formId != null || onEdit != null -> {
                 {
                     Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                        onEdit?.let { go ->
+                            // ⋮, not the pencil: that one is "Edit form" on a form's PDF.
+                            ShifaIconButton(
+                                Res.drawable.ic_more_v_16,
+                                tr(Res.string.editDocument),
+                                { go(d) },
+                                variant = ShifaIconButtonVariant.Secondary,
+                            )
+                        }
                         formId?.let { id ->
                             ShifaIconButton(
                                 Res.drawable.ic_edit_16,

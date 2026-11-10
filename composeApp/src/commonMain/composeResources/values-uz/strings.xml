@@ -1013,6 +1013,9 @@
     <string name="deleteBlocked">Hisobingizni hozircha o'chirib bo'lmaydi</string>
     <string name="deleteCertificateTitle">Sertifikat o'chirilsinmi?</string>
     <string name="deleteCodeSent">%1$s manziliga 6 xonali kod yubordik. Hisobni o'chirish uchun uni kiriting.</string>
+    <string name="deleteDocument">Hujjatni o'chirish</string>
+    <string name="deleteDocumentBody">“%1$s” uni ko'ra oladigan barcha uchun bemor kartasidan olib tashlanadi.</string>
+    <string name="deleteDocumentQuestion">Bu hujjat o'chirilsinmi?</string>
     <string name="deleteGroupBody">Uning xizmatlari qoladi va guruhsiz bo'ladi.</string>
     <string name="deleteGroupTitle">Guruh o'chirilsinmi?</string>
     <string name="deleteLocation">Joylashuvni o'chirish</string>
@@ -1146,6 +1149,8 @@
     <string name="documentCategory_URINE_TEST">Siydik tahlili</string>
     <string name="documentCategory_VACCINATION_RECORD">Emlash hujjati</string>
     <string name="documentCategory_XRAY">Rentgen</string>
+    <string name="documentDeleteFailed">Hujjatni o'chirib bo'lmadi. Qaytadan urinib ko'ring.</string>
+    <string name="documentDeletedNamed">“%1$s” hujjati o'chirildi</string>
     <string name="documentEverything">Hammasini hujjatlashtirish</string>
     <string name="documentGenerated">Hujjat muvaffaqiyatli yaratildi</string>
     <string name="documentGone">Bu hujjat endi mavjud emas.</string>
@@ -1155,6 +1160,7 @@
     <string name="documentSaveFailed">Faylni saqlab bo'lmadi.</string>
     <string name="documentSaved">Qurilmangizga saqlandi</string>
     <string name="documentTitle">Hujjat nomi</string>
+    <string name="documentUpdated">Hujjat yangilandi</string>
     <string name="documentUploaded">Hujjat muvaffaqiyatli yuklandi</string>
     <string name="documentUploadedNamed">“%1$s” hujjati yuklandi</string>
     <string name="documenting">Hujjatlashtirilmoqda…</string>
@@ -1192,6 +1198,7 @@
     <string name="durationMinutes">%1$s daq</string>
     <string name="edit">Tahrirlash</string>
     <string name="editDetails">Ma'lumotlarni tahrirlash</string>
+    <string name="editDocument">Hujjatni tahrirlash</string>
     <string name="editForm">Formani tahrirlash</string>
     <string name="editGroup">Guruhni tahrirlash</string>
     <string name="editKey">Tahrirlash</string>

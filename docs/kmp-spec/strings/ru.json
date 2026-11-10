@@ -2940,5 +2940,12 @@
   "notificationsOn": "Включены",
   "notificationsTapToAllow": "Выключены · нажмите, чтобы разрешить",
   "notificationsBlocked": "Заблокированы в этом браузере",
-  "notificationsUnsupported": "Этот браузер не показывает уведомления"
+  "notificationsUnsupported": "Этот браузер не показывает уведомления",
+  "editDocument": "Изменить документ",
+  "deleteDocument": "Удалить документ",
+  "deleteDocumentQuestion": "Удалить этот документ?",
+  "deleteDocumentBody": "«{title}» исчезнет из карты пациента у всех, кто мог его видеть.",
+  "documentUpdated": "Документ обновлён",
+  "documentDeletedNamed": "Документ «{title}» удалён",
+  "documentDeleteFailed": "Не удалось удалить документ. Попробуйте ещё раз."
 }
