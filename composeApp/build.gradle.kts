@@ -68,6 +68,7 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             implementation(libs.osmdroid.android) // MapPin: OpenStreetMap tiles, no Google key (D-06, CORE-07)
             implementation(libs.daily.client) // video visits: Daily's Android SDK (VIDEO-01)
+            implementation(libs.posthog.android) // product analytics (docs/posthog)
         }
 
         androidUnitTest.dependencies {
@@ -171,6 +172,17 @@ val generateWebBuildInfo =
     }
 tasks.matching { it.name == "compileKotlinWasmJs" }.configureEach { dependsOn(generateWebBuildInfo) }
 
+// The PostHog project key (docs/posthog): release builds only, from CI's Gradle property or, to test tracking with a
+// local release build, `posthog.apiKey.prod` in the root local.properties. Missing means tracking off. Debug builds
+// never get one (00-plan.md §3: development is never tracked).
+val localProperties =
+    Properties().apply {
+        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+    }
+val postHogProdKey =
+    project.findProperty("posthog.apiKey.prod")?.toString()
+        ?: localProperties.getProperty("posthog.apiKey.prod").orEmpty()
+
 // Written by CI (google_play_deploy.yml); absent locally, so a local release build is debug-signed (see below).
 val keystoreProperties =
     Properties().apply {
@@ -207,6 +219,7 @@ android {
         getByName("debug") {
             versionNameSuffix = "-debug"
             isDebuggable = true
+            buildConfigField("String", "POSTHOG_API_KEY", "\"\"") // never tracked
         }
 
         getByName("release") {
@@ -214,6 +227,7 @@ android {
             // CI signs with the upload key; a local release build is debug-signed so it installs on a device.
             // Never upload one.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            buildConfigField("String", "POSTHOG_API_KEY", "\"$postHogProdKey\"")
         }
     }
     // BuildConfig.DEBUG gates the HTTP logs and the debug menu (CLAUDE.md "Logging").
