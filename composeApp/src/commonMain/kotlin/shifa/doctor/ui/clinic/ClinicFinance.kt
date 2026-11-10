@@ -531,7 +531,8 @@ class ClinicFinanceViewModel(
 
     fun savePay() {
         val sheet = _state.value.pay ?: return
-        if (sheet.busy) return
+        // Another action still running: the sheet must not start its spinner for a payment that won't be sent.
+        if (sheet.busy || _state.value.busy) return
         val amount = sheet.minor ?: return _state.update { it.copy(pay = sheet.copy(tried = true)) }
         _state.update { it.copy(pay = sheet.copy(tried = true, busy = true)) }
         record(sheet.row, amount, sheet.method, sheet.memo.trim().ifEmpty { null }) { e ->
