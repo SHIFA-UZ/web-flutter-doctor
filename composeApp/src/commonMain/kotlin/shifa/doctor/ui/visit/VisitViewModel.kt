@@ -406,6 +406,14 @@ class VisitViewModel(
     suspend fun uploadScribe(
         audio: ByteArray,
         recordingId: String?,
+    ): CodeBanner =
+        // In this ViewModel's scope, not the caller's: the recorder's scope ends when the doctor opens the patient's
+        // record mid-upload, which cancelled the upload and left the recording with no "Upload again".
+        viewModelScope.async { sendScribe(audio, recordingId) }.await()
+
+    private suspend fun sendScribe(
+        audio: ByteArray,
+        recordingId: String?,
     ): CodeBanner {
         unsent = audio to recordingId
         _state.update { it.copy(scribeUploading = true, scribeRetry = false) }

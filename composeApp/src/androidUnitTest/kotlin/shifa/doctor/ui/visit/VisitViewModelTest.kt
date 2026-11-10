@@ -10,6 +10,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -312,6 +313,19 @@ class VisitViewModelTest {
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.aiNotesUploaded)
         assertThat(classToTest.state.value.scribeRetry).isFalse()
         assertThat(calls.count { it.startsWith("POST consultations/upload-recording") }).isEqualTo(2)
+    }
+
+    @Test
+    fun `a scribe upload outlives the screen that started it, and its failure still offers to send again`() {
+        val classToTest = opened()
+        uploadStatus = HttpStatusCode.InternalServerError
+        // The recorder's scope, cancelled as soon as the upload starts (the doctor opened the patient's record).
+        val screen = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+        val caller = screen.launch { classToTest.uploadScribe(byteArrayOf(1, 2, 3), "rec-1") }
+        caller.cancel()
+        settle { classToTest.state.value.scribeRetry }
+        assertThat(classToTest.state.value.scribeRetry).isTrue()
+        assertThat(classToTest.state.value.scribeUploading).isFalse()
     }
 
     @Test
