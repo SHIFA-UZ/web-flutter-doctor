@@ -19,7 +19,6 @@ import shifa.doctor.data.chat.ChatRepository
 import shifa.doctor.data.chat.chatRepository
 import shifa.doctor.data.model.Conversation
 import shifa.doctor.data.model.Message
-import shifa.doctor.data.model.MessageStatus
 import shifa.doctor.data.model.SendMessageRequest
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chatFileTypeNotAllowed
@@ -121,9 +120,7 @@ class ThreadViewModel(
     private var fetchedUpTo: Long? = null
 
     private suspend fun load() {
-        // The full read only brings read ticks: nothing to catch up on once the patient has read all of the doctor's.
-        val unread = _state.value.messages?.any { it.isMine && it.status != MessageStatus.Read } ?: true
-        val full = (polls++ % FULL_EVERY == 0 && unread) || fetchedUpTo == null
+        val full = polls++ % FULL_EVERY == 0 || fetchedUpTo == null
         // A newer-only read that came back full has more behind it: read on until a page isn't full.
         var after = if (full) null else fetchedUpTo
         do {
@@ -382,7 +379,7 @@ internal fun mimeOf(fileName: String) =
         else -> "image/jpeg"
     }
 
-/** Every sixth poll (about 30 s) reads the whole thread while a message of the doctor's is unread, so its tick catches up. */
+/** Every sixth poll (about 30 s) reads the whole thread, so read ticks on older messages catch up. */
 private const val FULL_EVERY = 6
 
 /** The backend's default page for a newer-only read (BE-14). */
