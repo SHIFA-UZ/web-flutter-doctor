@@ -54,6 +54,8 @@ kotlin {
             implementation(npm("@js-joda/timezone", "2.23.0"))
             // WEB-08: Daily's call object for video visits (the phones use Daily's native SDKs).
             implementation(npm("@daily-co/daily-js", "0.94.0"))
+            // Product analytics on the web (data/tracking/PostHogWebSink), bundled rather than loaded from a CDN.
+            implementation(npm("posthog-js", "1.438.24"))
         }
 
         androidMain.dependencies {
@@ -153,9 +155,24 @@ val generateWebBuildInfo =
         val build = appVersionCode.toString()
         // The debug menu and the console logger only in the development build (wasmJsBrowserDevelopmentRun/-Webpack).
         val debug = gradle.startParameter.taskNames.any { it.contains("Development") }
+        // The PostHog project key (public, but kept out of git): -Pposthog.apiKey.prod (CI) or local.properties. Without
+        // one the web never starts tracking (main.kt).
+        val postHogKey =
+            (
+                providers.gradleProperty("posthog.apiKey.prod").orNull
+                    ?: Properties()
+                        .apply {
+                            rootProject.file(
+                                "local.properties",
+                            ).takeIf { it.exists() }?.inputStream()?.use(::load)
+                        }
+                        .getProperty("posthog.apiKey.prod")
+            ).orEmpty().trim()
+        require(postHogKey.matches(Regex("[A-Za-z0-9_-]*"))) { "posthog.apiKey.prod is not a PostHog project key" }
         inputs.property("version", version)
         inputs.property("build", build)
         inputs.property("debug", debug)
+        inputs.property("postHogKey", postHogKey)
         outputs.file(out)
         doLast {
             out.get().asFile.apply {
@@ -164,7 +181,8 @@ val generateWebBuildInfo =
                     "package shifa.doctor.utils\n\n" +
                         "internal const val WEB_VERSION = \"$version\"\n" +
                         "internal const val WEB_BUILD = \"$build\"\n" +
-                        "internal const val WEB_DEBUG = $debug\n",
+                        "internal const val WEB_DEBUG = $debug\n" +
+                        "internal const val WEB_POSTHOG_KEY = \"$postHogKey\"\n",
                 )
             }
         }
