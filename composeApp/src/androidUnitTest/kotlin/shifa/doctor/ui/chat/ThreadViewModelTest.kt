@@ -340,6 +340,8 @@ class ThreadViewModelTest {
 
     @Test
     fun `polls ask only for newer messages and merge them, with a full read every sixth time`() {
+        // One of the doctor's own messages is still unread: its tick is what the full reads are for.
+        thread[0] = """{"id":1,"chatId":7,"senderRole":"doctor","isMine":true,"type":"text","content":{"text":"Hi"},"status":"sent","createdAt":"2026-11-05T05:00:00Z"}"""
         val classToTest = opened()
         classToTest.foreground(true)
         settle { cursors.size >= 3 }
@@ -353,6 +355,15 @@ class ThreadViewModelTest {
         classToTest.foreground(false)
         // Every sixth poll after the first reads everything again (read ticks on older messages).
         assertThat(cursors.count { it == null }).isAtLeast(2)
+    }
+
+    @Test
+    fun `with nothing of the doctor's unread, polls never read the whole thread again`() {
+        val classToTest = opened()
+        classToTest.foreground(true)
+        settle { cursors.size >= 9 }
+        classToTest.foreground(false)
+        assertThat(cursors.count { it == null }).isEqualTo(1)
     }
 
     @Test
