@@ -33,6 +33,7 @@ import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.api.fileCacheKey
 import shifa.doctor.data.chat.fileSizeLabel
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.attachFile
@@ -102,7 +103,7 @@ internal fun ImageTile(
         local != null -> Image(local, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         url != null ->
             KamelImage(
-                resource = asyncPainterResource(url),
+                resource = asyncPainterResource(url, key = fileCacheKey(url)),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -178,7 +179,7 @@ internal fun ImageViewer(
     Box(Modifier.fillMaxSize().background(ShifaColors.Bg.Media)) {
         val zoom = remember(url) { ZoomState(min = 0.5f) }
         KamelImage(
-            resource = asyncPainterResource(url),
+            resource = asyncPainterResource(url, key = fileCacheKey(url)),
             contentDescription = tr(Res.string.chatPhoto),
             modifier = Modifier.fillMaxSize().zoomable(zoom),
             contentScale = ContentScale.Fit,
