@@ -29,9 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.kamel.image.KamelImage
-import io.kamel.image.asyncPainterResource
 import org.jetbrains.compose.resources.painterResource
-import shifa.doctor.data.api.fileCacheKey
 import shifa.doctor.data.chat.fileSizeLabel
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.attachFile
@@ -73,6 +71,7 @@ import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.ZoomState
 import shifa.doctor.ui.widgets.decodedImage
+import shifa.doctor.ui.widgets.fileImageResource
 import shifa.doctor.ui.widgets.zoomable
 import shifa.doctor.utils.PdfView
 import shifa.doctor.utils.tr
@@ -104,7 +103,7 @@ internal fun ImageTile(
         local != null -> Image(local, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         url != null ->
             KamelImage(
-                resource = asyncPainterResource(url, key = fileCacheKey(url)),
+                resource = fileImageResource(url),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -180,7 +179,7 @@ internal fun ImageViewer(
     Box(Modifier.fillMaxSize().background(ShifaColors.Bg.Media)) {
         val zoom = remember(url) { ZoomState(min = 0.5f) }
         KamelImage(
-            resource = asyncPainterResource(url, key = fileCacheKey(url)),
+            resource = fileImageResource(url),
             contentDescription = tr(Res.string.chatPhoto),
             modifier = Modifier.fillMaxSize().zoomable(zoom),
             contentScale = ContentScale.Fit,
