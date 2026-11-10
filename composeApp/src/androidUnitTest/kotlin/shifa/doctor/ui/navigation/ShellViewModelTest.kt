@@ -492,6 +492,8 @@ class ShellViewModelTest {
         classToTest.openPush(mapOf("type" to "CHAT_MESSAGE", "notificationId" to "7", "conversationId" to "42"))
         waitFor { classToTest.state.value.pushGo != null }
         assertThat(classToTest.state.value.pushGo).isEqualTo(NotificationGo.Conversation(42))
+        // The read is sent beside the opening, not before it: wait for it (it raced the assertion on a loaded machine).
+        waitFor { "/api/notifications/7/read" in paths }
         assertThat(paths).contains("/api/notifications/7/read")
         classToTest.pushOpened()
         assertThat(classToTest.state.value.pushGo).isNull()
