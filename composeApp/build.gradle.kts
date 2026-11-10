@@ -148,6 +148,19 @@ val appVersionCode = versionBuild
 
 println("Building Shifa Doctor v$appVersionName (Build $appVersionCode)")
 
+// The PostHog project key (docs/posthog), from CI's Gradle property or, to test tracking locally, `posthog.apiKey.prod`
+// in the root local.properties. Missing means tracking off. Android debug builds never get one; the web bundle checks
+// its host at run time (00-plan.md §3: development is never tracked).
+val localProperties =
+    Properties().apply {
+        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+    }
+val postHogProdKey =
+    (
+        project.findProperty("posthog.apiKey.prod")?.toString()
+            ?: localProperties.getProperty("posthog.apiKey.prod").orEmpty()
+    ).trim()
+
 // WEB-04: the web build's version and build number as Kotlin constants (Android has BuildConfig, iOS its bundle).
 val generateWebBuildInfo =
     tasks.register("generateWebBuildInfo") {
@@ -156,19 +169,8 @@ val generateWebBuildInfo =
         val build = appVersionCode.toString()
         // The debug menu and the console logger only in the development build (wasmJsBrowserDevelopmentRun/-Webpack).
         val debug = gradle.startParameter.taskNames.any { it.contains("Development") }
-        // The PostHog project key (public, but kept out of git): -Pposthog.apiKey.prod (CI) or local.properties. Without
-        // one the web never starts tracking (main.kt).
-        val postHogKey =
-            (
-                providers.gradleProperty("posthog.apiKey.prod").orNull
-                    ?: Properties()
-                        .apply {
-                            rootProject.file(
-                                "local.properties",
-                            ).takeIf { it.exists() }?.inputStream()?.use(::load)
-                        }
-                        .getProperty("posthog.apiKey.prod")
-            ).orEmpty().trim()
+        // The PostHog key (postHogProdKey above). Without one the web never starts tracking (main.kt).
+        val postHogKey = postHogProdKey
         require(postHogKey.matches(Regex("[A-Za-z0-9_-]*"))) { "posthog.apiKey.prod is not a PostHog project key" }
         inputs.property("version", version)
         inputs.property("build", build)
@@ -189,17 +191,6 @@ val generateWebBuildInfo =
         }
     }
 tasks.matching { it.name == "compileKotlinWasmJs" }.configureEach { dependsOn(generateWebBuildInfo) }
-
-// The PostHog project key (docs/posthog): release builds only, from CI's Gradle property or, to test tracking with a
-// local release build, `posthog.apiKey.prod` in the root local.properties. Missing means tracking off. Debug builds
-// never get one (00-plan.md §3: development is never tracked).
-val localProperties =
-    Properties().apply {
-        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
-    }
-val postHogProdKey =
-    project.findProperty("posthog.apiKey.prod")?.toString()
-        ?: localProperties.getProperty("posthog.apiKey.prod").orEmpty()
 
 // Written by CI (google_play_deploy.yml); absent locally, so a local release build is debug-signed (see below).
 val keystoreProperties =
