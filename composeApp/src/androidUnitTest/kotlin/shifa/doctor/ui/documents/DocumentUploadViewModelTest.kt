@@ -21,6 +21,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.documents.DocumentsRepository
 import shifa.doctor.data.model.DocumentCategory
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.DocumentsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.documentUploadedNamed
 import shifa.doctor.generated.resources.fileTooLarge
@@ -54,6 +56,7 @@ class DocumentUploadViewModelTest {
             }
         }
     private val created = mutableListOf<DocumentUploadViewModel>()
+    private val tracker = RecordingTracker()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -70,7 +73,7 @@ class DocumentUploadViewModelTest {
     }
 
     private fun opened(clinicId: Long? = null) =
-        DocumentUploadViewModel(14, clinicId, null, DocumentsRepository { createHttpClient({ null }, engine) })
+        DocumentUploadViewModel(14, clinicId, null, DocumentsRepository { createHttpClient({ null }, engine) }, tracker)
             .also { created += it }
 
     // The smallest JPEG the PDF writer takes: SOI, a 3-channel 8-bit frame header with its components, EOI.
@@ -183,5 +186,39 @@ class DocumentUploadViewModelTest {
         assertThat(classToTest.state.value.uploaded).isEqualTo(1)
         assertThat(classToTest.state.value.uploading).isNull()
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.uploadCancelled)
+    }
+
+    @Test
+    fun `uploads are tracked by their outcome, with kind and type only`() {
+        val classToTest = opened()
+        classToTest.pdf("%PDF-1.4".encodeToByteArray() + ByteArray(DocumentUploadViewModel.MAX_FILE), "big.pdf")
+        classToTest.photo(jpeg, "photo.jpg")
+        classToTest.edit { it.copy(category = DocumentCategory.XRAY) }
+        classToTest.add()
+        settle { classToTest.state.value.uploaded == 1 }
+        status = HttpStatusCode.InternalServerError
+        classToTest.photo(jpeg, "photo.jpg")
+        classToTest.edit { it.copy(category = DocumentCategory.XRAY) }
+        classToTest.add()
+        settle { classToTest.state.value.failed != null }
+        status = HttpStatusCode.OK
+        classToTest.retry()
+        settle { classToTest.state.value.uploaded == 2 }
+        hold = CompletableDeferred()
+        classToTest.photo(jpeg, "photo.jpg")
+        classToTest.edit { it.copy(category = DocumentCategory.XRAY) }
+        classToTest.add()
+        classToTest.cancelUpload()
+        hold!!.complete(Unit)
+        Thread.sleep(200)
+
+        assertThat(tracker.events)
+            .containsExactly(
+                DocumentsEvents.DocumentUploadFailed("pdf", null, "too_large"),
+                DocumentsEvents.DocumentUploaded("image", DocumentCategory.XRAY, false, null, false),
+                DocumentsEvents.DocumentUploadFailed("image", DocumentCategory.XRAY, "server"),
+                DocumentsEvents.DocumentUploaded("image", DocumentCategory.XRAY, false, null, true),
+                DocumentsEvents.DocumentUploadCancelled("image", DocumentCategory.XRAY),
+            ).inOrder()
     }
 }

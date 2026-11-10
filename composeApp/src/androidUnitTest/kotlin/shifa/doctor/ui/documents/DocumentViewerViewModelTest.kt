@@ -17,6 +17,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.documents.DocumentsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.DocumentsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.couldNotLoadDocument
 import shifa.doctor.generated.resources.documentSaveFailed
@@ -46,6 +48,7 @@ class DocumentViewerViewModelTest {
             }
         }
     private val created = mutableListOf<DocumentViewerViewModel>()
+    private val tracker = RecordingTracker()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -62,7 +65,7 @@ class DocumentViewerViewModelTest {
     }
 
     private fun opened() =
-        DocumentViewerViewModel(14, 5, null, DocumentsRepository { createHttpClient({ null }, engine) }).also {
+        DocumentViewerViewModel(14, 5, null, DocumentsRepository { createHttpClient({ null }, engine) }, tracker).also {
             created += it
             it.load()
             settle { it.state.value.viewed != Viewed.Loading }
@@ -137,5 +140,32 @@ class DocumentViewerViewModelTest {
         hold!!.complete(Unit)
         Thread.sleep(200)
         assertThat(classToTest.state.value.requested).isFalse()
+    }
+
+    @Test
+    fun `openings, access requests and saves are tracked by their outcome`() {
+        opened().save(FileSaver(), "Blood test")
+        status = HttpStatusCode.Forbidden
+        val locked = opened()
+        locked.requestAccess()
+        settle { locked.state.value.requested }
+        status = HttpStatusCode.NotFound
+        opened()
+        status = HttpStatusCode.InternalServerError
+        opened()
+        status = HttpStatusCode.OK
+        body = ByteArray(0)
+        opened()
+
+        assertThat(tracker.events)
+            .containsExactly(
+                DocumentsEvents.DocumentOpened("pdf"),
+                DocumentsEvents.DocumentSaveToDeviceFailed("pdf"),
+                DocumentsEvents.DocumentOpenFailed("no_access"),
+                DocumentsEvents.DocumentAccessRequested("viewer"),
+                DocumentsEvents.DocumentOpenFailed("gone"),
+                DocumentsEvents.DocumentOpenFailed("server"),
+                DocumentsEvents.DocumentOpenFailed("empty_file"),
+            ).inOrder()
     }
 }

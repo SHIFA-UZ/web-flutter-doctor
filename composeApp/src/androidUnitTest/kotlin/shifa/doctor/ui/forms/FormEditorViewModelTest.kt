@@ -32,6 +32,8 @@ import shifa.doctor.data.model.ClinicalChipSelection
 import shifa.doctor.data.model.ClinicalDisease
 import shifa.doctor.data.model.LocalizedName
 import shifa.doctor.data.patients.PatientsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.DocumentsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.formDocumentFailed
 import shifa.doctor.generated.resources.formLoadFailed
@@ -111,6 +113,7 @@ class FormEditorViewModelTest {
         }
     private val scheduler = TestCoroutineScheduler()
     private val created = mutableListOf<FormEditorViewModel>()
+    private val tracker = RecordingTracker()
     private val clock =
         PracticeClock("Asia/Tashkent", { Instant.parse("2026-11-04T05:00:00Z") }, { TimeZone.of("Asia/Tashkent") })
 
@@ -149,6 +152,7 @@ class FormEditorViewModelTest {
             warned,
             icd,
             clinicId,
+            tracker,
         ).also {
             created += it
             it.load()
@@ -427,5 +431,30 @@ class FormEditorViewModelTest {
         val existing = opened(formId = 5, icd = Icd10Hit("K04.0", "Pulpitis"))
         assertThat(existing.state.value.form?.diagnosisCode).isNull()
         assertThat(existing.state.value.dirty).isFalse()
+    }
+
+    @Test
+    fun `saves and signature requests are tracked by their outcome, with the form type only`() {
+        linkStatus = HttpStatusCode.InternalServerError
+        val classToTest = opened()
+        classToTest.save()
+        classToTest.requestSignature()
+        classToTest.edit { it.copy(complaints = "Pain") }
+        classToTest.save()
+        settle { !classToTest.state.value.saving }
+        linkStatus = HttpStatusCode.OK
+        classToTest.save()
+        settle { classToTest.state.value.done }
+        classToTest.requestSignature()
+        settle { classToTest.state.value.form?.signatureRequested == true }
+
+        assertThat(tracker.events)
+            .containsExactly(
+                DocumentsEvents.FormSaveFailed("025-2", true, null, "incomplete"),
+                DocumentsEvents.FormSignatureRequestFailed("025-2", "incomplete"),
+                DocumentsEvents.FormSaveFailed("025-2", true, "link", "server"),
+                DocumentsEvents.FormSaved("025-2", true),
+                DocumentsEvents.FormSignatureRequested("025-2"),
+            ).inOrder()
     }
 }

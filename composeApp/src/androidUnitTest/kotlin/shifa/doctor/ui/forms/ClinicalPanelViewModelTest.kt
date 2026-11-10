@@ -22,6 +22,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.clinical.ClinicalEngineRepository
 import shifa.doctor.data.model.ClinicalChipSelection
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.DocumentsEvents
 import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,13 +31,14 @@ class ClinicalPanelViewModelTest {
     private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var hold: CompletableDeferred<Unit>? = null
     private var failDisease = false
+    private var failSynthesize = false
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val engine =
         MockEngine { req ->
             val path = req.url.encodedPath.removePrefix("/api/clinical-engine/")
             calls += "${req.method.value} $path ${req.body.toByteArray().decodeToString()}"
             if (path == "synthesize") hold?.await()
-            if (failDisease && path.startsWith("diseases/")) {
+            if ((failDisease && path.startsWith("diseases/")) || (failSynthesize && path == "synthesize")) {
                 return@MockEngine respond(
                     """{"status":500,"code":"X","requestId":"req-e"}""",
                     HttpStatusCode.InternalServerError,
@@ -66,6 +69,7 @@ class ClinicalPanelViewModelTest {
             respond(body, HttpStatusCode.OK, json)
         }
     private val created = mutableListOf<ClinicalPanelViewModel>()
+    private val tracker = RecordingTracker()
 
     private val scheduler = TestCoroutineScheduler()
 
@@ -86,7 +90,7 @@ class ClinicalPanelViewModelTest {
     private fun opened(
         diseaseId: String? = null,
         selections: List<ClinicalChipSelection> = emptyList(),
-    ) = ClinicalPanelViewModel(ClinicalEngineRepository { createHttpClient({ null }, engine) }) { "en" }.also {
+    ) = ClinicalPanelViewModel(ClinicalEngineRepository { createHttpClient({ null }, engine) }, tracker) { "en" }.also {
         created += it
         it.start(diseaseId, selections)
         settle { !it.state.value.loading }
@@ -204,5 +208,24 @@ class ClinicalPanelViewModelTest {
         ).containsExactly("dis.003.morbi.1", mapOf("X" to "5"), "dis.009.treatment_1.1", emptyMap<String, String>())
         // The searched chip shows again in its field, so it can be seen and removed.
         assertThat(s.chips("treatment_1").map { it.chipId }).containsExactly("dis.009.treatment_1.1")
+    }
+
+    @Test
+    fun `Apply is tracked by its outcome, with the chip count as a range`() {
+        val classToTest = opened()
+        classToTest.pickDisease("dis.003")
+        settle { classToTest.state.value.disease != null }
+        failSynthesize = true
+        classToTest.apply()
+        settle { classToTest.state.value.error != null }
+        failSynthesize = false
+        classToTest.apply()
+        settle { classToTest.state.value.result != null }
+
+        assertThat(tracker.events)
+            .containsExactly(
+                DocumentsEvents.ClinicalEngineApplyFailed("server"),
+                DocumentsEvents.ClinicalEngineApplied("2-5"),
+            ).inOrder()
     }
 }

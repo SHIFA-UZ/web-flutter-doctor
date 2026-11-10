@@ -29,11 +29,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.documents.DocumentsRepository
 import shifa.doctor.data.documents.documentsRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.DocumentFile
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.DocumentsEvents
+import shifa.doctor.data.tracking.events.documentKind
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.back
 import shifa.doctor.generated.resources.cantPreview
@@ -106,6 +111,7 @@ class DocumentViewerViewModel(
     private val documentId: Long,
     private val clinicId: Long?,
     private val repo: DocumentsRepository = documentsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(DocumentViewerUiState())
     val state: StateFlow<DocumentViewerUiState> = _state.asStateFlow()
@@ -119,8 +125,10 @@ class DocumentViewerViewModel(
         _state.update { it.copy(viewed = Viewed.Loading, banner = null) }
         work +=
             viewModelScope.launch {
+                val download = repo.download(patientId, documentId, clinicId)
+                val failure = download.exceptionOrNull()
                 val viewed =
-                    repo.download(patientId, documentId, clinicId).fold(
+                    download.fold(
                         onSuccess = { file ->
                             // An empty answer is a failure, not a blank page (flow §6).
                             if (file.bytes.isEmpty()) failed(null) else Viewed.Ready(file)
@@ -133,6 +141,14 @@ class DocumentViewerViewModel(
                             }
                         },
                     )
+                tracker.track(
+                    when (viewed) {
+                        is Viewed.Ready -> DocumentsEvents.DocumentOpened(documentKind(viewed.file.mime))
+                        Viewed.NoAccess -> DocumentsEvents.DocumentOpenFailed("no_access")
+                        Viewed.Gone -> DocumentsEvents.DocumentOpenFailed("gone")
+                        else -> DocumentsEvents.DocumentOpenFailed(failure?.toFailureReason() ?: "empty_file")
+                    },
+                )
                 _state.update { it.copy(viewed = viewed) }
             }
     }
@@ -142,7 +158,9 @@ class DocumentViewerViewModel(
         _state.update { it.copy(requesting = true, banner = null) }
         work +=
             viewModelScope.launch {
-                repo.requestAccess(patientId, documentId, clinicId).fold(
+                val result = repo.requestAccess(patientId, documentId, clinicId)
+                tracker.track(accessRequestEvent("viewer", result.exceptionOrNull()))
+                result.fold(
                     onSuccess = { _state.update { it.copy(requesting = false, requested = true) } },
                     onFailure = { e ->
                         _state.update {
@@ -171,6 +189,14 @@ class DocumentViewerViewModel(
                 file.fileName?.let(::safeFileName) ?: (safeFileName(title) + extension(file.mime)),
                 file.bytes,
             )
+        val kind = documentKind(file.mime)
+        tracker.track(
+            if (result.isSuccess) {
+                DocumentsEvents.DocumentSavedToDevice(kind)
+            } else {
+                DocumentsEvents.DocumentSaveToDeviceFailed(kind)
+            },
+        )
         _state.update {
             it.copy(
                 banner =

@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinical.ClinicalEngineRepository
 import shifa.doctor.data.clinical.clinicalEngineRepository
@@ -37,6 +38,10 @@ import shifa.doctor.data.model.ClinicalGroup
 import shifa.doctor.data.model.ClinicalSharedTemplate
 import shifa.doctor.data.model.ClinicalTopDiagnosis
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.DocumentsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.apply
 import shifa.doctor.generated.resources.change
@@ -130,6 +135,8 @@ data class ClinicalPanelUiState(
  */
 class ClinicalPanelViewModel(
     private val repo: ClinicalEngineRepository = clinicalEngineRepository,
+    // Before [locale]: the tests pass the locale as a trailing lambda.
+    private val tracker: Tracker = Tracking,
     private val locale: () -> String = { languageStorage.language.value.backendCode },
 ) : ViewModel() {
     private val _state = MutableStateFlow(ClinicalPanelUiState())
@@ -315,6 +322,7 @@ class ClinicalPanelViewModel(
                 repo.synthesize(locale(), disease.diseaseId, selections).fold(
                     onSuccess = {
                             fields ->
+                        tracker.track(DocumentsEvents.ClinicalEngineApplied(countBucket(selections.size)))
                         _state.update {
                             // Only for the disease still shown.
                             if (it.disease?.diseaseId != disease.diseaseId) {
@@ -325,6 +333,7 @@ class ClinicalPanelViewModel(
                         }
                     },
                     onFailure = { e ->
+                        tracker.track(DocumentsEvents.ClinicalEngineApplyFailed(e.toFailureReason()))
                         _state.update {
                             it.copy(
                                 applying = false,
