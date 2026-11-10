@@ -761,15 +761,17 @@ fun PatientDetailScreen(
     LaunchedEffect(Unit) { viewModel.load() }
     // Read each time the tab shows, back from the viewer included (access may have changed, flow 06/06 §5).
     // The documents tab reads the forms too: a form's PDF gets "Edit form" (flow 06/06).
-    LaunchedEffect(state.tab) {
+    // Not for clinic staff: the forms routes are the doctor's alone, so the tab is hidden and nothing is read.
+    val session by sessionRepository.session.collectAsStateWithLifecycle()
+    val staff = session?.isClinicStaff == true
+    LaunchedEffect(state.tab, staff) {
         if (state.tab == RecordTab.Documents) documents.load()
-        if (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms) forms.load()
+        if (!staff && (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms)) forms.load()
     }
     val titleOf = @Composable { d: PatientDocument -> documentTitle(d) }
     val back = { if (viewModel.back()) onBack() }
     BackHandler(onBack = back)
     // AI-09: the patient briefing (PRO, doctors only; hidden until the plan is known).
-    val session by sessionRepository.session.collectAsStateWithLifecycle()
     val briefingAllowed = rememberAllowed(DoctorFeature.PatientBriefing) && session?.isClinicStaff == false
     var briefingOpen by rememberSaveable { mutableStateOf(false) }
     val timelineAllowed = rememberAllowed(DoctorFeature.AiNotes) && session?.isClinicStaff == false
@@ -789,7 +791,7 @@ fun PatientDetailScreen(
             refresh = {
                 viewModel.load(refresh = true)
                 if (state.tab == RecordTab.Documents) documents.load()
-                if (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms) forms.load()
+                if (!staff && (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms)) forms.load()
             },
             ui = viewModel::ui,
             select = viewModel::select,
@@ -851,6 +853,7 @@ fun PatientDetailScreen(
         formsState,
         timeline = if (timelineAllowed) ({ ClinicalTimeline(id) }) else null,
         prophylaxis = clinicId?.let { c -> { ProphylaxisCard(id, c) } },
+        tabs = if (staff) RecordTab.entries - RecordTab.Forms else RecordTab.entries,
     )
     UploadSheets(upload, uploads, sources)
     DocumentEditSheets(docs.edit, documents)
@@ -913,6 +916,8 @@ fun PatientDetailContent(
     timeline: (@Composable () -> Unit)? = null,
     // CLINIC-06: the clinic's prophylaxis card under Medical info; only in a clinic's scope.
     prophylaxis: (@Composable () -> Unit)? = null,
+    // Clinic staff get no Forms tab (the backend keeps patient forms to doctors).
+    tabs: List<RecordTab> = RecordTab.entries,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     // No title: the header below names the patient (flow 06/03 §3.1). ⋮ once the patient is read (CARE-02/03).
     val more = state.patient?.takeIf { actions.findPartner != null || actions.partnerships != null }
@@ -946,9 +951,9 @@ fun PatientDetailContent(
                     // The tabs pin under the app bar while the record scrolls (flow 06/03 §3.5).
                     stickyHeader {
                         UnderlineTabs(
-                            RecordTab.entries.map { TabItem(tr(it.label)) },
-                            state.tab.ordinal,
-                            { actions.select(RecordTab.entries[it]) },
+                            tabs.map { TabItem(tr(it.label)) },
+                            tabs.indexOf(state.tab).coerceAtLeast(0),
+                            { actions.select(tabs[it]) },
                             Modifier.background(ShifaColors.Bg.Canvas).then(gap),
                         )
                     }
