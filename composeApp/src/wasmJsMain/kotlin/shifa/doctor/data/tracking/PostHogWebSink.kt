@@ -15,7 +15,9 @@ external object PostHogJsModule : JsAny
  * rule allows (doctor.shifa.uz on the production backend), so every other site sends nothing. It fetches nothing on
  * start either: no feature flags or remote config, no external scripts. Everything automatic is off (autocapture,
  * heatmaps, replay, surveys, page views and leaves, web vitals, exceptions): the page is one canvas, and its address
- * holds names and ids, so the URL, path and referrer properties posthog-js adds are dropped from every event.
+ * holds names and ids, so everything posthog-js derives from the URL, the referrer or the campaign is dropped from
+ * every event and person (see `before_send`). Each event is sent at once (no batch), so an opt-out finds nothing
+ * waiting; only a request that failed (offline) sits in posthog-js's retry queue, which it has no way to drop.
  */
 class PostHogWebSink(
     apiKey: String,
@@ -41,7 +43,7 @@ class PostHogWebSink(
         personPropertiesSetOnce: Map<String, Any>,
     ) = phIdentify(posthog, distinctId, personProperties.json(), personPropertiesSetOnce.json())
 
-    override fun reset(dropQueue: Boolean) = phReset(posthog, optedIn, dropQueue)
+    override fun reset(dropQueue: Boolean) = phReset(posthog, optedIn)
 
     override fun register(superProperties: Map<String, Any>) = phRegister(posthog, superProperties.json())
 
@@ -50,7 +52,7 @@ class PostHogWebSink(
         phOptIn(posthog, optedIn)
     }
 
-    // posthog-js sends its batch every few seconds and the rest with a beacon when the page goes away; it has no flush.
+    // Unbatched (`request_batching: false`): each event goes out when captured, so there is nothing to flush.
     override fun flush() = Unit
 }
 
@@ -74,6 +76,12 @@ private fun initPostHog(
     js(
         """(function () {
     var posthog = module.default || module;
+    // posthog-js 1.438.24 adds these even with save_referrer / save_campaign_params off: the page's and the
+    // referrer's URL, path and domain, the session-entry and initial copies of everything it reads from them (UTM and
+    // click-id parameters, search engine and keyword), and Meta's _fbc / _fbp. The hostname property stays.
+    var fromAddress = new RegExp('(url|pathname|referrer|referring_domain)$|^\\u0024(initial|session_entry)_|' +
+        '^\\u0024(search_engine|fbc|fbp)$|^ph_keyword$|^utm_|^(gad_source|mc_cid|gclid|gclsrc|dclid|gbraid|wbraid|' +
+        'fbclid|msclkid|twclid|li_fat_id|igshid|ttclid|rdt_cid|epik|qclid|sccid|oppref|bfcid|irclid|_kx)$');
     posthog.init(apiKey, {
         api_host: host,
         persistence: 'localStorage',
@@ -92,10 +100,11 @@ private fun initPostHog(
         disable_surveys: true,
         save_referrer: false,
         save_campaign_params: false,
+        request_batching: false,
         before_send: function (e) {
             [e.properties, e['\u0024set'], e['\u0024set_once']].forEach(function (props) {
                 if (props) Object.keys(props).forEach(function (k) {
-                    if (/(url|pathname|referrer)$/.test(k)) delete props[k];
+                    if (fromAddress.test(k)) delete props[k];
                 });
             });
             return e;
@@ -148,22 +157,19 @@ private fun phOptIn(
 }
 
 /**
- * The identity goes, and with [dropQueue] the queue too. posthog-js has no public way to drop its batch and retry queues, so their arrays are
- * emptied (fields of the pinned version; a later one without them only keeps its queue). Its reset also forgets the
- * consent, which `opt_out_capturing_by_default` turns into "off": opted in, it is opted in again (opted out first, so
- * the reset doesn't warn about it).
+ * The identity goes. `dropQueue` can't be honoured: posthog-js has no public way to drop its retry queue (its fields
+ * are renamed in the bundle), so a request that failed offline before an opt-out may still go out later, like on iOS.
+ * Nothing else waits: events are not batched. Its reset also forgets the consent, which `opt_out_capturing_by_default`
+ * turns into "off": opted in, it is opted in again (opted out first, so the reset doesn't warn about it).
  */
 private fun phReset(
     ph: JsAny,
     optedIn: Boolean,
-    dropQueue: Boolean,
 ) {
     js(
         """(function () {
     ph.opt_out_capturing();
     ph.reset();
-    if (dropQueue && ph._requestQueue && ph._requestQueue._queue) ph._requestQueue._queue = [];
-    if (dropQueue && ph._retryQueue && ph._retryQueue._queue) ph._retryQueue._queue = [];
     if (optedIn) ph.opt_in_capturing({ captureEventName: false });
 })()""",
     )

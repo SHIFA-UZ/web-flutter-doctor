@@ -43,14 +43,36 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // offline outlive a reset. Batch again if the SDK gains a public queue clear.
         config.flushAt = 1
         // Setup itself sends `Application Installed` / `Updated` before anything can be registered (00-plan §4 rule 1).
+        // An exception's messages go: a Ktor or serialization message can hold a URL with ids, JSON input or the
+        // backend's text. Type, module, mechanism and stack frames stay.
         let app = TrackingSinkKt.TRACKING_APP
         config.setBeforeSend([{ event in
             event.properties["app"] = app
+            event.properties["$exception_message"] = nil
+            event.properties["$exception_steps"] = nil // only from addExceptionStep, which the app never calls
+            if let list = event.properties["$exception_list"] as? [[String: Any]] {
+                event.properties["$exception_list"] = list.map(AppDelegate.withoutMessage)
+            }
             return event
         }])
         config.optOut = TrackingBridgeKt.trackingStartsOff()
         PostHogSDK.shared.setup(config)
         Tracking.shared.start(sink: PostHogAnalytics(), webHost: nil)
+    }
+
+    /// posthog-ios 3.93.3 puts an error's message in `value`, and a crash's `__crash_info` text in its signal meta.
+    private static func withoutMessage(_ exception: [String: Any]) -> [String: Any] {
+        var exception = exception
+        exception["value"] = nil
+        if var mechanism = exception["mechanism"] as? [String: Any],
+           var meta = mechanism["meta"] as? [String: Any],
+           var signal = meta["signal"] as? [String: Any] {
+            signal["crash_info_message"] = nil
+            meta["signal"] = signal
+            mechanism["meta"] = meta
+            exception["mechanism"] = mechanism
+        }
+        return exception
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
