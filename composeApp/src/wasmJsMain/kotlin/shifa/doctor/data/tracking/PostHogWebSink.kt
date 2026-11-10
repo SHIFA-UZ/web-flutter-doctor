@@ -41,7 +41,7 @@ class PostHogWebSink(
         personPropertiesSetOnce: Map<String, Any>,
     ) = phIdentify(posthog, distinctId, personProperties.json(), personPropertiesSetOnce.json())
 
-    override fun reset() = phReset(posthog, optedIn)
+    override fun reset(dropQueue: Boolean) = phReset(posthog, optedIn, dropQueue)
 
     override fun register(superProperties: Map<String, Any>) = phRegister(posthog, superProperties.json())
 
@@ -148,7 +148,7 @@ private fun phOptIn(
 }
 
 /**
- * The identity and the queue go. posthog-js has no public way to drop its batch and retry queues, so their arrays are
+ * The identity goes, and with [dropQueue] the queue too. posthog-js has no public way to drop its batch and retry queues, so their arrays are
  * emptied (fields of the pinned version; a later one without them only keeps its queue). Its reset also forgets the
  * consent, which `opt_out_capturing_by_default` turns into "off": opted in, it is opted in again (opted out first, so
  * the reset doesn't warn about it).
@@ -156,13 +156,14 @@ private fun phOptIn(
 private fun phReset(
     ph: JsAny,
     optedIn: Boolean,
+    dropQueue: Boolean,
 ) {
     js(
         """(function () {
     ph.opt_out_capturing();
     ph.reset();
-    if (ph._requestQueue && ph._requestQueue._queue) ph._requestQueue._queue = [];
-    if (ph._retryQueue && ph._retryQueue._queue) ph._retryQueue._queue = [];
+    if (dropQueue && ph._requestQueue && ph._requestQueue._queue) ph._requestQueue._queue = [];
+    if (dropQueue && ph._retryQueue && ph._retryQueue._queue) ph._retryQueue._queue = [];
     if (optedIn) ph.opt_in_capturing({ captureEventName: false });
 })()""",
     )

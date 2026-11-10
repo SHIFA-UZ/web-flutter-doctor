@@ -33,7 +33,7 @@ final class PostHogAnalytics: NSObject, TrackingSink {
 
     /// posthog-ios has no public way to drop its queue; AppDelegate sets `flushAt = 1`, so only events still in flight
     /// or held while offline can outlive this (each keeps the distinct id it was captured with).
-    func reset() {
+    func reset(dropQueue: Bool) {
         PostHogSDK.shared.reset()
     }
 

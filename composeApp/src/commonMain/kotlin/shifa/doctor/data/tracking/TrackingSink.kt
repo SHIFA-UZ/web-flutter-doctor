@@ -35,8 +35,12 @@ interface TrackingSink {
         personPropertiesSetOnce: Map<String, Any>,
     )
 
-    /** Forgets the identity and whatever is still queued. The SDK drops its super properties too; [Tracking] puts them back. */
-    fun reset()
+    /**
+     * Forgets the identity. The SDK drops its super properties too; [Tracking] puts them back. [dropQueue] when tracking
+     * turns off (nothing collected before may be sent later); a session end keeps the queue, so its `session_ended`,
+     * captured under the old identity, still goes out.
+     */
+    fun reset(dropQueue: Boolean)
 
     /** Super properties: on every later event, the SDK's own (lifecycle, exceptions) included. */
     fun register(superProperties: Map<String, Any>)

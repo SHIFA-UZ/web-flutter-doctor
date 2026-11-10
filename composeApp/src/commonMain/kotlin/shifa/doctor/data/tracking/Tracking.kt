@@ -87,7 +87,7 @@ object Tracking : SynchronizedObject(), Tracker {
             val status = trackingStatus(environment(), optOut, webHost)
             if (status.on != applied) {
                 sink.optOut(!status.on)
-                if (applied == true) reset()
+                if (applied == true) reset(dropQueue = true)
                 applied = status.on
             }
             _status.value = status
@@ -144,10 +144,10 @@ object Tracking : SynchronizedObject(), Tracker {
      * Every session end. Reaches the SDK even while tracking is off: the identity must go, or it would be left for
      * the next user. The SDK's reset drops the super properties too, so they are put back.
      */
-    fun reset() {
+    fun reset(dropQueue: Boolean = false) {
         synchronized(this) {
             val sink = sink ?: return
-            sink.reset()
+            sink.reset(dropQueue)
             settings.identified = null
             sink.register(superProperties.toMap())
         }

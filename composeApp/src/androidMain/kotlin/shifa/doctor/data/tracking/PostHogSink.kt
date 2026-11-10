@@ -76,8 +76,8 @@ internal class PostHogSink(
         personPropertiesSetOnce: Map<String, Any>,
     ) = posthog.identify(distinctId, personProperties, personPropertiesSetOnce.ifEmpty { null })
 
-    override fun reset() {
-        (postHogQueueField?.get(posthog) as? PostHogQueueInterface<*>)?.clear()
+    override fun reset(dropQueue: Boolean) {
+        if (dropQueue) (postHogQueueField?.get(posthog) as? PostHogQueueInterface<*>)?.clear()
         posthog.reset()
     }
 

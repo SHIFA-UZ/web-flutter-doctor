@@ -147,7 +147,7 @@ class TrackingTest {
     }
 
     @Test
-    fun `reset puts every super property back, since the SDK's reset drops them`() {
+    fun `a session-end reset keeps the queue and puts every super property back`() {
         started()
         Tracking.register("app_language", "ru")
         sink.calls.clear()
@@ -183,7 +183,7 @@ class TrackingTest {
         Tracking.flush()
 
         assertThat(sink.calls)
-            .containsExactly("optOut true", "reset", "register {app=doctor, app_language=uz}")
+            .containsExactly("optOut true", "reset drop", "register {app=doctor, app_language=uz}")
             .inOrder()
         assertThat(Tracking.status.value.reason).isEqualTo(TrackingOffReason.DevelopmentBackend)
     }
@@ -234,7 +234,7 @@ class TrackingTest {
         Tracking.track(ShellEvents.MoreOpened)
 
         assertThat(sink.calls)
-            .containsExactly("optOut true", "reset", "register {app=doctor, app_language=uz}")
+            .containsExactly("optOut true", "reset drop", "register {app=doctor, app_language=uz}")
             .inOrder()
         assertThat(Tracking.status.value.reason).isEqualTo(TrackingOffReason.OptedOut)
         assertThat(Tracking.optedOut).isTrue()

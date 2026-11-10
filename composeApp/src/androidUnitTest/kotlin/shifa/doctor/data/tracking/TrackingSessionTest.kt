@@ -187,7 +187,7 @@ class TrackingSessionTest {
 
             assertThat(sink.calls).containsExactly(
                 "optOut true",
-                "reset",
+                "reset drop",
                 "register {app=doctor, app_language=uz}",
                 "optOut false",
                 doctor7Identify,

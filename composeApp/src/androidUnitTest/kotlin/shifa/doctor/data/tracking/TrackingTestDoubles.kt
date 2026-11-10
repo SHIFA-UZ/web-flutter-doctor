@@ -47,8 +47,8 @@ class RecordingSink : TrackingSink {
         calls += "identify $distinctId $personProperties $personPropertiesSetOnce"
     }
 
-    override fun reset() {
-        calls += "reset"
+    override fun reset(dropQueue: Boolean) {
+        calls += if (dropQueue) "reset drop" else "reset"
     }
 
     override fun register(superProperties: Map<String, Any>) {
