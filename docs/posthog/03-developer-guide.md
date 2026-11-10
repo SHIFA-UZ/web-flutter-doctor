@@ -95,7 +95,24 @@ result.fold(
 
 **4. Screen views.** The shell sends one for every tab and pushed route, and `App.kt` for the signed-out screens
 (chunk A6), so a feature job adds none for those. A view inside one route is yours (a record tab, a clinic section,
-a finance view; their ids are already in `TrackScreen`):
+a finance view; their ids are already in `TrackScreen`).
+
+**One owner per screen id**, so no id is ever counted twice. A sub-view id is sent *in addition to* its container's
+(opening a patient sends `patient` from the shell and `patient_overview` from B4); it never replaces it, and the
+container's id is never sent again from inside it.
+
+| Owner | Screen ids |
+|---|---|
+| Shell, `ui/navigation/MainScreen.kt` via `shellScreen(state)` (A6) | the tabs: `home`, `calendar`, `patients`, `chat`, `clinic`, `tasks`, `reports`, `notifications`, `profile`; `intelligence`; every pushed route: `language`, `conversation`, `patient_chat`, `patient_search`, `task`, `task_create`, `task_templates`, `schedule`, `patient`, `locations`, `appointment`, `visit`, `block`, `plan_detail`, `plan_wizard`, `find_partner`, `partnerships`, `partnership`, `doctor_schedule`, `booking`, `form`, `document`, and the `profile_*` sections (`profile_personal_info` … `profile_privacy`) |
+| `App.kt` (A6) | `splash`, `sign_in`, `email_entry` and `email_code` (with `mode`: `sign_in` / `reset` / `sms_sign_in`), `reset_password`, `verify_key`, `lock` |
+| B1, `RegisterScreen` | `register` (its kind and step are only known there) |
+| B4, `PatientDetailScreen` | `patient_overview`, `patient_medical`, `patient_appointments`, `patient_documents`, `patient_forms`, `patient_activity` |
+| B8, the clinic workspace | `clinic_overview` … `clinic_settings`, `finance_dashboard` … `finance_payments` |
+
+A screen the shell already names (a route above) gets no `TrackScreenView` of its own, even for a mode or a step: send
+that as an event property or ask the coordinator for a sub-view id. The shell sends a view each time a screen comes to
+the front (keyed on the stack under it): More, a sheet or a dialog over it sends nothing; Back to it, or another tab
+and back, sends it again. The debug menu is never tracked.
 
 ```kotlin
 @Composable

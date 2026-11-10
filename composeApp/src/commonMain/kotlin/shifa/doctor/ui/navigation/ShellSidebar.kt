@@ -153,7 +153,7 @@ internal fun ShellSidebar(
                             entry,
                             selected = !state.intelligence && state.tab == entry.tab,
                             rail = rail,
-                        ) { actions.select(entry.tab) }
+                        ) { actions.tapTab(entry.tab, "sidebar") }
                 }
             }
         }
@@ -182,7 +182,7 @@ internal fun ShellSidebar(
                     .clip(ShifaRadius.ControlMd)
                     .pointerHoverIcon(
                         PointerIcon.Hand,
-                    ).clickable(role = Role.Button) { actions.select(ShellTab.Profile) }
+                    ).clickable(role = Role.Button) { actions.tapTab(ShellTab.Profile, "sidebar") }
                     // The name is the label when shown; the rail and staff show the photo only.
                     .then(
                         if (rail || identity == null) {

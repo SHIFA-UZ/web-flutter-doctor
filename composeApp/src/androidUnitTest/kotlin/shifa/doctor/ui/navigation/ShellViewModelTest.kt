@@ -27,6 +27,8 @@ import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.DoctorTier
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ShellEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
 import shifa.doctor.stopAll
@@ -87,6 +89,7 @@ class ShellViewModelTest {
     private val profile by lazy { ProfileRepository { client } }
 
     private var scheduleReads = 0
+    private val tracker = RecordingTracker()
 
     private fun vm(
         staff: Boolean = false,
@@ -99,6 +102,7 @@ class ShellViewModelTest {
         }, com.russhwolf.settings.MapSettings(), { "u1" }),
         BadgesRepository { client },
         startPath = startPath,
+        tracker = tracker,
     ) { scheduleReads++ }.also { created += it }
 
     private fun pushVm(
@@ -111,6 +115,7 @@ class ShellViewModelTest {
         notifications = shifa.doctor.data.notifications.NotificationsRepository { client },
         pushes = pushes,
         profileWaitMs = 1_000,
+        tracker = tracker,
     ) { scheduleReads++ }.also { created += it }
 
     private fun ShellViewModel.settle() {
@@ -526,5 +531,40 @@ class ShellViewModelTest {
         waitFor { chat() > chat0 }
         assertThat(chat()).isGreaterThan(chat0)
         assertThat(scheduleReads).isEqualTo(1)
+    }
+
+    @Test
+    fun `tab taps, More and a refused tab are tracked`() {
+        tier = "PRO" // no Tasks
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.tapTab(ShellTab.Chat, "bar")
+        classToTest.openMore()
+        classToTest.tapTab(ShellTab.Tasks, "sidebar")
+        classToTest.select(ShellTab.Patients) // not the doctor's own tab choice (a card, a link): no tab_selected
+        assertThat(tracker.events)
+            .containsExactly(
+                ShellEvents.TabSelected("chat", "bar"),
+                ShellEvents.MoreOpened,
+                ShellEvents.TabSelected("tasks", "sidebar"),
+                ShellEvents.TabRefused("tasks"),
+            ).inOrder()
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Patients)
+    }
+
+    @Test
+    fun `a tapped push is tracked by its type and target only`() {
+        val classToTest = pushVm()
+        classToTest.settle()
+        classToTest.openPush(mapOf("type" to "CHAT_MESSAGE", "notificationId" to "7", "conversationId" to "42"))
+        waitFor { tracker.events.size == 1 }
+        classToTest.pushOpened()
+        classToTest.openPush(mapOf("type" to "GENERAL"))
+        waitFor { tracker.events.size == 2 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ShellEvents.PushOpened("CHAT_MESSAGE", "chat"),
+                ShellEvents.PushOpened("GENERAL", "inbox"),
+            ).inOrder()
     }
 }
