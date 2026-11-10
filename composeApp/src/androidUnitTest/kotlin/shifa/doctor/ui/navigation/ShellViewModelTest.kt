@@ -49,6 +49,7 @@ class ShellViewModelTest {
 
     private var clinics = """[{"clinicId":1,"name":"Shifa Demo Clinic"}]"""
     private var hold = CompletableDeferred(Unit)
+    private var profileDown = false
     private val paths = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var chat = 1
     private var notifications = 140
@@ -70,6 +71,7 @@ class ShellViewModelTest {
                         """{"id":5,"role":"CLINIC_STAFF","firstName":"Dilfuza","lastName":"Y","photoUrl":"https://x/p.jpg"}"""
                     } else {
                         hold.await()
+                        if (profileDown) return@MockEngine respond("{}", HttpStatusCode.InternalServerError)
                         """{"profile":{},"settings":{"defaultStartTab":"$startTab"},"subscription":{"tier":"$tier","features":[${features()}]}}"""
                     }
                 respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -200,6 +202,28 @@ class ShellViewModelTest {
         repeat(200) { if (staff.state.value.avatarUrl == null) Thread.sleep(10) }
         assertThat(staff.state.value.tab).isEqualTo(ShellTab.Clinic)
         assertThat(staff.state.value.stack).containsExactly(ShellRoute.Root(ShellTab.Clinic))
+    }
+
+    @Test
+    fun `no screen view until the start tab is applied, even when the profile fails`() {
+        hold = CompletableDeferred()
+        profileDown = true
+        val offline = vm()
+        assertThat(offline.state.value.startApplied).isFalse()
+        hold.complete(Unit)
+        waitFor { offline.state.value.startApplied }
+        assertThat(offline.state.value.startApplied).isTrue()
+        assertThat(offline.state.value.profileFailed).isTrue()
+        assertThat(offline.state.value.tab).isEqualTo(ShellTab.Home)
+
+        profileDown = false
+        val doctor = vm()
+        waitFor { doctor.state.value.startApplied }
+        assertThat(doctor.state.value.tab).isEqualTo(ShellTab.Calendar)
+
+        val staff = vm(staff = true)
+        waitFor { staff.state.value.startApplied }
+        assertThat(staff.state.value.startApplied).isTrue()
     }
 
     @Test
@@ -561,10 +585,19 @@ class ShellViewModelTest {
         classToTest.pushOpened()
         classToTest.openPush(mapOf("type" to "GENERAL"))
         waitFor { tracker.events.size == 2 }
+        classToTest.openPush(mapOf("type" to "Aziza wrote to you"))
+        waitFor { tracker.events.size == 3 }
+        classToTest.openPush(emptyMap())
+        waitFor { tracker.events.size == 4 }
         assertThat(tracker.events)
             .containsExactly(
                 ShellEvents.PushOpened("CHAT_MESSAGE", "chat"),
                 ShellEvents.PushOpened("GENERAL", "inbox"),
+                ShellEvents.PushOpened("other", "inbox"),
+                ShellEvents.PushOpened(null, "inbox"),
             ).inOrder()
+        assertThat(
+            ShellEvents.PushOpened("GENERAL", "inbox").properties,
+        ).containsExactly("type", "GENERAL", "routed_to", "inbox")
     }
 }

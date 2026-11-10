@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import shifa.doctor.data.api.BACKEND_CODE
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.calendar.changed
@@ -282,6 +283,9 @@ data class ShellUiState(
     val profileFailed: Boolean = false,
     // PUSH-03: where a tapped push leads, once found; the shell opens it over Home and clears it.
     val pushGo: NotificationGo? = null,
+    // A6: the start tab (or web address) has been applied, read or not; until then no screen view, or every launch
+    // would first send Home's (Clinic's for staff).
+    val startApplied: Boolean = false,
 ) {
     val home: ShellTab get() = if (staff) ShellTab.Clinic else ShellTab.Home
 
@@ -458,6 +462,7 @@ class ShellViewModel(
                 // Their times (chat, notifications) are shown in their own zone, else their clinic's: never UTC.
                 profile.staffZone(me?.timeZone ?: clinics.mine().getOrNull()?.firstOrNull()?.timeZone)
                 if (!switched) startPath?.let(::openPath)
+                _state.update { it.copy(startApplied = true) }
                 return@launch
             }
             // Together: Home's schedule and every plan gate wait for the profile, not for the clinics before it.
@@ -483,6 +488,7 @@ class ShellViewModel(
                     _state.update { it.copy(tab = clamp(start, it)) }
                 }
             }
+            _state.update { it.copy(startApplied = true) }
             // The Tasks badge and Home's follow-up count, for doctors whose plan has Tasks (01 §6.3); Home's first
             // focus may come before the plan is known.
             refreshFollowUps()
@@ -773,8 +779,8 @@ class ShellViewModel(
         val staff = _state.value.staff
         val mine = ++pushTaps // a later tap wins over a slower earlier one
         viewModelScope.launch {
-            // The push's type only: the rest of its data names patients.
-            val type = data["type"]?.takeIf { it.isNotBlank() } ?: "unknown"
+            // The push's type only (a backend code, else `other`): the rest of its data names patients.
+            val type = data["type"]?.takeIf { it.isNotBlank() }?.let { if (BACKEND_CODE.matches(it)) it else "other" }
             val n = AppNotification.fromPush(data, currentInstant())
             if (n == null) {
                 if (mine == pushTaps) tracker.track(ShellEvents.PushOpened(type, NotificationGo.Inbox.trackTarget))

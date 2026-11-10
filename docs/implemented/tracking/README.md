@@ -19,6 +19,9 @@ feature group adds its own file in this folder; the coordinator keeps this table
 The three SDKs are attached when a key is present; only a release build on the production backend (and on the web
 `doctor.shifa.uz`) sends. `Tracking` is synchronized (A1b calls it from repository dispatchers).
 
+**Known limits:** iOS and the web cannot drop an offline retry backlog at an opt-out (only Android clears its queue);
+anonymous splash and boot events are sent before a stored ADMIN token is rejected (admins are never identified).
+
 ## A1: the core (2026-11-10)
 
 No design board and no flow file: tracking has no UI in this chunk.
@@ -67,7 +70,8 @@ No design board and no flow file: tracking has no UI in this chunk.
 - The debug menu's recent-events list: chunk A7 (it adds the list to `Tracking`).
 - A global `api_error` event from `apiCall`: not in the plan's chunks; polling would flood it while offline.
 - The opt-out switch and its strings: group B9.
-- No lock in `Tracking`: every caller is on the main thread today.
+- `Tracking` takes its own lock on every entry point: `api_error` / `api_slow` (A1b) call it from repository
+  dispatchers (`PushRegistration` on `Dispatchers.Default`).
 
 ## A6: screen views from the shell (2026-11-10)
 
@@ -82,8 +86,10 @@ No design board and no flow file: tracking has no UI in this chunk.
 - `ShellViewModel` (tracker before its trailing `scheduleRefresh` lambda): `tab_selected(tab, source)` from
   `tapTab` (the bar, More, the sidebar; other `select` calls such as Home's cards are not the doctor's tab choice),
   `tab_refused(tab)` when the plan or the clinic membership turns a tab into Home (also a gated tab picked before the
-  plan was known), `more_opened`, `push_opened(type, target)` once a tapped push's target is found (`type` only from
-  its data, `unknown` without one; `target` `home` when its appointment is gone).
+  plan was known), `more_opened`, `push_opened(type, routed_to)` once a tapped push's target is found (the patient
+  app's names; `type` only from its data, a backend code or `other`, left out without one; `routed_to` `home` when
+  its appointment is gone). No `cold_start`: the shell can't tell a cold start's tap from one that waited behind
+  sign-in or the lock.
 - Tests: `ShellScreenTest` (the mapping), two `ShellViewModelTest` cases (tab/More/refused, push).
 
 ## A7: debug menu (2026-11-10)
