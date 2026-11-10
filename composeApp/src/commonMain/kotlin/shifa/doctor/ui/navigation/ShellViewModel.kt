@@ -386,6 +386,8 @@ class ShellViewModel(
             if (staff) {
                 val me = profile.meProfile().getOrNull()
                 _state.update { it.copy(avatarUrl = me?.photoUrl, hasClinic = true) }
+                // Their times (chat, notifications) are shown in their own zone, else their clinic's: never UTC.
+                profile.staffZone(me?.timeZone ?: clinics.mine().getOrNull()?.firstOrNull()?.timeZone)
                 if (!switched) startPath?.let(::openPath)
                 return@launch
             }

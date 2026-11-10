@@ -148,8 +148,7 @@ fun NotificationsScreen(
             onOpen(it)
         }
     }
-    val me by profileRepository.me.collectAsStateWithLifecycle()
-    val zone = me?.profile?.timeZone
+    val zone by profileRepository.zone.collectAsStateWithLifecycle(null)
     val clock = remember(zone) { PracticeClock(zone) }
     NotificationsContent(
         state,

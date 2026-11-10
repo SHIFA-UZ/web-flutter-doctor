@@ -11,6 +11,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -262,6 +263,20 @@ class ShellViewModelTest {
         hold.complete(Unit)
         classToTest.settle()
         assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Tasks)
+    }
+
+    @Test
+    fun `clinic staff, who have no doctor profile, get their clinic's time zone`() {
+        clinics = """[{"clinicId":1,"name":"Shifa Demo Clinic","timeZone":"Asia/Tashkent"}]"""
+        val classToTest = vm(staff = true)
+        repeat(200) { if (classToTest.state.value.avatarUrl == null) Thread.sleep(10) }
+        val zone =
+            kotlinx.coroutines.runBlocking {
+                kotlinx.coroutines.withTimeout(5_000) { profile.zone.first { it != null } }
+            }
+        assertThat(zone).isEqualTo("Asia/Tashkent")
+        profile.clear()
+        assertThat(kotlinx.coroutines.runBlocking { profile.zone.first() }).isNull()
     }
 
     @Test

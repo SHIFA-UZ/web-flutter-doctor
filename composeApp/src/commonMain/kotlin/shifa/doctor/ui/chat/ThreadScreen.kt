@@ -253,8 +253,7 @@ fun ThreadScreen(
     // CHAT-05: pdf, doc, docx, jpg, png; a document message opens in the browser (the system shows or hands it on).
     val pickDocument = rememberDocumentPickerLauncher(DocumentKinds.ChatAttachment) { it?.let(viewModel::sendDocument) }
     val browser = rememberInAppBrowser()
-    val me by profileRepository.me.collectAsStateWithLifecycle()
-    val zone = me?.profile?.timeZone
+    val zone by profileRepository.zone.collectAsStateWithLifecycle(null)
     val clock = remember(zone) { PracticeClock(zone) }
     ThreadContent(
         state.copy(conversation = state.conversation ?: known),
