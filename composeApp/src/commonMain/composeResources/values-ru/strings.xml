@@ -1142,6 +1142,7 @@
     <string name="documentCategory_OTHER_PRIVATE">Другой частный документ</string>
     <string name="documentCategory_PATHOLOGY">Патология</string>
     <string name="documentCategory_PRESCRIPTION">Рецепт</string>
+    <string name="documentCategory_PRE_APPOINTMENT">Перед приёмом</string>
     <string name="documentCategory_REFERRAL">Направление</string>
     <string name="documentCategory_REMOTE_TASK_DOCUMENT">Документ к удалённой задаче</string>
     <string name="documentCategory_STOOL_TEST">Анализ кала</string>

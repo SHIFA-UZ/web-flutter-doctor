@@ -70,6 +70,9 @@ enum class DocumentCategory(
     HOSPITAL_REPORT(true),
     ALLERGY_REPORT(true),
     OTHER_MEDICAL(true),
+
+    /** What a patient attached to a booking; the backend sets it, so it is never picked here. */
+    PRE_APPOINTMENT(true, pickable = false),
     APPOINTMENT_NOTE(false),
     REMOTE_TASK_DOCUMENT(false),
     INTERNAL_NOTE(false),

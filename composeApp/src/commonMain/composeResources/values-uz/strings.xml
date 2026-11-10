@@ -1142,6 +1142,7 @@
     <string name="documentCategory_OTHER_PRIVATE">Boshqa maxfiy hujjat</string>
     <string name="documentCategory_PATHOLOGY">Patologiya</string>
     <string name="documentCategory_PRESCRIPTION">Retsept</string>
+    <string name="documentCategory_PRE_APPOINTMENT">Qabuldan oldin</string>
     <string name="documentCategory_REFERRAL">Yo'llanma</string>
     <string name="documentCategory_REMOTE_TASK_DOCUMENT">Masofaviy vazifa hujjati</string>
     <string name="documentCategory_STOOL_TEST">Najas tahlili</string>

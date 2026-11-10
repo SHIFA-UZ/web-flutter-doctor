@@ -845,6 +845,7 @@
   "documentCategory_OTHER_PRIVATE": "Другой частный документ",
   "documentCategory_PATHOLOGY": "Патология",
   "documentCategory_PRESCRIPTION": "Рецепт",
+  "documentCategory_PRE_APPOINTMENT": "Перед приёмом",
   "documentCategory_REFERRAL": "Направление",
   "documentCategory_REMOTE_TASK_DOCUMENT": "Документ к удалённой задаче",
   "documentCategory_STOOL_TEST": "Анализ кала",

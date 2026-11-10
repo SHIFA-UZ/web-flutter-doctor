@@ -23,6 +23,7 @@ import shifa.doctor.generated.resources.documentCategory_OTHER_MEDICAL
 import shifa.doctor.generated.resources.documentCategory_OTHER_PRIVATE
 import shifa.doctor.generated.resources.documentCategory_PATHOLOGY
 import shifa.doctor.generated.resources.documentCategory_PRESCRIPTION
+import shifa.doctor.generated.resources.documentCategory_PRE_APPOINTMENT
 import shifa.doctor.generated.resources.documentCategory_REFERRAL
 import shifa.doctor.generated.resources.documentCategory_REMOTE_TASK_DOCUMENT
 import shifa.doctor.generated.resources.documentCategory_STOOL_TEST
@@ -57,6 +58,7 @@ val DocumentCategory.label: StringResource
             DocumentCategory.HOSPITAL_REPORT -> Res.string.documentCategory_HOSPITAL_REPORT
             DocumentCategory.ALLERGY_REPORT -> Res.string.documentCategory_ALLERGY_REPORT
             DocumentCategory.OTHER_MEDICAL -> Res.string.documentCategory_OTHER_MEDICAL
+            DocumentCategory.PRE_APPOINTMENT -> Res.string.documentCategory_PRE_APPOINTMENT
             DocumentCategory.APPOINTMENT_NOTE -> Res.string.documentCategory_APPOINTMENT_NOTE
             DocumentCategory.REMOTE_TASK_DOCUMENT -> Res.string.documentCategory_REMOTE_TASK_DOCUMENT
             DocumentCategory.INTERNAL_NOTE -> Res.string.documentCategory_INTERNAL_NOTE

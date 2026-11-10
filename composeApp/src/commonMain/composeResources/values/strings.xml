@@ -1142,6 +1142,7 @@
     <string name="documentCategory_OTHER_PRIVATE">Other private document</string>
     <string name="documentCategory_PATHOLOGY">Pathology</string>
     <string name="documentCategory_PRESCRIPTION">Prescription</string>
+    <string name="documentCategory_PRE_APPOINTMENT">Before the appointment</string>
     <string name="documentCategory_REFERRAL">Referral</string>
     <string name="documentCategory_REMOTE_TASK_DOCUMENT">Remote task document</string>
     <string name="documentCategory_STOOL_TEST">Stool test</string>

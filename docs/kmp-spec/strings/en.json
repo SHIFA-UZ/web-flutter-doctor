@@ -845,6 +845,7 @@
   "documentCategory_OTHER_PRIVATE": "Other private document",
   "documentCategory_PATHOLOGY": "Pathology",
   "documentCategory_PRESCRIPTION": "Prescription",
+  "documentCategory_PRE_APPOINTMENT": "Before the appointment",
   "documentCategory_REFERRAL": "Referral",
   "documentCategory_REMOTE_TASK_DOCUMENT": "Remote task document",
   "documentCategory_STOOL_TEST": "Stool test",
