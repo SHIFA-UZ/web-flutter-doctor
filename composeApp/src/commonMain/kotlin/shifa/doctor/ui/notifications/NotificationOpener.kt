@@ -96,3 +96,19 @@ class NotificationOpener(
         )
     }
 }
+
+/**
+ * Where a tapped notification led, as the `target` word of `notification_opened` (and the shell's `push_opened`, which
+ * keeps its own copy for now). A null [NotificationOpener.go] result is the caller's word: nothing opened.
+ */
+val NotificationGo.trackTarget: String
+    get() =
+        when (this) {
+            is NotificationGo.Appointment -> "appointment"
+            is NotificationGo.Patient -> "patient"
+            is NotificationGo.Document -> "document"
+            NotificationGo.Chat, is NotificationGo.Conversation -> "chat"
+            NotificationGo.Partnerships, is NotificationGo.Partnership -> "partnership"
+            is NotificationGo.Task -> "task"
+            NotificationGo.Inbox -> "inbox"
+        }

@@ -22,6 +22,9 @@ import shifa.doctor.data.model.ConsultationTypes
 import shifa.doctor.data.model.Engagement
 import shifa.doctor.data.model.SmsUsage
 import shifa.doctor.data.model.TrendPoint
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.exportFailed
 import shifa.doctor.ui.navigation.Notice
@@ -74,10 +77,17 @@ class AnalyticsViewModel(
     private val repo: AnalyticsRepository = analyticsRepository,
     // REPORT-01: Reports also reads the SMS reminders for the range.
     private val withSms: Boolean = false,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(AnalyticsUiState(AnalyticsRange.lastDays(today), today))
     val state: StateFlow<AnalyticsUiState> = _state.asStateFlow()
     private val reads = mutableMapOf<String, Job>()
+
+    // Where the card is, for its events: Home's card or the Reports page (the one that reads the SMS block).
+    private val source = if (withSms) "reports" else "home"
+
+    // The exported period's length, from the tap until the share sheet answers.
+    private var exportDays = 0
 
     init {
         refresh()
@@ -111,7 +121,7 @@ class AnalyticsViewModel(
         if (today != s.today) {
             val untouched = s.range == AnalyticsRange.lastDays(s.today)
             _state.update { it.copy(today = today) }
-            if (untouched) setRange(AnalyticsRange.lastDays(today))
+            if (untouched) applyRange(AnalyticsRange.lastDays(today))
         }
         read("overview") { repo.overview().let { r -> _state.update { it.copy(overview = r) } } }
     }
@@ -119,6 +129,12 @@ class AnalyticsViewModel(
     /** A saved range: the label at once, the trend read for it. */
     fun setRange(range: AnalyticsRange) {
         if (range == _state.value.range) return
+        tracker.track(HomeEvents.ReportRangeChanged(source, range.days, range.end == _state.value.today))
+        applyRange(range)
+    }
+
+    // A new day moves an untouched range without the doctor choosing it: not tracked.
+    private fun applyRange(range: AnalyticsRange) {
         // The SMS block shows its skeleton, never the old range's numbers under the new label.
         _state.update { it.copy(range = range, trendLoading = true, sms = if (withSms) null else it.sms) }
         readTrend(range)
@@ -147,6 +163,7 @@ class AnalyticsViewModel(
     fun export() {
         if (_state.value.exporting) return
         val range = _state.value.range
+        exportDays = range.days
         _state.update { it.copy(exporting = true) }
         viewModelScope.launch {
             val s = _state.value.loaded ?: repo.all(range)
@@ -162,7 +179,10 @@ class AnalyticsViewModel(
                 } else {
                     null
                 }
-            if (csv == null) ShellNotice.pending.value = Notice(Res.string.exportFailed)
+            if (csv == null) {
+                tracker.track(HomeEvents.ReportExportFailed(source, "incomplete"))
+                ShellNotice.pending.value = Notice(Res.string.exportFailed)
+            }
             _state.update {
                 it.copy(exporting = false, export = csv?.let { c -> AnalyticsExport(dashboardCsvName(range), c) })
             }
@@ -171,7 +191,12 @@ class AnalyticsViewModel(
 
     /** The share sheet was shown, or couldn't be. */
     fun exported(shown: Boolean) {
-        if (!shown) ShellNotice.pending.value = Notice(Res.string.exportFailed)
+        if (shown) {
+            tracker.track(HomeEvents.ReportExported(source, exportDays))
+        } else {
+            tracker.track(HomeEvents.ReportExportFailed(source, "share_unavailable"))
+            ShellNotice.pending.value = Notice(Res.string.exportFailed)
+        }
         _state.update { it.copy(export = null) }
     }
 }

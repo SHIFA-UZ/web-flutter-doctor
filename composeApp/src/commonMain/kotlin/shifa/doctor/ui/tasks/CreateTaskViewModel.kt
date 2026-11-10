@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.MAX_TIMES_PER_DAY
@@ -25,6 +26,10 @@ import shifa.doctor.data.tasks.TaskForm
 import shifa.doctor.data.tasks.TaskFormProblem
 import shifa.doctor.data.tasks.TasksRepository
 import shifa.doctor.data.tasks.withSlot
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.HomeEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.customTimesAddAtLeastOne
 import shifa.doctor.generated.resources.failedToCreateTask
@@ -75,6 +80,7 @@ class CreateTaskViewModel(
     private val repo: TasksRepository = TasksRepository(),
     private val patientsRepo: PatientsRepository = patientsRepository,
     private val profile: ProfileRepository = profileRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state: MutableStateFlow<CreateTaskUiState>
 
@@ -242,15 +248,28 @@ class CreateTaskViewModel(
                         Res.string.customTimesAddAtLeastOne,
                     )
         }
-        val request = s.form.request() ?: return
+        val request =
+            s.form.request() ?: return tracker.track(
+                HomeEvents.TaskCreateFailed("invalid", problems.map { it.trackName() }),
+            )
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
             repo.create(request).fold(
                 {
+                    val f = s.form
+                    tracker.track(
+                        HomeEvents.TaskCreated(
+                            f.category,
+                            f.mode,
+                            f.slots.size,
+                            fromTemplate = s.templateName != null,
+                        ),
+                    )
                     ShellNotice.pending.value = Notice(Res.string.taskCreated, success = true)
                     _state.update { it.copy(saving = false, done = true) }
                 },
                 { e ->
+                    tracker.track(HomeEvents.TaskCreateFailed(e.toFailureReason()))
                     if (e is ApiException.Forbidden) launch { profile.refresh() }
                     ShellNotice.pending.value =
                         Notice(

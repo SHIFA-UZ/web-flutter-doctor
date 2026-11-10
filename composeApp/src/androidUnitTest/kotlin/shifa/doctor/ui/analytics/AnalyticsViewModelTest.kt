@@ -24,6 +24,8 @@ import shifa.doctor.data.model.AnalyticsRange
 import shifa.doctor.data.model.ConsultationTypes
 import shifa.doctor.data.model.Engagement
 import shifa.doctor.data.model.TrendPoint
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 
@@ -213,5 +215,36 @@ class AnalyticsViewModelTest {
         classToTest.refreshToday(LocalDate(2026, 11, 7))
         assertThat(classToTest.state.value.range.days).isEqualTo(30)
         assertThat(classToTest.state.value.range.end).isEqualTo(LocalDate(2026, 11, 6))
+    }
+
+    @Test
+    fun `a chosen period and the export are tracked, a new day moving the period is not`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            AnalyticsViewModel(today, AnalyticsRepository { createHttpClient({ null }, engine) }, tracker = tracker)
+        settle { classToTest.state.value.loaded != null }
+        classToTest.refreshToday(LocalDate(2026, 11, 6))
+        classToTest.setRange(AnalyticsRange(LocalDate(2026, 10, 1), LocalDate(2026, 10, 10)))
+        classToTest.setRange(AnalyticsRange.lastDays(LocalDate(2026, 11, 6), 30))
+        settle { !classToTest.state.value.trendLoading }
+        classToTest.export()
+        settle { classToTest.state.value.export != null }
+        classToTest.exported(shown = true)
+        classToTest.export()
+        settle { classToTest.state.value.export != null }
+        classToTest.exported(shown = false)
+        failEngagement = true
+        classToTest.refresh()
+        settle { classToTest.state.value.engagement?.isFailure == true }
+        classToTest.export()
+        settle { !classToTest.state.value.exporting }
+        assertThat(tracker.events)
+            .containsExactly(
+                HomeEvents.ReportRangeChanged("home", 10, endsToday = false),
+                HomeEvents.ReportRangeChanged("home", 30, endsToday = true),
+                HomeEvents.ReportExported("home", 30),
+                HomeEvents.ReportExportFailed("home", "share_unavailable"),
+                HomeEvents.ReportExportFailed("home", "incomplete"),
+            ).inOrder()
     }
 }

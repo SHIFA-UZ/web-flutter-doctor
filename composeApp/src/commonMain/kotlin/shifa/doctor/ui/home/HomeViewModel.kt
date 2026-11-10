@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.home.HomeRepository
 import shifa.doctor.data.home.HomeSchedule
@@ -17,6 +18,9 @@ import shifa.doctor.data.home.homeRepository
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.couldNotLoad
 import shifa.doctor.generated.resources.homeLoadFailed
@@ -53,6 +57,7 @@ class HomeViewModel(
     private val clockFor: (String?) -> PracticeClock = { PracticeClock(it) },
     private val gate: RefreshGate = RefreshGate(),
     private val patients: PatientsRepository = patientsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
@@ -149,8 +154,16 @@ class HomeViewModel(
             val slot = found.getOrNull()
             // A failed read is not "no slots": the doctor would stop looking for a day that is in fact free.
             found.fold(
-                { if (it == null) ShellNotice.pending.value = Notice(Res.string.noSlotsAvailable) },
+                {
+                    if (it == null) {
+                        tracker.track(HomeEvents.HomeVideoSlotSearchFailed("no_slots"))
+                        ShellNotice.pending.value = Notice(Res.string.noSlotsAvailable)
+                    } else {
+                        tracker.track(HomeEvents.HomeVideoSlotFound)
+                    }
+                },
                 { e ->
+                    tracker.track(HomeEvents.HomeVideoSlotSearchFailed(e.toFailureReason()))
                     ShellNotice.pending.value =
                         Notice(e.toUserMessage(Res.string.couldNotLoad), requestId = e.requestId)
                 },

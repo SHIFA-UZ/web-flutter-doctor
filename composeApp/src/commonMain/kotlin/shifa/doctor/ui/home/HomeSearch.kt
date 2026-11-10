@@ -47,6 +47,10 @@ import shifa.doctor.data.model.Patient
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addPatient
 import shifa.doctor.generated.resources.back
@@ -104,6 +108,7 @@ data class PatientSearchUiState(
 class PatientSearchViewModel(
     private val repo: PatientsRepository = patientsRepository,
     today: LocalDate = PracticeClock(profileRepository.me.value?.profile?.timeZone).today(),
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PatientSearchUiState(today = today))
     val state: StateFlow<PatientSearchUiState> = _state.asStateFlow()
@@ -134,6 +139,12 @@ class PatientSearchViewModel(
     }
 
     fun type(text: String) = _state.update { it.copy(query = text) }
+
+    /** A result was tapped (the shell opens it): how many matched and whether anything was typed, never the text. */
+    fun opened() {
+        val s = _state.value
+        tracker.track(HomeEvents.HomeSearchResultOpened(countBucket(s.hits.size), s.query.isNotBlank()))
+    }
 }
 
 @Composable
@@ -146,7 +157,18 @@ fun PatientSearchScreen(
     viewModel: PatientSearchViewModel = viewModel(key = "patient-search-$opened") { PatientSearchViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    PatientSearchContent(state, viewModel::type, viewModel::load, onBack, onOpen, onAddPatient, autofocus = true)
+    PatientSearchContent(
+        state,
+        viewModel::type,
+        viewModel::load,
+        onBack,
+        { id ->
+            viewModel.opened()
+            onOpen(id)
+        },
+        onAddPatient,
+        autofocus = true,
+    )
 }
 
 /** The search page: Back, the field (keyboard up on entry), then the list, its count, or why there is none. */
