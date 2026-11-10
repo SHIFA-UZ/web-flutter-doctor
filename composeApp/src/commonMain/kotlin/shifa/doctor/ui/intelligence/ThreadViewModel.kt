@@ -166,17 +166,21 @@ class ThreadViewModel(
     fun draft(text: String) = _state.update { it.copy(draft = text) }
 
     /** The composer's Send (no [text]: the draft) or a starter prompt ([text]): the text as typed. */
-    fun send(text: String? = null) = submit(text ?: _state.value.draft, if (text == null) "typed" else "starter")
+    fun send(text: String? = null) {
+        submit(text ?: _state.value.draft, if (text == null) "typed" else "starter")
+    }
 
+    /** False when the question can't go now (a reply or a booking is running, or nothing to ask). */
     private fun submit(
         text: String,
         input: String,
-    ) {
-        if (_state.value.busy || store.state.value.activeId in bookings) return
-        val question = ChatTitles.stripWakePhrase(text).ifBlank { return }
+    ): Boolean {
+        if (_state.value.busy || store.state.value.activeId in bookings) return false
+        val question = ChatTitles.stripWakePhrase(text).ifBlank { return false }
         _state.update { it.copy(draft = "") }
         voice.typed()
         ask(question, input = input)
+        return true
     }
 
     /** A transcribed take as the question, in the language it was spoken in; false when a question can't go now. */
@@ -360,8 +364,8 @@ class ThreadViewModel(
     fun answerCancel(yes: Boolean) {
         val chat = store.state.value.active ?: return
         val language = languages[chat.id] ?: appLanguage()
-        tracker.track(ChatEvents.IntelligenceCancelAnswered(yes))
-        submit((if (yes) CONFIRM else DECLINE)[language] ?: if (yes) "yes" else "no", "card_answer")
+        val sent = submit((if (yes) CONFIRM else DECLINE)[language] ?: if (yes) "yes" else "no", "card_answer")
+        if (sent) tracker.track(ChatEvents.IntelligenceCancelAnswered(yes))
     }
 
     private fun cardUi(
@@ -490,7 +494,18 @@ class ThreadViewModel(
         tracker.track(
             ChatEvents.IntelligenceReplyReceived(
                 track.input,
-                card?.let { IntelCard.typeOf(s.toolName, it) },
+                // A type the app doesn't know is `other`: the backend's raw string could be anything.
+                card?.let {
+                    if (IntelCard.of(
+                            s.toolName,
+                            it,
+                        ) is IntelCard.Other
+                    ) {
+                        "other"
+                    } else {
+                        IntelCard.typeOf(s.toolName, it)
+                    }
+                },
                 card?.changesSchedule() == true,
                 (now() - askedAt).inWholeSeconds.toInt(),
                 track.isRetry,

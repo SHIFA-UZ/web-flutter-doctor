@@ -223,4 +223,29 @@ class BillingSubscriptionTest {
                 ProfileEvents.BillingLinkFailed("connect", "server"),
             ).inOrder()
     }
+
+    @Test
+    fun `a link the browser blocked is only billing_link_failed, an opened one is opened`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            BillingViewModel(
+                repo,
+                subscriptions,
+                retryDelayMs = 0,
+                tracker = tracker,
+            ).also { created += it }
+        classToTest.open()
+        classToTest.connect()
+        settle { classToTest.state.value.openUrl != null }
+        classToTest.urlOpened(false)
+        classToTest.connect()
+        settle { classToTest.state.value.openUrl != null }
+        classToTest.urlOpened(true)
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.BillingLinkFailed("connect", "not_opened"),
+                ProfileEvents.StripeConnectOpened,
+            )
+            .inOrder()
+    }
 }

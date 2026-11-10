@@ -8,7 +8,7 @@ clinical value or any id; searches send only the result count as a `countBucket`
 
 | Event | Properties | Fires from |
 |---|---|---|
-| `patients_searched` | `result_count` (`countBucket`) | `PatientsViewModel.type`, when the 300 ms debounce settles on non-blank text |
+| `patients_searched` | `result_count` (`countBucket`) | `PatientsViewModel.type`, when the 300 ms debounce settles on non-blank text and the directory has loaded (else every count is `0`) |
 | `patients_filtered` | `tab` (`all` / `favorites` / `follow_ups`), `status` (`active` / `at_risk` / `follow_up` / `unknown`, left out for all), `is_descending` | `PatientsViewModel.filter`, only when the segment, status or order really changed |
 | `patient_picked` | `searched`, `result_count` (`countBucket` of the list shown, only when searched) | `PatientPickerSheet` (the pick callback, not the tray), so booking and the new-task screen are covered once |
 | `patient_created` | `has_phone` | `CreatePatientViewModel.create`, success without `editing` |
@@ -53,6 +53,7 @@ change, and again when the record comes back to the front (the same rule as the 
 - Chronic-disease warning shown: a fact about the patient's health, never sent.
 - `ClinicalTimelineViewModel`: read-only.
 - Patient opened "from" (directory / search / clinic / notification / link): only the shell knows the source.
+- AI summary PRO gate shown: drawn by the screen from the tier, no ViewModel action; the gate's funnel is the profile's `subscription_checkout_opened`.
 
 ## Needs from the coordinator
 

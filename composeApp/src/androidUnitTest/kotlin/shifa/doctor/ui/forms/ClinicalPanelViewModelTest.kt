@@ -185,6 +185,7 @@ class ClinicalPanelViewModelTest {
         Thread.sleep(200)
         assertThat(classToTest.state.value.result).isNull()
         assertThat(classToTest.state.value.applying).isFalse()
+        assertThat(tracker.events.filterIsInstance<DocumentsEvents.ClinicalEngineApplied>()).isEmpty()
     }
 
     @Test

@@ -56,9 +56,10 @@ object ChatEvents {
 
     /**
      * Shifa answered. [input]: `typed` / `starter` (a welcome card) / `voice` / `card_answer` (a cancellation card's
-     * yes or no); [cardType]: the card's type as the backend names it (`schedule`, `propose_appointment`, …), null
-     * for words only; [hasScheduleChange]: Shifa itself booked, moved or cancelled visits in this answer; [seconds]:
-     * from the question to the finished answer; [hasPatientContext]: the chat is about one patient.
+     * yes or no); [cardType]: the card's type as the backend names it (`schedule`, `propose_appointment`, …), `other`
+     * for a type the app doesn't know, null for words only; [hasScheduleChange]: Shifa itself booked, moved or
+     * cancelled visits in this answer; [seconds]: from the question to the finished answer; [hasPatientContext]: the
+     * chat is about one patient.
      */
     data class IntelligenceReplyReceived(
         val input: String,

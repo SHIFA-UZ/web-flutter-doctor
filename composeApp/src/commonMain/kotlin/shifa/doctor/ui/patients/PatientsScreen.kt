@@ -241,8 +241,8 @@ class PatientsViewModel(
             viewModelScope.launch {
                 delay(DEBOUNCE)
                 _state.update { it.copy(query = text, page = 0) }
-                // The result count as a range, never the text.
-                if (text.isNotBlank()) {
+                // The result count as a range, never the text; not before the directory loaded (it would say 0).
+                if (text.isNotBlank() && _state.value.patients != null) {
                     tracker.track(PatientsEvents.PatientsSearched(countBucket(_state.value.visible.size)))
                 }
             }

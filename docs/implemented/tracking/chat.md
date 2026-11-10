@@ -19,13 +19,13 @@ on a `*_failed` event is `toFailureReason()` unless listed otherwise.
 | `chat_conversation_start_failed` | `reason`, `entry` (`search` / `patient`) | `startWith` failure; `PatientChatViewModel` (a patient's "Send message") failure |
 | `chat_users_searched` | `result_count` (`countBucket`) | `ChatListViewModel.type`, when the debounced search answers for the text still typed |
 | `chat_list_sorted` | `sort` (`newest` / `oldest` / `unread_newest` / `unread_oldest`) | `ChatListViewModel.sort`, only when the order changes |
-| `intelligence_reply_received` | `input` (`typed` / `starter` / `voice` / `card_answer`), `card_type` (the backend's card type, `IntelCard.typeOf`; left out for words only), `has_schedule_change` (Shifa itself booked, moved or cancelled in this answer), `seconds` (question to finished answer), `is_retry`, `has_patient_context` | intelligence `ThreadViewModel.finish` |
+| `intelligence_reply_received` | `input` (`typed` / `starter` / `voice` / `card_answer`), `card_type` (the backend's card type, `IntelCard.typeOf`, when the app knows it, else `other`; left out for words only), `has_schedule_change` (Shifa itself booked, moved or cancelled in this answer), `seconds` (question to finished answer), `is_retry`, `has_patient_context` | intelligence `ThreadViewModel.finish` |
 | `intelligence_reply_failed` | `reason` (`empty`, `ai_unavailable`, else `toFailureReason()`: `rate_limited` is the daily limit, `timeout`), `input`, `is_retry` | `finish` (empty answer), `fail` |
 | `intelligence_reply_stopped` | `input` | `cancelTurn` while an answer is being written (the mic on "Reviewing…", leaving, another chat) |
 | `intelligence_facts_documented` | `fact_count` (`countBucket`) | `documentFacts` success |
 | `intelligence_facts_document_failed` | `reason` | `documentFacts` failure |
 | `intelligence_proposal_dismissed` | none | `dismiss` (a proposal's Cancel) |
-| `intelligence_cancel_answered` | `is_confirmed` | `answerCancel` ("Yes, cancel" / "Keep them"; the turn it sends is `input = card_answer`) |
+| `intelligence_cancel_answered` | `is_confirmed` | `answerCancel` ("Yes, cancel" / "Keep them"; the turn it sends is `input = card_answer`), only when the answer went (not while a reply or a booking runs) |
 | `intelligence_conversation_renamed` / `_deleted` | none | `IntelligenceViewModel.rename` / `delete` |
 | `intelligence_conversation_exported` | none | `IntelligenceViewModel.exported`, called by `IntelligenceScreen` when the share sheet opened |
 | `intelligence_conversation_export_failed` | `reason` (`empty` / `share_failed`) | `export` (nothing to export) / `exportFailed` |

@@ -322,7 +322,10 @@ class ClinicalPanelViewModel(
                 repo.synthesize(locale(), disease.diseaseId, selections).fold(
                     onSuccess = {
                             fields ->
-                        tracker.track(DocumentsEvents.ClinicalEngineApplied(countBucket(selections.size)))
+                        // Only for the disease still shown: a result for another one is dropped, not applied.
+                        if (_state.value.disease?.diseaseId == disease.diseaseId) {
+                            tracker.track(DocumentsEvents.ClinicalEngineApplied(countBucket(selections.size)))
+                        }
                         _state.update {
                             // Only for the disease still shown.
                             if (it.disease?.diseaseId != disease.diseaseId) {
