@@ -39,11 +39,16 @@ import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.ai.AiRepository
 import shifa.doctor.data.ai.aiRepository
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.ClinicPattern
 import shifa.doctor.data.model.CommitVisitFactsRequest
 import shifa.doctor.data.model.VisitFact
 import shifa.doctor.data.model.VisitFacts
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.documentEverything
 import shifa.doctor.generated.resources.documenting
@@ -113,6 +118,7 @@ data class VisitFactsUiState(
 class VisitFactsViewModel(
     private val appointmentId: Long,
     private val repo: AiRepository = aiRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(VisitFactsUiState())
     val state: StateFlow<VisitFactsUiState> = _state.asStateFlow()
@@ -161,11 +167,19 @@ class VisitFactsViewModel(
         _state.update { it.copy(documenting = true, documentError = null, done = null) }
         viewModelScope.launch {
             if (!flushNotes()) {
+                tracker.track(VisitEvents.VisitFactsDocumentFailed("notes_not_saved"))
                 val banner = CodeBanner(Res.string.notesSaveFailed)
                 return@launch _state.update { it.copy(documenting = false, documentError = banner) }
             }
             repo.commit(CommitVisitFactsRequest(appointmentId, accept, s.rejected.toList())).fold(
                 { r ->
+                    tracker.track(
+                        VisitEvents.VisitFactsDocumented(
+                            countBucket(r.committedFacts.size),
+                            countBucket(s.rejected.size),
+                            countBucket(r.createdTaskIds.size),
+                        ),
+                    )
                     committed(r.committedFacts.joinToString("\n") { it.text.trim() }.trim())
                     // The answer applied at once (the backend rejects the drafts not accepted), so the drafts can't
                     // be documented twice while the read below runs, or if it fails.
@@ -190,6 +204,7 @@ class VisitFactsViewModel(
                     load()
                 },
                 { e ->
+                    tracker.track(VisitEvents.VisitFactsDocumentFailed(e.toFailureReason()))
                     val text = e.toUserMessage(Res.string.visitFactsDocumentFailed)
                     _state.update {
                         it.copy(

@@ -16,6 +16,8 @@ import kotlinx.datetime.Instant
 import org.junit.After
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.data.video.VideoRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.callErrorOccurred
@@ -344,5 +346,44 @@ class VideoVisitTest {
         made.single().state.value = VideoCallState(phase = VideoCallState.Phase.Joined, patientJoined = false)
         assertThat(classToTest.state.value.patientSeen).isTrue()
         assertThat(classToTest.state.value.aloneSince).isNull()
+    }
+
+    @Test
+    fun `the call is tracked by permissions, joins, refusals by reason, controls and how it ended`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            VideoVisit(
+                7,
+                scope,
+                { FakeCall().also { made += it } },
+                { start to start + 1.hours },
+                VideoRepository { createHttpClient({ null }, engine) },
+                { now },
+                tracker,
+            )
+        classToTest.permissions(true, true)
+        classToTest.permissions(true, true)
+        status = HttpStatusCode.Forbidden
+        now = start + 2.hours
+        classToTest.join()
+        settle { classToTest.state.value.error != null }
+        status = HttpStatusCode.OK
+        classToTest.join()
+        settle { made.single().log.any { it.startsWith("join") } }
+        made.single().state.value = VideoCallState(failed = true)
+        classToTest.join()
+        settle { made.last().log.any { it.startsWith("join") } }
+        made.last().state.value = VideoCallState(phase = VideoCallState.Phase.Joined, patientJoined = true)
+        classToTest.toggleMic()
+        classToTest.leave()
+        assertThat(tracker.events)
+            .containsExactly(
+                VisitEvents.VideoPermissionsResult(isCameraGranted = true, isMicGranted = true),
+                VisitEvents.VideoJoinFailed("too_late"),
+                VisitEvents.VideoJoinFailed("daily_failed"),
+                VisitEvents.VideoJoined(isRejoin = false),
+                VisitEvents.VideoControlToggled("mic", false),
+                VisitEvents.VideoCallEnded("doctor", hasPatientJoined = true),
+            ).inOrder()
     }
 }

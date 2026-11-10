@@ -19,6 +19,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.documents.DocumentsRepository
 import shifa.doctor.data.model.BriefingStatus
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.stopAll
 
 class BriefingViewModelTest {
@@ -90,5 +92,26 @@ class BriefingViewModelTest {
         val classToTest = opened()
         assertThat(classToTest.state.value.failed).isTrue()
         assertThat(classToTest.state.value.status).isEqualTo(BriefingStatus.Failed)
+    }
+
+    @Test
+    fun `the briefing is tracked once failed, once ready, and copied`() {
+        val tracker = RecordingTracker()
+        val client = { createHttpClient({ null }, engine) }
+        val classToTest =
+            BriefingViewModel(7, 14, AppointmentsRepository(client), DocumentsRepository(client), tracker = tracker)
+                .also { created += it }
+        classToTest.start()
+        settle { classToTest.state.value.status == BriefingStatus.Failed }
+        classToTest.retry()
+        settle { classToTest.state.value.status == BriefingStatus.Ready && !classToTest.state.value.retrying }
+        classToTest.copied()
+        assertThat(tracker.events)
+            .containsExactly(
+                VisitEvents.VisitBriefingOpened,
+                VisitEvents.VisitBriefingFailed("generation_failed"),
+                VisitEvents.VisitBriefingReady,
+                VisitEvents.VisitBriefingCopied,
+            ).inOrder()
     }
 }
