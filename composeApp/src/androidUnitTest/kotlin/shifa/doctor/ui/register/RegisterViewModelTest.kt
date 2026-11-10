@@ -620,4 +620,34 @@ class RegisterViewModelTest {
                 AuthEvents.RegistrationAbandoned("receptionist", "staff"),
             ).inOrder()
     }
+
+    @Test
+    fun `a session that ends during the details PATCH is still a completed registration, details not saved`() {
+        replies["profile"] = HttpStatusCode.Unauthorized to """{"status":401,"code":"SESSION_INVALID","requestId":"r7"}"""
+        val vm =
+            RegisterViewModel(
+                Invite("KEY-1", false),
+                auth,
+                sessions,
+                { "UTC" },
+                CatalogRepository({ client }, { BUNDLED }),
+                ProfileRepository(tokenClient),
+                OtpCooldown(),
+                tracker,
+            ).also { created += it }
+        vm.toStep2()
+        vm.onAddress("Chilonzor 5")
+        vm.registerWithCode()
+        assertThat(sessions.session.value).isNull()
+        assertThat(tracker.events.filterIsInstance<AuthEvents.RegistrationFailed>()).isEmpty()
+        assertThat(tracker.events.last())
+            .isEqualTo(
+                AuthEvents.RegistrationCompleted(
+                    "doctor",
+                    isExistingPatient = false,
+                    hasDetails = true,
+                    isDetailsSaved = false,
+                ),
+            )
+    }
 }

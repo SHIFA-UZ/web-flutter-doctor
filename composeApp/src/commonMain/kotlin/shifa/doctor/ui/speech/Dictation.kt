@@ -20,6 +20,7 @@ import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.data.tracking.Tracker
 import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.durationBucket
 import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
@@ -197,6 +198,7 @@ class Dictation(
                 tracker.track(VisitEvents.ScribeFailed(RECORDING_FAILED, "record"))
                 return@launch _state.update { DictationState(banner = CodeBanner(Res.string.errorRecordingVoice)) }
             }
+            tracker.track(VisitEvents.ScribeRecordingFinished(durationBucket(recorder.lastDurationSeconds.toLong())))
             val banner = process(audio, id)
             _state.update { DictationState(banner = banner) }
         }

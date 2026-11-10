@@ -23,9 +23,9 @@ that as a trailing lambda).
 | `profile_service_save_failed` | `is_new`, `reason` | `ServicesViewModel.save` |
 | `profile_service_deleted` / `profile_service_delete_failed` | — / `reason` | `ServicesViewModel.delete` (already gone counts as deleted) |
 | `profile_service_groups_saved` / `profile_service_groups_save_failed` | `group_count` (`countBucket`) / `reason` | `ServicesViewModel.saveGroups` |
-| `subscription_checkout_opened` | `plan` (backend code, `PRO`), `from_tier`, **`price_bucket`** | `BillingViewModel.upgrade`, once the checkout URL is in hand |
+| `subscription_checkout_opened` | `plan` (backend code, `PRO`), `from_tier`, **`price_bucket`** | `BillingViewModel.urlOpened(true)` after `upgrade`: once the browser showed the checkout (a blocked page is only `billing_link_failed(not_opened)`) |
 | `subscription_checkout_returned` | `is_tier_changed`, `tier` | `BillingViewModel.resumed` after a checkout |
-| `stripe_connect_opened` | — | `BillingViewModel.connect` |
+| `stripe_connect_opened` | — | `BillingViewModel.urlOpened(true)` after `connect`, as above |
 | `stripe_connect_returned` | `has_account` | `BillingViewModel.resumed` after onboarding |
 | `billing_link_failed` | `kind` (`checkout` / `connect`), `reason` (`not_opened` when the browser refused the window) | `BillingViewModel.goOut`, `urlOpened(false)` |
 | `password_changed` / `password_change_failed` | — / `reason` (`wrong_current_password` or a failure word) | `SecurityViewModel.change` |

@@ -246,6 +246,9 @@ class BillingViewModel(
             ProfileEvents.StripeConnectOpened,
         ) { subscriptions.connectOnboarding() }
 
+    // Sent once the browser shows the page (urlOpened), not when the link arrives.
+    private var openedEvent: TrackEvent? = null
+
     private fun goOut(
         key: String,
         away: Away,
@@ -257,7 +260,7 @@ class BillingViewModel(
         viewModelScope.launch {
             url().fold(
                 onSuccess = { link ->
-                    tracker.track(opened)
+                    openedEvent = opened
                     _state.update { it.copy(opening = null, openUrl = link, away = away) }
                 },
                 onFailure = { e ->
@@ -278,6 +281,8 @@ class BillingViewModel(
      * click opened): the doctor is told, instead of a button that seemed to do nothing.
      */
     fun urlOpened(opened: Boolean = true) {
+        if (opened) openedEvent?.let(tracker::track)
+        openedEvent = null
         if (!opened) {
             _state.value.away?.let {
                 tracker.track(

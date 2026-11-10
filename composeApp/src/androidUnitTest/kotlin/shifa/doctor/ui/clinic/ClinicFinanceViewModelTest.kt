@@ -340,4 +340,21 @@ class ClinicFinanceViewModelTest {
                 ClinicEvents.FinancialRecordCreated("invoice", hasPlan = false, amountBucket = "100k-500k"),
             ).inOrder()
     }
+
+    @Test
+    fun `picking the month already shown isn't a month change`() {
+        val tracker = RecordingTracker()
+        val vm =
+            ClinicFinanceViewModel(
+                clinic,
+                LocalDate(2026, 11, 6),
+                FinanceRepository { client },
+                ClinicsRepository({ client }, MapSettings(), { "u1" }),
+                shifa.doctor.data.treatmentplans.TreatmentPlansRepository { client },
+                tracker,
+            ).also { created += it }
+        vm.month(FinanceMonth(2026, 11))
+        vm.month(null)
+        assertThat(tracker.events).containsExactly(ClinicEvents.FinanceMonthChanged(isAllTime = true))
+    }
 }

@@ -52,6 +52,7 @@ open) is the caller's word (`none` here, `home` in the shell).
   (`from_template` on `task_created` covers it), create abandoned.
 - Reports trend-day taps, PREMIUM teaser / "see plans": no ViewModel action today.
 - Notification `type` is the backend's spelling, the same as `push_opened` (guide §3, "values").
+- Inbox viewed with an unread bucket: the shell sends the `notifications` screen view; a property on it needs the shell (platform layer), and a second "viewed" event would double it.
 
 ## Needs from the coordinator
 

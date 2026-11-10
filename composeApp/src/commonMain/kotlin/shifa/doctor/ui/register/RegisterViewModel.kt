@@ -589,17 +589,14 @@ class RegisterViewModel(
                     else -> result
                 }
             val hasDetails = s.step == RegisterStep.Details && extras != ProfileUpdateRequest()
+            // The account exists and signed in once: completed, even when the session ended during step 2's PATCH
+            // (then its details are not saved).
             tracker.track(
-                final.fold(
-                    {
-                        AuthEvents.RegistrationCompleted(
-                            kind,
-                            isExistingPatient = s.existing != null,
-                            hasDetails = hasDetails,
-                            isDetailsSaved = if (hasDetails) patchFailure == null else null,
-                        )
-                    },
-                    { AuthEvents.RegistrationFailed(kind, it.toFailureReason()) },
+                AuthEvents.RegistrationCompleted(
+                    kind,
+                    isExistingPatient = s.existing != null,
+                    hasDetails = hasDetails,
+                    isDetailsSaved = if (hasDetails) patchFailure == null else null,
                 ),
             )
             if (final.isSuccess && patchFailure != null) {

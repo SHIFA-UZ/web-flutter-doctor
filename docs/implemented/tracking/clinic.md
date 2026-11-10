@@ -29,7 +29,7 @@ is sent. Enum values go out as their `trackName()` (`PayMethod.Card` → `card`,
 | `clinic_invitation_revoked` / `clinic_invitation_revoke_failed` | — / `reason` | `revoke` |
 | `clinic_patients_searched` | `result_bucket` (`countBucket` of the total) | `ClinicPatientsViewModel.load` answer for a non-empty search |
 | `clinic_finance_kpi_selected` | `kpi` (`revenue` / `outstanding` / `overdue` / `rate`) | `ClinicFinanceViewModel.kpi` |
-| `clinic_finance_month_changed` | `is_all_time` | `ClinicFinanceViewModel.month` |
+| `clinic_finance_month_changed` | `is_all_time` | `ClinicFinanceViewModel.month`, only when the month differs from the one shown |
 | `clinic_payment_recorded` | `source` (`ledger_full` / `ledger_custom` / `plan`), `method`, `amount_bucket` | finance `payFull` / `savePay` success; `PlanDetailViewModel.savePay` success |
 | `clinic_payment_failed` | `source`, `method`, `reason` | the same, on failure |
 | `clinic_installment_status_changed` | `status` (`paid` / `pending` / `waived` / `cancelled`), `method` (paid only), `amount_bucket` | `markPaid` / `setStatus` success |

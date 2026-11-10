@@ -198,4 +198,20 @@ class PatientsViewModelTest {
                 PatientsEvents.PatientsFiltered("follow_ups", null, false),
             ).inOrder()
     }
+
+    @Test
+    fun `a search before the directory loaded isn't tracked as no results`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            PatientsViewModel(
+                repo,
+                FavoritesRepository(FavoritesStorage(settings)),
+                flowOf(42L to "Asia/Tashkent"),
+                { clock },
+                tracker,
+            ).also { created += it }
+        typed(classToTest, "patient 1")
+        assertThat(classToTest.state.value.patients).isNull()
+        assertThat(tracker.events).isEmpty()
+    }
 }

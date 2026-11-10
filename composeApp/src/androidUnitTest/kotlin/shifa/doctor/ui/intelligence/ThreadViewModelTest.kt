@@ -555,6 +555,21 @@ class ThreadViewModelTest {
         settle { store.state.value.active!!.messages.size == 6 && !classToTest.state.value.busy }
         assertThat(classToTest.state.value.autoOpen).isNull()
     }
+
+    @Test
+    fun `an unknown card type is other, a cancel answer that can't go now isn't tracked`() {
+        val classToTest = vm()
+        withCard(classToTest, """{"cardType":"some_new_card","spokenHint":"Done"}""")
+        assertThat(tracker.events.filterIsInstance<ChatEvents.IntelligenceReplyReceived>().single().cardType)
+            .isEqualTo("other")
+        withCard(classToTest, """{"cardType":"propose_appointment","patientId":12,$slots}""")
+        gate = CompletableDeferred()
+        classToTest.book(3, slot)
+        settle { calls.isNotEmpty() }
+        classToTest.answerCancel(true)
+        gate!!.complete(Unit)
+        assertThat(tracker.events.filterIsInstance<ChatEvents.IntelligenceCancelAnswered>()).isEmpty()
+    }
 }
 
 private const val COMMITTED_1021 = """{"id":1021,"patientId":12,"factType":"MEDICATION","text":"Ibuprofen","status":"COMMITTED"}"""

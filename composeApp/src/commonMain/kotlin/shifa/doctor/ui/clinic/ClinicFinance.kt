@@ -277,7 +277,7 @@ class ClinicFinanceViewModel(
     }
 
     fun month(m: FinanceMonth?) {
-        tracker.track(ClinicEvents.FinanceMonthChanged(isAllTime = m == null))
+        if (m != _state.value.month) tracker.track(ClinicEvents.FinanceMonthChanged(isAllTime = m == null))
         _state.update { it.copy(month = m) }
         load()
     }

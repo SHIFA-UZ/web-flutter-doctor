@@ -30,7 +30,7 @@ with its edit sheet (`PatientDocumentsViewModel`) send the same events from the 
 | `form_save_failed` | `form_type`, `is_new`, `step` (`form` / `pdf` / `document` / `link`; none for `incomplete`), `reason`: `incomplete` / `pdf_not_made` / `toFailureReason()` | `FormEditorViewModel.save` and the pipeline's failed step |
 | `form_signature_requested` | `form_type` | `FormEditorViewModel.requestSignature` |
 | `form_signature_request_failed` | `form_type`, `reason`: `incomplete` / `toFailureReason()` (the silent save or the request) | same |
-| `clinical_engine_applied` | `chips_bucket` (`countBucket` of the picked chips) | `ClinicalPanelViewModel.apply`, synthesis done |
+| `clinical_engine_applied` | `chips_bucket` (`countBucket` of the picked chips) | `ClinicalPanelViewModel.apply`, synthesis done and its disease still shown (a dropped result is not tracked) |
 | `clinical_engine_apply_failed` | `reason` | same |
 
 No event uses `amountBucket`.
@@ -53,6 +53,7 @@ None. `document` and `form` are the shell's routes; `patient_documents` and `pat
   the discard question, Cancel on the upload sheet before an upload, and loading the lists (reads; their failures
   are `api_error`).
 - An empty file is refused before its type is known, so its `kind` is `other`.
+- Clinical engine opened / disease picked: taps before the outcome (`clinical_engine_applied` / `_apply_failed`); a disease id is never sent, so a pick event would carry nothing.
 
 ## Needs from the coordinator
 

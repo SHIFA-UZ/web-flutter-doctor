@@ -21,8 +21,8 @@ PIN, password or name: the method, mode and kind are fixed words.
 | `registration_form_failed` | `reason` (`invalid_input` / `doctor_exists` / `toFailureReason()`) | `RegisterViewModel.next` |
 | `registration_code_sent` | `kind`, `is_resend` | `RegisterViewModel.sendCode` (only when a code really went out) and `resendCode` |
 | `registration_code_failed` | `kind`, `is_resend`, `reason` (`toFailureReason()`) | the same |
-| `registration_completed` | `kind`, `is_existing_patient`, `has_details`, `is_details_saved` (only with details) | `RegisterViewModel.submit`, once signed in (after the step-2 PATCH) |
-| `registration_failed` | `kind`, `reason` (`invalid_input` / `wrong_code` / `doctor_exists` / `ownership_required` / `unusable_token` / `toFailureReason()`) | `RegisterViewModel.register` (on-device checks), `refused`, `submit`. A receptionist's `OWNERSHIP_REQUIRED` without a code is not a failure (the code is asked next) |
+| `registration_completed` | `kind`, `is_existing_patient`, `has_details`, `is_details_saved` (only with details) | `RegisterViewModel.submit`, once signed in (after the step-2 PATCH; also when that PATCH ended the session: the account exists, `is_details_saved = false`) |
+| `registration_failed` | `kind`, `reason` (`invalid_input` / `wrong_code` / `doctor_exists` / `ownership_required` / `unusable_token` / `toFailureReason()`) | `RegisterViewModel.register` (on-device checks), `refused`, `submit` (`unusable_token` only). A receptionist's `OWNERSHIP_REQUIRED` without a code is not a failure (the code is asked next) |
 | `registration_abandoned` | `kind`, `step` (`form` / `existing_patient` / `details` / `staff`) | `RegisterViewModel.back` on a clean form, `RegisterViewModel.discard` ("Discard" in the question) |
 | `sign_out_cancelled` | none | `SignOutViewModel.cancel`, only while the question is open (a confirmed sign-out is `session_ended(signed_out)` from A5) |
 | `app_unlocked` | `method` (`pin` / `biometric`) | `LockViewModel.submit`, `onBiometricSuccess` |
@@ -57,6 +57,7 @@ No event uses `amountBucket` or `countBucket`.
 - **The step-2 PATCH failure** as its own event: `registration_completed.is_details_saved = false`.
 - **Person properties** (`signed_up_at`, the sign-in method): left out, since identify (A5) runs from the session
   collector and the order against these events is not fixed. Add them through the coordinator if wanted.
+- E-mail code sheet closed without a code (`closeCode`): before any account exists the funnel already ends at `registration_code_sent` without `registration_completed`; `registration_abandoned` covers leaving the form.
 
 ## Needs from the coordinator
 

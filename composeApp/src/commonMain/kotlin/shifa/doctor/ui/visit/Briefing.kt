@@ -116,6 +116,9 @@ class BriefingViewModel(
     }
 
     fun start() {
+        // A reopened sheet is a new sheet (the ViewModel is kept per appointment).
+        readySent = false
+        failing = false
         tracker.track(VisitEvents.VisitBriefingOpened)
         follow()
         patientId ?: return
