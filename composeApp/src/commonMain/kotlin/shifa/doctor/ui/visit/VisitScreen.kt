@@ -381,6 +381,10 @@ fun VisitScreen(
     var followUp by remember { mutableStateOf<Long?>(null) }
     val videoState = viewModel.video?.state?.collectAsStateWithLifecycle()?.value
     val callPart = viewModel.video?.let { v -> videoState?.let { VideoPart(it, v.call) } }
+    LifecycleResumeEffect(viewModel) {
+        viewModel.foreground(true)
+        onPauseOrDispose { viewModel.foreground(false) }
+    }
     viewModel.video?.let { v ->
         val permissions = rememberCallPermissions(v::permissions)
         // Asked once on open; read again on every return to the app, so permissions granted in Settings count at once

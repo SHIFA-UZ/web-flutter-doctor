@@ -244,6 +244,21 @@ class VisitViewModelTest {
     }
 
     @Test
+    fun `an awaited signature is read again when the visit comes back to the front, not while it is away`() {
+        val classToTest = opened()
+        classToTest.requestSignature()
+        settle { classToTest.state.value.signature == SignatureState.Waiting && !classToTest.state.value.signing }
+
+        fun reads() = calls.count { it == "GET appointments/7" }
+        classToTest.foreground(false)
+        Thread.sleep(50)
+        val away = reads()
+        classToTest.foreground(true)
+        settle { reads() > away }
+        assertThat(reads()).isEqualTo(away + 1)
+    }
+
+    @Test
     fun `helpers say when there is nothing, add their text to the notes, and modes save the notes`() {
         forms = "[]"
         val classToTest = opened()

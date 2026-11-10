@@ -345,9 +345,23 @@ class VisitViewModel(
         }
     }
 
-    /** The signature read again every 10 s while awaited; one reader at a time. */
+    // Whether the visit is on screen: the signature isn't polled from another tab or behind the app.
+    private var front = true
+
+    /** The screen came to the front or left it: the awaited signature is read again on return, never in between. */
+    fun foreground(on: Boolean) {
+        front = on
+        if (!on) {
+            watching?.cancel()
+        } else if (_state.value.signature == SignatureState.Waiting) {
+            watchSignature()
+        }
+    }
+
+    /** The signature read again every 10 s while awaited and on screen; one reader at a time. */
     private fun watchSignature() {
         watching?.cancel()
+        if (!front) return
         watching =
             viewModelScope.launch {
                 appointments.signatureUpdates(appointmentId).collect { r ->
