@@ -70,6 +70,7 @@ import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
 import shifa.doctor.generated.resources.aiNotesNeedPro
 import shifa.doctor.generated.resources.aiNotesNotReadyTryLater
 import shifa.doctor.generated.resources.aiNotesUploaded
+import shifa.doctor.generated.resources.amountGreaterThanZero
 import shifa.doctor.generated.resources.appointmentLoadFailed
 import shifa.doctor.generated.resources.appointmentPlanNoLinesOnTooth
 import shifa.doctor.generated.resources.dentalDocSaveFailed
@@ -486,6 +487,13 @@ class VisitViewModel(
         val s = _state.value
         if (s.end.running || s.visit == null) return
         val p = plan.state.value
+        // Before any step: the plan's ticks are applied (and lock the plan) before the payment is sent, so an amount
+        // that can't be paid must stop End here, not after them.
+        if (p.pendingPayment && p.amountInvalid) {
+            return _state.update {
+                it.copy(end = EndUiState(confirm = true, error = CodeBanner(Res.string.amountGreaterThanZero)))
+            }
+        }
         val steps =
             listOfNotNull(
                 EndStep.Notes,
