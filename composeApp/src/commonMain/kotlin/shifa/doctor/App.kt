@@ -72,8 +72,9 @@ fun App() {
     val language by languageStorage.language.collectAsState()
     val session by sessionRepository.session.collectAsState()
     // 01 §8: the backend gets the UI language on sign-in and on every change (deduped in the repository).
+    // Not for clinic staff: the route is the doctor's, and answers them 403 every time.
     LaunchedEffect(session != null, language) {
-        if (session != null) languageRepository.sync(language.backendCode)
+        if (session?.isClinicStaff == false) languageRepository.sync(language.backendCode)
     }
     // PUSH-01: this device on the doctor's account, once per session and token (FCM may refresh the token any time; iOS
     // reports it from Swift). A failure is tried again with the next session or token.
