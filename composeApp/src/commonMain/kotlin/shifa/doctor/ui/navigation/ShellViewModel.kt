@@ -3,6 +3,8 @@ package shifa.doctor.ui.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -387,9 +389,15 @@ class ShellViewModel(
                 if (!switched) startPath?.let(::openPath)
                 return@launch
             }
-            val clinicResult = clinics.mine()
-            _state.update { it.copy(hasClinic = clinicResult.getOrNull()?.isNotEmpty() ?: false) }
-            val me = readProfile()
+            // Together: Home's schedule and every plan gate wait for the profile, not for the clinics before it.
+            val me =
+                coroutineScope {
+                    val clinicResult = async { clinics.mine() }
+                    val profileRead = async { readProfile() }
+                    _state.update { it.copy(hasClinic = clinicResult.await().getOrNull()?.isNotEmpty() ?: false) }
+                    profileRead.await()
+                }
+            started = true
             _state.update { it.copy(gate = FeatureGate.of(me?.subscription)) }
             val waiting = pending
             pending = null
@@ -411,6 +419,9 @@ class ShellViewModel(
             profile.me.collect { me -> if (me != null) onPlan(FeatureGate.of(me.subscription)) }
         }
     }
+
+    // True once the start's own clinic and profile reads are back.
+    private var started = false
 
     /** `GET /doctors/me`; failed only while no profile is known at all (Home can't pick its day without one). */
     private suspend fun readProfile() =
@@ -743,12 +754,13 @@ class ShellViewModel(
      */
     fun onResume() {
         refreshNotifications()
-        if (_state.value.staff) return
+        // The first resume comes with the first composition, while the start is still reading the same two things.
+        if (_state.value.staff || !started) return
         // A newer resume cancels the older refresh still out; the profile also drops reads older than its latest.
         resumeRefresh?.cancel()
         resumeRefresh =
             viewModelScope.launch {
-                clinics.mine().onSuccess { list -> _state.update { it.copy(hasClinic = list.isNotEmpty()) } }
+                launch { clinics.mine().onSuccess { list -> _state.update { it.copy(hasClinic = list.isNotEmpty()) } } }
                 readProfile()
             }
     }
