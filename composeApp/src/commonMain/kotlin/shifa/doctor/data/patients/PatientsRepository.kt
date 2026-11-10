@@ -10,6 +10,9 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +22,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.intOrNull
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.apiJson
@@ -68,22 +72,24 @@ class PatientsRepository(
         val mine = generation.incrementAndGet()
         return runCatching {
             val all = mutableListOf<Patient>()
-            for (page in 0 until MAX_PAGES) {
-                val json =
-                    apiCall<JsonElement> {
-                        client().get(ApiConfig.Endpoints.PATIENTS) {
-                            parameter("page", page)
-                            parameter("size", PAGE_SIZE)
-                            parameter("sort", "fullName,asc")
-                        }
-                    }.getOrThrow()
-                val (rows, last) = pageOf(json, PAGE_SIZE)
-                all += rows.rows(Patient.serializer(), "patients").filter { it.id != 0L }
-                if (last) break
-                if (page == MAX_PAGES - 1) {
-                    // Not silently cut: the list stays as it was and the caller sees the failure.
-                    httpLogger.log("FAILED patients: more than $MAX_PAGES pages")
-                    error("too many patients")
+            val first = page(0)
+            val (firstRows, firstLast) = pageOf(first, PAGE_SIZE)
+            all += firstRows.patients()
+            val total = ((first as? JsonObject)?.get("totalPages") as? JsonPrimitive)?.intOrNull
+            if (!firstLast && total != null) {
+                tooMany(total > MAX_PAGES)
+                // A Spring page says how many pages there are: the rest are read four at a time, in order.
+                (1 until total).chunked(BATCH).forEach { batch ->
+                    coroutineScope { batch.map { async { page(it) } }.awaitAll() }
+                        .forEach { all += pageOf(it, PAGE_SIZE).first.patients() }
+                }
+            } else if (!firstLast) {
+                // A bare list doesn't: page after page until a short one.
+                for (page in 1 until MAX_PAGES) {
+                    val (rows, last) = pageOf(page(page), PAGE_SIZE)
+                    all += rows.patients()
+                    if (last) break
+                    tooMany(page == MAX_PAGES - 1)
                 }
             }
             all.distinctBy { it.id }
@@ -93,6 +99,24 @@ class PatientsRepository(
                 readAt = time.markNow()
             }
         }
+    }
+
+    private suspend fun page(page: Int): JsonElement =
+        apiCall<JsonElement> {
+            client().get(ApiConfig.Endpoints.PATIENTS) {
+                parameter("page", page)
+                parameter("size", PAGE_SIZE)
+                parameter("sort", "fullName,asc")
+            }
+        }.getOrThrow()
+
+    private fun List<JsonElement>.patients() = rows(Patient.serializer(), "patients").filter { it.id != 0L }
+
+    // Not silently cut: the list stays as it was and the caller sees the failure.
+    private fun tooMany(reached: Boolean) {
+        if (!reached) return
+        httpLogger.log("FAILED patients: more than $MAX_PAGES pages")
+        error("too many patients")
     }
 
     /** The directory if it was read within [ttl], else read again (a tab switch doesn't refetch everything). */
@@ -258,6 +282,7 @@ class PatientsRepository(
         const val PAGE_SIZE = 100
         const val ASSIGN_PAGE = 500
         const val MAX_PAGES = 200
+        const val BATCH = 4
     }
 }
 

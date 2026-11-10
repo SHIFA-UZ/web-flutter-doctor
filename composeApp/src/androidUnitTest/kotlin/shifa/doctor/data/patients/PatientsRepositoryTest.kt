@@ -87,6 +87,28 @@ class PatientsRepositoryTest {
     private val repo = PatientsRepository({ createHttpClient({ null }, engine) }, time, 60.seconds)
 
     @Test
+    fun `a Spring page with more pages reads them all, in order, and refuses more than the limit`() =
+        runBlocking<Unit> {
+            var total = 6
+            val paged =
+                MockEngine { req ->
+                    val page = req.url.parameters["page"]!!.toInt()
+                    respond(
+                        """{"content":[{"id":${page + 1},"name":"P$page"}],"last":${page == total - 1},"totalPages":$total}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            val classToTest = PatientsRepository({ createHttpClient({ null }, paged) }, time, 60.seconds)
+            assertThat(
+                classToTest.refresh().getOrThrow().map { it.id },
+            ).containsExactly(1L, 2L, 3L, 4L, 5L, 6L).inOrder()
+            total = 201
+            assertThat(classToTest.refresh().isFailure).isTrue()
+            assertThat(classToTest.patients.value).hasSize(6)
+        }
+
+    @Test
     fun `the directory is read page by page, rows without an id dropped, each patient once`() =
         runBlocking<Unit> {
             val list = repo.refresh().getOrThrow()
