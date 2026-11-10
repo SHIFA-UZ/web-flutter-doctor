@@ -169,6 +169,16 @@ object Tracking : SynchronizedObject(), Tracker {
         }
     }
 
+    /**
+     * At a launch with no saved session: an identity still held belongs to a session whose reset never ran (the process
+     * died between the sign-out and the reset), so it goes now, before anything is sent under it.
+     */
+    fun dropStaleIdentity() {
+        synchronized(this) {
+            if (sink != null && settings.identified != null) reset()
+        }
+    }
+
     /** A super property on every event. Registered even while off, so it is there once tracking is back on. */
     fun register(
         key: String,
