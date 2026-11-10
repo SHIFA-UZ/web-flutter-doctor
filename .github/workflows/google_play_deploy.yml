@@ -113,7 +113,7 @@ jobs:
           echo "Keystore unlock OK"
 
       - name: Build Android App Bundle
-        run: ./gradlew :composeApp:bundleRelease -PversionBuild=${{ steps.version.outputs.build_number }} --no-daemon
+        run: ./gradlew :composeApp:bundleRelease -PversionBuild=${{ steps.version.outputs.build_number }} -Pposthog.apiKey.prod=${{ secrets.POSTHOG_API_KEY_PROD }} --no-daemon
 
       - name: Decode Google Play service account key
         env:
