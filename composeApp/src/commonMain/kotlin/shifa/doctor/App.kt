@@ -38,6 +38,8 @@ import shifa.doctor.data.push.pushRegistration
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.trackingSession
 import shifa.doctor.ui.applock.LockScreen
 import shifa.doctor.ui.auth.LanguageSwitch
 import shifa.doctor.ui.auth.LocalLanguageSwitch
@@ -93,6 +95,9 @@ fun App() {
             sessionRepository.enforce()
         }
     }
+    // Tracking (A5): identify, session_started / session_ended and the reset; the language on every event.
+    LaunchedEffect(Unit) { trackingSession.run() }
+    LaunchedEffect(language) { Tracking.register("app_language", language.tag) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
         sessionRepository.onForeground() // LOCK-02: expiry and 30 days of inactivity, before the lock asks for a PIN
         appLockRepository.onForeground()
@@ -109,6 +114,7 @@ fun App() {
                 // Debug menu → Demo data or Development backend restarts everything from the splash.
                 val demo by DemoMode.enabled.collectAsState()
                 val backend by BackendChoice.current.collectAsState()
+                LaunchedEffect(demo, backend) { Tracking.refresh() } // demo data and the dev backend are never tracked
                 key(demo, backend) { ScopedViewModels { AppScreens() } }
             }
         }
