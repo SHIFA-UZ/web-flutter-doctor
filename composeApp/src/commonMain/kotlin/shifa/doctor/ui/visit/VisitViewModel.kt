@@ -378,7 +378,12 @@ class VisitViewModel(
         watching =
             viewModelScope.launch {
                 appointments.signatureUpdates(appointmentId).collect { r ->
-                    r.getOrNull()?.let { d -> _state.update { it.copy(visit = d) } }
+                    r.getOrNull()?.let { d ->
+                        if (_state.value.signature == SignatureState.Waiting && d.signature == SignatureState.Signed) {
+                            tracker.track(VisitEvents.VisitPatientSigned)
+                        }
+                        _state.update { it.copy(visit = d) }
+                    }
                 }
             }
     }
@@ -446,8 +451,14 @@ class VisitViewModel(
             }
         if (result.isSuccess) unsent = null
         tracker.track(
-            result.exceptionOrNull()?.let { VisitEvents.ScribeFailed(it.toFailureReason(), "upload") }
-                ?: VisitEvents.ScribeUploaded(retry),
+            result.exceptionOrNull()?.toFailureReason()?.let {
+                // No plan or the daily limit: the plan's rules, not a broken scribe (kept off the alert).
+                if (it == "forbidden" || it == "rate_limited") {
+                    VisitEvents.ScribeBlocked(it)
+                } else {
+                    VisitEvents.ScribeFailed(it, "upload")
+                }
+            } ?: VisitEvents.ScribeUploaded(retry),
         )
         _state.update {
             it.copy(
@@ -523,7 +534,7 @@ class VisitViewModel(
         // Before any step: the plan's ticks are applied (and lock the plan) before the payment is sent, so an amount
         // that can't be paid must stop End here, not after them.
         if (p.pendingPayment && p.amountInvalid) {
-            tracker.track(VisitEvents.VisitEndFailed("invalid_amount", EndStep.Payment.trackName()))
+            tracker.track(VisitEvents.VisitPaymentInvalid)
             return _state.update {
                 it.copy(end = EndUiState(confirm = true, error = CodeBanner(Res.string.amountGreaterThanZero)))
             }
@@ -545,26 +556,33 @@ class VisitViewModel(
         video?.release()
         ending =
             viewModelScope.launch {
-                if (!notes.flush()) return@launch fail("notes_not_saved", CodeBanner(Res.string.notesSaveFailed))
+                if (!notes.flush()) {
+                    return@launch fail(
+                        "notes_not_saved",
+                        "notes",
+                        CodeBanner(Res.string.notesSaveFailed),
+                    )
+                }
                 // A dental record that couldn't be read would be left out of the summary: read it first (or stop).
                 if (s.dental && !dentalRecord.loaded()) {
-                    return@launch fail("dental_not_loaded", CodeBanner(Res.string.dentalLoadFailed))
+                    return@launch fail("dental_not_loaded", "dental", CodeBanner(Res.string.dentalLoadFailed))
                 }
                 if (!dentalRecord.flush()) {
                     return@launch fail(
                         "dental_not_saved",
+                        "dental",
                         CodeBanner(Res.string.dentalDocSaveFailed),
                     )
                 }
                 // DENTAL-03: the ticked plan lines, then the payment; either failing leaves the visit open.
                 if (EndStep.Plan in steps) {
                     step(EndStep.Plan)
-                    plan.applyTicks()?.let { return@launch fail("plan_not_saved", CodeBanner(it)) }
+                    plan.applyTicks()?.let { return@launch fail("plan_not_saved", "plan", CodeBanner(it)) }
                     tracker.track(VisitEvents.VisitPlanLinesCompleted(countBucket(p.ticks.size)))
                 }
                 if (EndStep.Payment in steps) {
                     step(EndStep.Payment)
-                    plan.recordPayment()?.let { return@launch fail("payment_not_recorded", CodeBanner(it)) }
+                    plan.recordPayment()?.let { return@launch fail("payment_not_recorded", "payment", CodeBanner(it)) }
                     val paid = plan.state.value
                     tracker.track(
                         VisitEvents.VisitPaymentRecorded(
@@ -584,6 +602,7 @@ class VisitViewModel(
                             e ->
                         return@launch fail(
                             e.toFailureReason(),
+                            "complete",
                             CodeBanner(e.toUserMessage(Res.string.endFailed), requestId = e.requestId),
                         )
                     }
@@ -617,9 +636,10 @@ class VisitViewModel(
 
     private fun fail(
         reason: String,
+        step: String,
         error: CodeBanner,
     ) {
-        tracker.track(VisitEvents.VisitEndFailed(reason, (_state.value.end.at ?: EndStep.Notes).trackName()))
+        tracker.track(VisitEvents.VisitEndFailed(reason, step))
         _state.update {
             it.copy(end = it.end.copy(running = false, at = null, error = error))
         }

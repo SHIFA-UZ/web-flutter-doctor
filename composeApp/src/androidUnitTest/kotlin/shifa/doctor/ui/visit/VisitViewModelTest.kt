@@ -722,7 +722,7 @@ class VisitViewModelTest {
         classToTest.skipScribe()
         ended(classToTest)
         assertThat(tracker.events).containsAtLeast(
-            VisitEvents.ScribeFailed("rate_limited", "upload"),
+            VisitEvents.ScribeBlocked("rate_limited"),
             VisitEvents.ScribeUploaded(isRetry = true),
             VisitEvents.ScribeWaitSkipped,
             VisitEvents.VisitSummarySkipped("ai_later"),
@@ -746,5 +746,52 @@ class VisitViewModelTest {
             VisitEvents.VisitNoShowFailed("not_allowed"),
             VisitEvents.VisitNoShowMarked(isPatientNotified = true),
         ).inOrder()
+    }
+
+    @Test
+    fun `a broken scribe upload is scribe_failed, the plan's limits are scribe_blocked`() {
+        val classToTest = opened()
+        uploadStatus = HttpStatusCode.Forbidden
+        runBlocking { classToTest.uploadScribe(byteArrayOf(1), "rec-1") }
+        uploadStatus = HttpStatusCode.InternalServerError
+        runBlocking { classToTest.uploadScribe(byteArrayOf(2), "rec-2") }
+        assertThat(tracker.events).containsAtLeast(
+            VisitEvents.ScribeBlocked("forbidden"),
+            VisitEvents.ScribeFailed("server", "upload"),
+        ).inOrder()
+    }
+
+    @Test
+    fun `an amount not above zero is visit_payment_invalid, not visit_end_failed`() {
+        planOn = true
+        val classToTest = opened(profession = "Dentist")
+        settle { classToTest.plan.state.value.candidates != null }
+        classToTest.plan.amount("0")
+        classToTest.end()
+        assertThat(tracker.events).contains(VisitEvents.VisitPaymentInvalid)
+        assertThat(tracker.events.filterIsInstance<VisitEvents.VisitEndFailed>()).isEmpty()
+    }
+
+    @Test
+    fun `an unreadable dental record fails End at the dental step`() {
+        dentalReadFails = true
+        val classToTest = opened(profession = "Dentist")
+        classToTest.end()
+        ended(classToTest)
+        assertThat(tracker.events).contains(VisitEvents.VisitEndFailed("dental_not_loaded", "dental"))
+    }
+
+    @Test
+    fun `the awaited signature arriving is tracked once`() {
+        val classToTest = opened()
+        classToTest.requestSignature()
+        settle { classToTest.state.value.signature == SignatureState.Waiting && !classToTest.state.value.signing }
+        visit = visit.dropLast(1) + ""","patientSignedAt":"2026-11-04T05:20:00Z"}"""
+        classToTest.foreground(false)
+        classToTest.foreground(true)
+        settle { classToTest.state.value.signature == SignatureState.Signed }
+        classToTest.foreground(false)
+        classToTest.foreground(true)
+        assertThat(tracker.events.count { it == VisitEvents.VisitPatientSigned }).isEqualTo(1)
     }
 }

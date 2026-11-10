@@ -212,4 +212,21 @@ class DictationTest {
                 VisitEvents.ScribeFailed("recording_failed", "record"),
             ).inOrder()
     }
+
+    @Test
+    fun `a finished scribe recording is tracked with its length as a range`() {
+        val tracker = RecordingTracker()
+        val client = { createHttpClient({ null }, engine) }
+        val recorder = FakeRecorder().apply { lastDurationSeconds = 90 }
+        val classToTest =
+            Dictation(scope, recorder, TranscriptionRepository(client), PublicConfigRepository(client), {
+                AppLanguage.English
+            }, tracker = tracker)
+        classToTest.start("scribe")
+        classToTest.finishWith { _, _ -> null }
+        settle { tracker.events.size == 2 }
+        assertThat(tracker.events)
+            .containsExactly(VisitEvents.ScribeRecordingStarted, VisitEvents.ScribeRecordingFinished("1-5m"))
+            .inOrder()
+    }
 }

@@ -114,4 +114,26 @@ class BriefingViewModelTest {
                 VisitEvents.VisitBriefingCopied,
             ).inOrder()
     }
+
+    @Test
+    fun `a reopened sheet tracks ready again`() {
+        briefing = """{"appointmentId":7,"status":"READY","briefingText":"Text","documentCount":1}"""
+        val tracker = RecordingTracker()
+        val client = { createHttpClient({ null }, engine) }
+        val classToTest =
+            BriefingViewModel(7, 14, AppointmentsRepository(client), DocumentsRepository(client), tracker = tracker)
+                .also { created += it }
+        classToTest.start()
+        settle { tracker.events.size == 2 }
+        classToTest.stop()
+        classToTest.start()
+        settle { tracker.events.size == 4 }
+        assertThat(tracker.events)
+            .containsExactly(
+                VisitEvents.VisitBriefingOpened,
+                VisitEvents.VisitBriefingReady,
+                VisitEvents.VisitBriefingOpened,
+                VisitEvents.VisitBriefingReady,
+            ).inOrder()
+    }
 }

@@ -45,6 +45,9 @@ object VisitEvents {
 
     data object VisitSignatureRequested : TrackEvent("visit_signature_requested")
 
+    /** The awaited signature arrived (waiting → signed while the visit was open). */
+    data object VisitPatientSigned : TrackEvent("visit_patient_signed")
+
     /** [reason]: `notes_not_saved` / a `toFailureReason()` word. */
     data class VisitSignatureRequestFailed(
         val reason: String,
@@ -75,9 +78,12 @@ object VisitEvents {
             "has_scribe_step" to hasScribeStep,
         )
 
+    /** End refused before it started: the payment typed at the visit is not above zero (input, not a failure). */
+    data object VisitPaymentInvalid : TrackEvent("visit_payment_invalid")
+
     /**
-     * End stopped before the visit was completed (it stays open). [step]: `notes` / `plan` / `payment` / `complete`;
-     * [reason]: `invalid_amount` / `notes_not_saved` / `dental_not_loaded` / `dental_not_saved` / `plan_not_saved` /
+     * End stopped before the visit was completed (it stays open). [step]: `notes` / `dental` / `plan` / `payment` /
+     * `complete`; [reason]: `notes_not_saved` / `dental_not_loaded` / `dental_not_saved` / `plan_not_saved` /
      * `payment_not_recorded` / a `toFailureReason()` word (the complete call). Alert "Visit can't be completed".
      */
     data class VisitEndFailed(
@@ -161,6 +167,11 @@ object VisitEvents {
 
     data object ScribeRecordingCancelled : TrackEvent("scribe_recording_cancelled")
 
+    /** The scribe's recording stopped and is about to be sent; [durationBucket] from `durationBucket`. */
+    data class ScribeRecordingFinished(
+        val durationBucket: String,
+    ) : TrackEvent("scribe_recording_finished", "duration_bucket" to durationBucket)
+
     /** The recording reached the scribe. [isRetry]: "Upload the recording again". */
     data class ScribeUploaded(
         val isRetry: Boolean,
@@ -168,12 +179,21 @@ object VisitEvents {
 
     /**
      * [stage]: `record` (the recorder gave nothing) / `upload` / `notes` (End waited and got no notes);
-     * [reason]: `recording_failed` / `timeout` / a `toFailureReason()` word. Alert "Visit can't be completed".
+     * [reason]: `recording_failed` / `timeout` / a `toFailureReason()` word (never `forbidden` / `rate_limited` at
+     * `upload`: those are [ScribeBlocked]). Alert "Visit can't be completed".
      */
     data class ScribeFailed(
         val reason: String,
         val stage: String,
     ) : TrackEvent("scribe_failed", "reason" to reason, "stage" to stage)
+
+    /**
+     * The upload was refused by the plan's rules, not broken (kept off the alert). [reason]: `forbidden` (no PRO) /
+     * `rate_limited` (the daily limit).
+     */
+    data class ScribeBlocked(
+        val reason: String,
+    ) : TrackEvent("scribe_blocked", "reason" to reason)
 
     /** End waited for the scribe and its notes arrived. */
     data object ScribeNotesReady : TrackEvent("scribe_notes_ready")
