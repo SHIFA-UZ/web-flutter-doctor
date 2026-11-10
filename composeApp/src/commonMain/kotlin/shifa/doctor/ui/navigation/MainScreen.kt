@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -181,6 +182,7 @@ import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.doctorDisplayName
 import shifa.doctor.utils.isDebugBuild
+import shifa.doctor.utils.showBrowserPath
 import shifa.doctor.utils.tr
 
 /** The tab's label and bar icons (DaApp `phoneTabs` / `moreRows`). */
@@ -236,6 +238,10 @@ fun MainScreen(
     BackHandler(enabled = state.moreOpen || state.intelligence || state.stack.size > 1 || state.tab != state.home) {
         viewModel.back()
     }
+    // WEB-10: the address bar names what the shell shows; signed out, the bare site.
+    val path = shellPath(state)
+    LaunchedEffect(path) { showBrowserPath(path) }
+    DisposableEffect(Unit) { onDispose { showBrowserPath("/") } }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }

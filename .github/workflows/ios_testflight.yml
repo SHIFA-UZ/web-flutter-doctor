@@ -116,6 +116,14 @@ jobs:
           key: konan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-${{ runner.arch }}-
 
+      # The Swift packages Fastlane clones (gym's cloned_source_packages_path), per Package.resolved.
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: iosApp/build/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('iosApp/iosApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
       #########################
       # PHASE 2: FIREBASE CONFIGURATION
       #########################

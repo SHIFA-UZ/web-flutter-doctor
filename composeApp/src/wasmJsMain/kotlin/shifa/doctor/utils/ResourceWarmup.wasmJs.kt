@@ -65,6 +65,8 @@ actual fun ResourceWarmup() {
         resourcesReady.value = true
         fadeBootFrame(0)
     }
+    // After the start, so its download doesn't hold the splash. Stays when this workaround goes (CMP 1.12.2).
+    if (resourcesReady.value) EmojiFont()
 }
 
 @Composable

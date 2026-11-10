@@ -70,6 +70,8 @@ platform :ios do
       skip_build_archive: false,
       skip_codesigning: false,
       build_path: "./build",
+      # Kept between CI runs (ios_testflight.yml caches it): resolving the Swift packages from scratch takes minutes.
+      cloned_source_packages_path: "./build/SourcePackages",
       archive_path: "./build/iosApp.xcarchive",
       verbose: false,
       buildlog_path: "./build/logs"
