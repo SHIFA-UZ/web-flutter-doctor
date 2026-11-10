@@ -461,8 +461,12 @@ fun AppointmentPanelScreen(
             ui = viewModel::ui,
             briefing = { briefingOpen = true },
             primary = { kind ->
-                // ponytail: Open summary waits for the summary document (PDF-01); Ended does nothing.
-                if (kind == CtaKind.Start || kind == CtaKind.Continue) onStart(appointment)
+                when (kind) {
+                    CtaKind.Start, CtaKind.Continue -> onStart(appointment)
+                    // The finished visit's own screen: its notes and its filed summary; never its call again.
+                    CtaKind.OpenSummary -> onStart(appointment.copy(videoFlag = false))
+                    CtaKind.Ended -> Unit
+                }
             },
             applyDuration = viewModel::applyDuration,
             remind = viewModel::remindPayment,
