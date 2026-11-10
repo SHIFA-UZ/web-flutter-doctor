@@ -149,6 +149,8 @@ class ClinicPatientsViewModel(
         val rows = s.rows ?: return
         if (s.last || s.loadingMore) return
         val gen = generation
+        // A resume's refresh still out would put page 0 back over the rows this adds to: it gives way.
+        loading?.cancel()
         _state.update { it.copy(loadingMore = true, error = null) }
         loading =
             viewModelScope.launch {
