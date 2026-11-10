@@ -31,6 +31,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.patients.FavoritesRepository
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.storage.FavoritesStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chronicDiseaseUpdated
 import shifa.doctor.generated.resources.failedToUpdate
@@ -112,6 +114,7 @@ class PatientDetailViewModelTest {
     private val favorites = FavoritesRepository(FavoritesStorage(MapSettings()))
     private val warned = mutableSetOf<Long>()
     private val created = mutableListOf<PatientDetailViewModel>()
+    private val tracker = RecordingTracker()
     private val clock =
         PracticeClock("Asia/Tashkent", { Instant.parse("2026-11-04T03:00:00Z") }, { TimeZone.of("Asia/Tashkent") })
 
@@ -139,6 +142,7 @@ class PatientDetailViewModelTest {
         flowOf(DetailDoctor(42, "Asia/Tashkent", sms)),
         { clock },
         warned,
+        tracker = tracker,
     ).also {
         created += it
         it.load()
@@ -370,5 +374,36 @@ class PatientDetailViewModelTest {
         settle { classToTest.state.value.visits != null }
         assertThat(classToTest.state.value.visitsError).isNull()
         assertThat(classToTest.state.value.lastVisit).isEqualTo(LocalDate(2026, 10, 21))
+    }
+
+    @Test
+    fun `record changes are tracked by field and outcome, never the value`() {
+        val classToTest = opened()
+        classToTest.setSms(true)
+        settle { !classToTest.state.value.saving }
+        patchStatus = HttpStatusCode.Conflict
+        classToTest.editPhones(listOf("901112233"))
+        classToTest.savePhones()
+        settle { classToTest.state.value.phoneTaken }
+        classToTest.editPhones(listOf("12"))
+        classToTest.savePhones()
+        classToTest.toggleFavorite()
+        classToTest.testSms()
+        settle { !classToTest.state.value.testing }
+        smsStatus = HttpStatusCode.Forbidden
+        classToTest.testSms()
+        settle { !classToTest.state.value.testing }
+        classToTest.createAccount()
+        settle { classToTest.state.value.account != null }
+        assertThat(tracker.events)
+            .containsExactly(
+                PatientsEvents.PatientFieldSaved("sms_reminders", true),
+                PatientsEvents.PatientFieldSaveFailed("phones", "conflict"),
+                PatientsEvents.PatientFieldSaveFailed("phones", "invalid_phone"),
+                PatientsEvents.PatientFavoriteToggled(true),
+                PatientsEvents.PatientTestSmsSent,
+                PatientsEvents.PatientTestSmsFailed("forbidden"),
+                PatientsEvents.PatientAccountCreated,
+            ).inOrder()
     }
 }

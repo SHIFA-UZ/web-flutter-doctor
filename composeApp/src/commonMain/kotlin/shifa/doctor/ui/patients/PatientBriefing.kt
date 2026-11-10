@@ -31,12 +31,16 @@ import shifa.doctor.data.ai.AiRepository
 import shifa.doctor.data.ai.aiRepository
 import shifa.doctor.data.ai.toAiMessage
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.PatientBriefing
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.copied
 import shifa.doctor.generated.resources.patientBriefingCopy
@@ -83,6 +87,7 @@ class PatientBriefingViewModel(
     private val repo: AiRepository = aiRepository,
     private val language: () -> AppLanguage = { languageStorage.language.value },
     private val profile: ProfileRepository = profileRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PatientBriefingUiState())
     val state: StateFlow<PatientBriefingUiState> = _state.asStateFlow()
@@ -96,14 +101,24 @@ class PatientBriefingViewModel(
     /** One request at a time (Flutter restarted it on a second tap: two paid calls). */
     fun generate() {
         if (_state.value.loading) return
+        val again = _state.value.briefing != null
         _state.update { it.copy(loading = true, error = null, copied = false) }
         viewModelScope.launch {
             repo.patientBriefing(patientId, language()).fold(
                 { b ->
                     val blank = b.briefing.isBlank()
+                    tracker.track(
+                        if (blank) {
+                            PatientsEvents.PatientBriefingFailed(again, "empty")
+                        } else {
+                            PatientsEvents.PatientBriefingGenerated(again)
+                        },
+                    )
                     _state.update { it.copy(loading = false, briefing = b.takeUnless { blank }, empty = blank) }
                 },
                 { e ->
+                    val reason = if (e is ApiException.ValidationError) "empty" else e.toFailureReason()
+                    tracker.track(PatientsEvents.PatientBriefingFailed(again, reason))
                     when (e) {
                         // Nothing to brief on any more: the empty state replaces an older text (it no longer holds).
                         is ApiException.ValidationError ->
@@ -126,7 +141,10 @@ class PatientBriefingViewModel(
         }
     }
 
-    fun copied() = _state.update { it.copy(copied = true) }
+    fun copied() {
+        _state.update { it.copy(copied = true) }
+        tracker.track(PatientsEvents.PatientBriefingCopied)
+    }
 }
 
 /** The sheet over patient detail (design `DaPatients` "brief" sheet). */

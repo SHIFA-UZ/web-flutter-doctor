@@ -58,6 +58,7 @@ import kotlinx.datetime.LocalTime
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.CalendarEntry
@@ -76,6 +77,10 @@ import shifa.doctor.data.profile.Gender
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.subscription.DoctorFeature
+import shifa.doctor.data.tracking.TrackScreen
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accountActive
 import shifa.doctor.generated.resources.accountCreateFailed
@@ -213,6 +218,7 @@ import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitch
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TabItem
+import shifa.doctor.ui.widgets.TrackScreenView
 import shifa.doctor.ui.widgets.UnderlineTabs
 import shifa.doctor.ui.widgets.pressable
 import shifa.doctor.utils.PhoneE164
@@ -235,6 +241,18 @@ enum class RecordTab(
     Forms(Res.string.formsTab),
     Activity(Res.string.activityTab),
 }
+
+/** The record tab's screen id (only [PatientDetailScreen] sends it). */
+private val RecordTab.trackScreen: TrackScreen
+    get() =
+        when (this) {
+            RecordTab.Overview -> TrackScreen.PatientOverview
+            RecordTab.Medical -> TrackScreen.PatientMedical
+            RecordTab.Appointments -> TrackScreen.PatientAppointments
+            RecordTab.Documents -> TrackScreen.PatientDocuments
+            RecordTab.Forms -> TrackScreen.PatientForms
+            RecordTab.Activity -> TrackScreen.PatientActivity
+        }
 
 data class PatientDetailUiState(
     val patient: Patient? = null,
@@ -338,6 +356,7 @@ class PatientDetailViewModel(
     private val warned: MutableSet<Long> = chronicWarned,
     // The clinic whose workspace opened the patient (CLINIC-06), else the doctor's own scope.
     private val clinicId: Long? = null,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private var clock = clockOf(profileRepository.me.value?.profile?.timeZone)
     private var appointments: List<PatientAppointment>? = null
@@ -502,13 +521,17 @@ class PatientDetailViewModel(
         val patient = s.patient ?: return
         if (s.saving || !s.phonesDirty) return
         val bad = s.phoneRows.any { it.isNotBlank() && PhoneE164.normalize(it) == null }
-        if (bad) return _state.update { it.copy(phonesTried = true) }
+        if (bad) {
+            tracker.track(PatientsEvents.PatientFieldSaveFailed("phones", "invalid_phone"))
+            return _state.update { it.copy(phonesTried = true) }
+        }
         val phones = s.phoneRows.mapNotNull { PhoneE164.normalize(it) }.distinct()
         if (phones.isEmpty() && patient.allPhones.isNotEmpty() && !confirmed) {
             return _state.update { it.copy(askRemovePhones = true) }
         }
         _state.update { it.copy(askRemovePhones = false) }
         patch(
+            "phones",
             PatientRequest(phones = phones, phone = phones.firstOrNull().orEmpty()),
             Res.string.phoneUpdated,
             done = { it.copy(phones = null, phonesTried = false, phoneTaken = false) },
@@ -521,6 +544,7 @@ class PatientDetailViewModel(
         if (s.saving || !s.allergiesDirty) return
         val text = s.allergyText.trim()
         patch(
+            "allergies",
             PatientRequest(allergies = text),
             Res.string.saved,
             { it.copy(allergies = text) },
@@ -534,6 +558,7 @@ class PatientDetailViewModel(
     fun setChronic(disease: ChronicDisease) {
         val wire = if (disease == ChronicDisease.None) "" else disease.wire
         patch(
+            "chronic_disease",
             PatientRequest(chronicDisease = wire),
             Res.string.chronicDiseaseUpdated,
             { it.copy(chronicDisease = wire) },
@@ -542,12 +567,12 @@ class PatientDetailViewModel(
 
     fun setGender(gender: Gender?) {
         val wire = gender?.wire.orEmpty()
-        patch(PatientRequest(gender = wire), Res.string.saved, { it.copy(gender = wire) })
+        patch("gender", PatientRequest(gender = wire), Res.string.saved, { it.copy(gender = wire) })
     }
 
     fun setBloodGroup(group: String?) {
         val wire = group.orEmpty()
-        patch(PatientRequest(bloodGroup = wire), Res.string.saved, { it.copy(bloodGroup = wire) })
+        patch("blood_group", PatientRequest(bloodGroup = wire), Res.string.saved, { it.copy(bloodGroup = wire) })
     }
 
     fun openEdit() =
@@ -575,23 +600,29 @@ class PatientDetailViewModel(
 
     fun closeEdit() = _state.update { it.copy(editing = null) }
 
-    fun toggleFavorite() = favorites.toggle(id)
+    fun toggleFavorite() {
+        favorites.toggle(id)
+        tracker.track(PatientsEvents.PatientFavoriteToggled(id in favorites.ids.value))
+    }
 
     fun acknowledgeChronic() = _state.update { it.copy(chronicWarning = false) }
 
-    fun setSms(on: Boolean) = sms(PatientRequest(smsReminderEnabled = on)) { it.copy(smsReminderEnabled = on) }
+    fun setSms(on: Boolean) =
+        sms("sms_reminders", PatientRequest(smsReminderEnabled = on), on) { it.copy(smsReminderEnabled = on) }
 
     fun setSmsHours(hours: Int) =
-        sms(PatientRequest(smsReminderHoursBefore = hours)) {
+        sms("sms_reminder_hours", PatientRequest(smsReminderHoursBefore = hours)) {
             it.copy(smsReminderHoursBefore = kotlinx.serialization.json.JsonPrimitive(hours))
         }
 
     private fun sms(
+        field: String,
         request: PatientRequest,
+        enabled: Boolean? = null,
         local: (Patient) -> Patient,
     ) {
         if (_state.value.patient?.allPhones.isNullOrEmpty()) return
-        patch(request, Res.string.smsReminderSaved, local)
+        patch(field, request, Res.string.smsReminderSaved, local, enabled = enabled)
     }
 
     fun testSms() {
@@ -599,6 +630,12 @@ class PatientDetailViewModel(
         _state.update { it.copy(testing = true, banner = null) }
         viewModelScope.launch {
             val result = repo.sendTestSms(id)
+            tracker.track(
+                result.fold(
+                    { PatientsEvents.PatientTestSmsSent },
+                    { PatientsEvents.PatientTestSmsFailed(it.toFailureReason()) },
+                ),
+            )
             _state.update { s ->
                 s.copy(
                     testing = false,
@@ -625,8 +662,12 @@ class PatientDetailViewModel(
         _state.update { it.copy(creatingAccount = true, banner = null) }
         viewModelScope.launch {
             repo.createAccount(id).fold(
-                onSuccess = { a -> _state.update { it.copy(creatingAccount = false, account = a) } },
+                onSuccess = { a ->
+                    tracker.track(PatientsEvents.PatientAccountCreated)
+                    _state.update { it.copy(creatingAccount = false, account = a) }
+                },
                 onFailure = { e ->
+                    tracker.track(PatientsEvents.PatientAccountCreateFailed(e.toFailureReason()))
                     val text =
                         if (e is ApiException.Conflict) {
                             Res.string.patientAccountExists
@@ -654,12 +695,14 @@ class PatientDetailViewModel(
      * the banner (a phone another patient has).
      */
     private fun patch(
+        field: String,
         request: PatientRequest,
         saved: StringResource,
         local: (Patient) -> Patient = { it },
         done: (PatientDetailUiState) -> PatientDetailUiState = { it },
         conflict: ((PatientDetailUiState) -> PatientDetailUiState)? = null,
         failed: (PatientDetailUiState) -> PatientDetailUiState = { it },
+        enabled: Boolean? = null,
     ) {
         val before = _state.value.patient ?: return
         if (_state.value.saving) return
@@ -667,11 +710,13 @@ class PatientDetailViewModel(
         viewModelScope.launch {
             repo.update(id, request).fold(
                 onSuccess = { p ->
+                    tracker.track(PatientsEvents.PatientFieldSaved(field, enabled))
                     _state.update {
                         done(it.copy(patient = p, saving = false, banner = CodeBanner(saved, error = false)))
                     }
                 },
                 onFailure = { e ->
+                    tracker.track(PatientsEvents.PatientFieldSaveFailed(field, e.toFailureReason()))
                     _state.update {
                         val back = it.copy(patient = before, saving = false)
                         when {
@@ -759,6 +804,8 @@ fun PatientDetailScreen(
     val docs by documents.state.collectAsStateWithLifecycle()
     val upload by uploads.state.collectAsStateWithLifecycle()
     val formsState by forms.state.collectAsStateWithLifecycle()
+    // The record tab shown, in addition to the shell's `patient` (B4 owns these ids).
+    TrackScreenView(state.tab.trackScreen)
     // Each finished upload: the list again, with the new document on top.
     LaunchedEffect(upload.uploaded) { if (upload.uploaded > 0) documents.load() }
     val sources = rememberUploadSources(uploads)
