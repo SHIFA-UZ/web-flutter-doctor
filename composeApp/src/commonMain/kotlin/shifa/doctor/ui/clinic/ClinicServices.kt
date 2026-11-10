@@ -22,7 +22,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -447,6 +449,8 @@ internal fun ColumnScope.ServicesSection(
         },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Back in front: read again (a colleague may have changed a price); not on top of the first read.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { if (state.services != null) viewModel.load() }
     ServicesContent(state, viewModel.actions())
 }
 
