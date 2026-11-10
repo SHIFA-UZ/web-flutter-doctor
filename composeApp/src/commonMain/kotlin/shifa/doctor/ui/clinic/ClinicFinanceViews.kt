@@ -43,6 +43,10 @@ import shifa.doctor.data.model.InstallmentRow
 import shifa.doctor.data.model.LedgerRow
 import shifa.doctor.data.model.MyClinic
 import shifa.doctor.data.model.mayManageFinance
+import shifa.doctor.data.tracking.TrackScreen
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ClinicEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.all
 import shifa.doctor.generated.resources.cancel
@@ -199,6 +203,7 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaTray
+import shifa.doctor.ui.widgets.TrackScreenView
 import shifa.doctor.utils.Money
 import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.PracticeClock
@@ -256,6 +261,7 @@ internal fun ColumnScope.FinanceSection(
     val state by viewModel.state.collectAsStateWithLifecycle()
     // Back from a plan (a payment, a status change) or the app: the view reads again.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
+    TrackScreenView(state.view.trackScreen)
     val share = rememberFileShare()
     val vm = viewModel
     FinanceContent(
@@ -267,11 +273,37 @@ internal fun ColumnScope.FinanceSection(
             vm::editMarkPaid, vm::markPaid, vm::closeMarkPaid, vm::setStatus, vm::remind, vm::openRecord,
             vm::editRecord, vm::searchPatient, vm::pickPatient, vm::pickPlan, vm::saveRecord, vm::closeRecord,
             vm::info, vm::dismiss,
-            { name, bytes -> share(name, "text/csv", bytes) },
+            { name, bytes ->
+                // The export has no ViewModel action: its outcome is tracked here, never in the content.
+                share(name, "text/csv", bytes).also { shared ->
+                    val view = state.view.trackName()
+                    Tracking.track(
+                        if (shared) {
+                            ClinicEvents.FinanceCsvExported(
+                                view,
+                            )
+                        } else {
+                            ClinicEvents.FinanceCsvExportFailed(view)
+                        },
+                    )
+                }
+            },
             onOpenPlan,
         ),
     )
 }
+
+/** The finance view's screen id (B8 owns them; sent beside the section's `clinic_finance`). */
+internal val FinanceView.trackScreen: TrackScreen
+    get() =
+        when (this) {
+            FinanceView.Dashboard -> TrackScreen.FinanceDashboard
+            FinanceView.Ledger -> TrackScreen.FinanceLedger
+            FinanceView.Installments -> TrackScreen.FinanceInstallments
+            FinanceView.Earnings -> TrackScreen.FinanceEarnings
+            FinanceView.Records -> TrackScreen.FinanceRecords
+            FinanceView.Payments -> TrackScreen.FinancePayments
+        }
 
 /** Board `DaClinic` Finance (phone, cards): views, month and Export, search and chips, then the view's list. */
 @Composable

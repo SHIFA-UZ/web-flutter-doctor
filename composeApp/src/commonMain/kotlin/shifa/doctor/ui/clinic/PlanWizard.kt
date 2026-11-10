@@ -45,6 +45,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.clinics.clinicsRepository
@@ -60,6 +61,12 @@ import shifa.doctor.data.model.PlanLineRequest
 import shifa.doctor.data.model.PlanServiceOption
 import shifa.doctor.data.model.PlanStatus
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.amountBucket
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.ClinicEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.data.treatmentplans.treatmentPlansRepository
 import shifa.doctor.generated.resources.Res
@@ -295,6 +302,7 @@ class PlanWizardViewModel(
     private val plans: TreatmentPlansRepository = treatmentPlansRepository,
     private val clinics: ClinicsRepository = clinicsRepository,
     private val finance: FinanceRepository = financeRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(
@@ -479,6 +487,7 @@ class PlanWizardViewModel(
         if (!s.valid(s.step)) return _state.update { it.copy(tried = it.tried + s.step) }
         if (s.step == PlanWizardUiState.STEPS) return save()
         _state.update { it.copy(step = it.step + 1) }
+        tracker.track(ClinicEvents.PlanWizardStepReached(s.step + 1))
     }
 
     fun back() {
@@ -501,7 +510,13 @@ class PlanWizardViewModel(
                 }
             }
         }
-        return true
+        return true.also { abandoned() }
+    }
+
+    /** The wizard leaves (closed, or "Discard changes?" answered Discard) with no plan made. */
+    fun abandoned() {
+        val s = _state.value
+        if (s.planId == null) tracker.track(ClinicEvents.PlanWizardAbandoned(s.step))
     }
 
     fun keepEditing() = _state.update { it.copy(askDiscard = false) }
@@ -528,6 +543,7 @@ class PlanWizardViewModel(
                 if (step in done) return true
                 val r = call()
                 r.exceptionOrNull()?.let { e ->
+                    tracker.track(ClinicEvents.PlanSaveFailed(step.trackName(), e.toFailureReason()))
                     _state.update { it.copy(busy = false, planId = planId, done = done, error = banner(e, failed)) }
                     return false
                 }
@@ -591,6 +607,17 @@ class PlanWizardViewModel(
             ) {
                 return@launch
             }
+            tracker.track(
+                ClinicEvents.PlanCreated(
+                    linesBucket = countBucket(s.lines.size),
+                    doctorsBucket = countBucket(s.picked.size),
+                    totalBucket = amountBucket(s.total, currency),
+                    hasInitialPayment = initial > 0,
+                    hasInstallments = s.installmentsOn,
+                    isActivated = s.activate,
+                    isFromPatient = s.firstStep == 2,
+                ),
+            )
             _state.update { it.copy(busy = false, planId = id, done = done, saved = true) }
         }
     }
@@ -694,7 +721,12 @@ fun PlanWizardScreen(
             dismiss = viewModel::dismiss,
         ),
     )
-    if (state.askDiscard) DiscardChangesSheet(onDiscard = actions.back, onKeep = viewModel::keepEditing)
+    if (state.askDiscard) {
+        DiscardChangesSheet(onDiscard = {
+            viewModel.abandoned()
+            actions.back()
+        }, onKeep = viewModel::keepEditing)
+    }
 }
 
 class PlanWizardActions(

@@ -20,6 +20,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicServiceAdded
@@ -33,12 +35,16 @@ class ClinicServicesViewModelTest {
     private var catalogFails = false
     private var servicesFail = false
     private var reads = 0
+    private var writesFail = false
     private val client =
         createHttpClient(
             { null },
             MockEngine { req ->
                 val path = req.url.encodedPath.removePrefix("/api/")
                 val json = headersOf(HttpHeaders.ContentType, "application/json")
+                if (writesFail && req.method.value != "GET") {
+                    return@MockEngine respond("""{"status":500}""", HttpStatusCode.InternalServerError, json)
+                }
                 if (req.method.value != "GET") {
                     writes += "${req.method.value} $path ${req.body.toByteArray().decodeToString()}"
                     return@MockEngine respond("""{"id":7,"title":"x"}""", HttpStatusCode.OK, json)
@@ -244,5 +250,47 @@ class ClinicServicesViewModelTest {
         val kept = ServiceEditor(price = "1501", currency = "UZS", storedMinor = 150050, storedCurrency = "UZS")
         assertThat(kept.priceMinor).isEqualTo(150050L)
         assertThat(kept.copy(currency = "USD").priceMinor).isEqualTo(150100L)
+    }
+
+    @Test
+    fun `saves, toggles and a discard are tracked by their outcome`() {
+        val tracker = RecordingTracker()
+        val vm =
+            ClinicServicesViewModel(
+                2,
+                "UZS",
+                TreatmentPlansRepository { client },
+                ClinicsRepository({ client }, MapSettings(), { "u1" }),
+                tracker,
+            ).also { created += it }
+        settle { vm.state.value.services != null && vm.state.value.catalog != null }
+        vm.openAdd()
+        settle { vm.state.value.doctors != null }
+        vm.save()
+        vm.edit { it.copy(title = "Implant", code = "d3310", price = "0") }
+        vm.save()
+        vm.edit { it.copy(code = "imp1") }
+        vm.save()
+        settle { vm.state.value.editor == null }
+        val root = vm.state.value.services!!.first { it.catalogItemId == 1L }
+        writesFail = true
+        vm.toggle(root)
+        settle { tracker.events.size == 4 && !vm.state.value.toggling }
+        writesFail = false
+        vm.toggle(root)
+        settle { tracker.events.size == 5 }
+        vm.openAdd()
+        vm.edit { it.copy(title = "x") }
+        vm.close()
+        vm.discard()
+        assertThat(tracker.events)
+            .containsExactly(
+                ClinicEvents.ServiceSaveFailed(isNew = true, reason = "invalid"),
+                ClinicEvents.ServiceSaveFailed(isNew = true, reason = "code_taken"),
+                ClinicEvents.ServiceSaved(isNew = true, isAllDoctors = true),
+                ClinicEvents.ServiceToggleFailed("server"),
+                ClinicEvents.ServiceToggled(isActive = false),
+                ClinicEvents.ServiceEditDiscarded,
+            ).inOrder()
     }
 }
