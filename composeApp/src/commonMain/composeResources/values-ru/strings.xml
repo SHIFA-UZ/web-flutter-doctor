@@ -2814,6 +2814,8 @@
     <string name="uploadingFile">Загрузка файла...</string>
     <string name="upperJaw">Верхняя челюсть</string>
     <string name="usa">США</string>
+    <string name="usageData">Передавать данные об использовании</string>
+    <string name="usageDataHint">Помогает нам улучшать приложение: передаётся, как вы им пользуетесь, без имён, сообщений и медицинских данных.</string>
     <string name="useBiometrics">Использовать Face ID / отпечаток</string>
     <string name="useEndAppointmentToSave">Используйте "Завершить прием", чтобы сохранить всю документацию</string>
     <string name="useEndDate">Использовать дату окончания (иначе продолжительность)</string>

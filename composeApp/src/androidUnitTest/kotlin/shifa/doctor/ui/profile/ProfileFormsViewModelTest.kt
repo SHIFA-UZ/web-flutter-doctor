@@ -23,6 +23,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.subscription.DoctorTier
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.contactDetailsSaved
 import shifa.doctor.generated.resources.contactSavedAddressFailed
@@ -299,5 +301,61 @@ class ProfileFormsViewModelTest {
         classToTest.save()
         settle { !classToTest.state.value.saving }
         assertThat(sent.single()).contains(""""stripeConnectAccountId":"acct_1234"""")
+    }
+
+    @Test
+    fun `contact saves and failures are tracked with the changed field names only`() {
+        val tracker = RecordingTracker()
+        val classToTest = ContactViewModel(repo, tracker).also { created += it }.apply { open() }
+        classToTest.edit { it.copy(email = "new@shifa.dev", city = "Samarkand") }
+        classToTest.save()
+        settle { classToTest.state.value.done }
+        fail["doctors/me/contact"] = HttpStatusCode.InternalServerError to """{"status":500,"code":"INTERNAL"}"""
+        classToTest.closed()
+        classToTest.open()
+        classToTest.edit { it.copy(email = "other@shifa.dev") }
+        classToTest.save()
+        settle { tracker.events.size == 2 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.SectionSaved("contact", listOf("email", "address")),
+                ProfileEvents.SectionSaveFailed("contact", "server"),
+            ).inOrder()
+    }
+
+    @Test
+    fun `invoicing saves and discards are tracked`() {
+        val tracker = RecordingTracker()
+        val classToTest = BillingViewModel(repo, tracker = tracker).also { created += it }.apply { open() }
+        classToTest.edit { it.copy(taxId = "305123456") }
+        classToTest.save()
+        settle { !classToTest.state.value.saving }
+        classToTest.edit { it.copy(name = "x") }
+        classToTest.discard()
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.SectionSaved("invoicing", listOf("tax_id")),
+                ProfileEvents.EditDiscarded("invoicing"),
+            ).inOrder()
+    }
+
+    @Test
+    fun `a password change is tracked by its outcome`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            SecurityViewModel(AuthRepository { createHttpClient({ null }, engine) }, tracker).also { created += it }
+        fail["auth/reset-password"] = HttpStatusCode.BadRequest to """{"status":400,"code":"BAD_REQUEST"}"""
+        classToTest.type { it.copy(current = "wrong", new = "Abcdef1!", confirm = "Abcdef1!") }
+        classToTest.change()
+        settle { !classToTest.state.value.saving }
+        fail.clear()
+        classToTest.type { it.copy(current = "right") }
+        classToTest.change()
+        settle { tracker.events.size == 2 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.PasswordChangeFailed("wrong_current_password"),
+                ProfileEvents.PasswordChanged,
+            ).inOrder()
     }
 }

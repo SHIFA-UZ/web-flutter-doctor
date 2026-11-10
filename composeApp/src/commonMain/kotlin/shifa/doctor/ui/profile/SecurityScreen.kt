@@ -19,9 +19,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.changePassword
 import shifa.doctor.generated.resources.confirmNewPassword
@@ -79,6 +83,7 @@ data class SecurityUiState(
  */
 class SecurityViewModel(
     private val auth: AuthRepository = AuthRepository(),
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SecurityUiState())
     val state: StateFlow<SecurityUiState> = _state.asStateFlow()
@@ -128,15 +133,22 @@ class SecurityViewModel(
         viewModelScope.launch {
             auth.changePassword(s.current, s.new).fold(
                 onSuccess = {
+                    tracker.track(ProfileEvents.PasswordChanged)
                     _state.value =
                         SecurityUiState(
                             banner = CodeBanner(Res.string.passwordUpdatedSuccessfully, error = false),
                         )
                 },
                 onFailure = { e ->
+                    // The policy was checked here, so a 400 means the current password was wrong (§8).
+                    val wrongCurrent = e is ApiException.ValidationError && e.status == 400
+                    tracker.track(
+                        ProfileEvents.PasswordChangeFailed(
+                            if (wrongCurrent) "wrong_current_password" else e.toFailureReason(),
+                        ),
+                    )
                     _state.update {
-                        // The policy was checked here, so a 400 means the current password was wrong (§8).
-                        if (e is ApiException.ValidationError && e.status == 400) {
+                        if (wrongCurrent) {
                             it.copy(saving = false, current = "", currentError = Res.string.currentPasswordIncorrect)
                         } else {
                             it.copy(

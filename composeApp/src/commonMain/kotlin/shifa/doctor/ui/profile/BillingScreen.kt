@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.DoctorBilling
 import shifa.doctor.data.profile.ProfileRepository
@@ -37,6 +38,11 @@ import shifa.doctor.data.subscription.DoctorTier
 import shifa.doctor.data.subscription.FeatureGate
 import shifa.doctor.data.subscription.SubscriptionPlan
 import shifa.doctor.data.subscription.SubscriptionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.amountBucket
+import shifa.doctor.data.tracking.events.ProfileEvents
+import shifa.doctor.data.tracking.events.TrackEvent
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.billingEmail
 import shifa.doctor.generated.resources.billingName
@@ -121,6 +127,9 @@ sealed interface Away {
     data object Connect : Away
 }
 
+/** The `kind` of a `billing_link_failed`. */
+private val Away.trackKind: String get() = if (this is Away.Checkout) "checkout" else "connect"
+
 /**
  * PROF-04 billing fields (flow 08/09 §3.2 and §3.6, DaProfile `profBilling`): the current plan and the invoicing
  * details card (`PATCH /doctors/me/billing`, the whole block: blanks go as null, the Stripe account and the Click /
@@ -130,6 +139,7 @@ class BillingViewModel(
     private val profile: ProfileRepository = profileRepository,
     private val subscriptions: SubscriptionRepository = SubscriptionRepository(),
     private val retryDelayMs: Long = RETURN_RETRY_MS,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BillingUiState())
     val state: StateFlow<BillingUiState> = _state.asStateFlow()
@@ -211,28 +221,47 @@ class BillingViewModel(
         }
     }
 
-    fun discard() = _state.update { it.copy(form = it.saved, askDiscard = false, done = true) }
+    fun discard() {
+        tracker.track(ProfileEvents.EditDiscarded(SECTION))
+        _state.update { it.copy(form = it.saved, askDiscard = false, done = true) }
+    }
 
     fun closed() = _state.update { it.copy(done = false) }
 
     /** Upgrade: the Stripe checkout for [plan] in the in-app browser (flow 08/09 §5). */
-    fun upgrade(plan: SubscriptionPlan) =
-        goOut(plan.code, Away.Checkout(_state.value.tier)) { subscriptions.checkout(plan.code) }
+    fun upgrade(plan: SubscriptionPlan) {
+        val from = _state.value.tier
+        goOut(
+            plan.code,
+            Away.Checkout(from),
+            ProfileEvents.CheckoutOpened(plan.code, from, amountBucket(plan.priceMinor, plan.currency)),
+        ) { subscriptions.checkout(plan.code) }
+    }
 
     /** Payouts: Stripe Connect onboarding, new or resumed. */
-    fun connect() = goOut(CONNECT, Away.Connect) { subscriptions.connectOnboarding() }
+    fun connect() =
+        goOut(
+            CONNECT,
+            Away.Connect,
+            ProfileEvents.StripeConnectOpened,
+        ) { subscriptions.connectOnboarding() }
 
     private fun goOut(
         key: String,
         away: Away,
+        opened: TrackEvent,
         url: suspend () -> Result<String>,
     ) {
         if (_state.value.opening != null) return
         _state.update { it.copy(opening = key, banner = null) }
         viewModelScope.launch {
             url().fold(
-                onSuccess = { link -> _state.update { it.copy(opening = null, openUrl = link, away = away) } },
+                onSuccess = { link ->
+                    tracker.track(opened)
+                    _state.update { it.copy(opening = null, openUrl = link, away = away) }
+                },
                 onFailure = { e ->
+                    tracker.track(ProfileEvents.BillingLinkFailed(away.trackKind, e.toFailureReason()))
                     _state.update {
                         it.copy(
                             opening = null,
@@ -248,7 +277,14 @@ class BillingViewModel(
      * The screen opened [openUrl]; not [opened] when the page couldn't be shown (a browser blocks a window that no
      * click opened): the doctor is told, instead of a button that seemed to do nothing.
      */
-    fun urlOpened(opened: Boolean = true) =
+    fun urlOpened(opened: Boolean = true) {
+        if (!opened) {
+            _state.value.away?.let {
+                tracker.track(
+                    ProfileEvents.BillingLinkFailed(it.trackKind, "not_opened"),
+                )
+            }
+        }
         _state.update {
             if (opened) {
                 it.copy(openUrl = null)
@@ -256,6 +292,7 @@ class BillingViewModel(
                 it.copy(openUrl = null, away = null, banner = CodeBanner(Res.string.checkoutFailed))
             }
         }
+    }
 
     /**
      * Back in the app after the hosted page: the profile is read again; after a checkout the plan is compared ("You're
@@ -279,6 +316,13 @@ class BillingViewModel(
             // Unread (offline): the check stays pending and runs again on the next return.
             val read = me ?: return@launch
             val tier = FeatureGate.of(read.subscription).tier
+            tracker.track(
+                if (away is Away.Checkout) {
+                    ProfileEvents.CheckoutReturned(tier != null && tier != away.tierBefore, tier)
+                } else {
+                    ProfileEvents.StripeConnectReturned(read.billing.stripeConnectAccountId != null)
+                },
+            )
             _state.update {
                 val withAccount =
                     it.copy(
@@ -329,6 +373,15 @@ class BillingViewModel(
         viewModelScope.launch {
             profile.updateBilling(body).fold(
                 onSuccess = { saved ->
+                    val o = s.saved
+                    val changed =
+                        listOfNotNull(
+                            "billing_name".takeIf { f.name != o.name },
+                            "billing_email".takeIf { f.email != o.email },
+                            "iban".takeIf { f.iban != o.iban },
+                            "tax_id".takeIf { f.taxId != o.taxId },
+                        )
+                    tracker.track(ProfileEvents.SectionSaved(SECTION, changed))
                     _state.update {
                         it.copy(
                             saving = false,
@@ -340,6 +393,7 @@ class BillingViewModel(
                     }
                 },
                 onFailure = { e ->
+                    tracker.track(ProfileEvents.SectionSaveFailed(SECTION, e.toFailureReason()))
                     _state.update {
                         it.copy(
                             saving = false,
@@ -353,6 +407,7 @@ class BillingViewModel(
 
     internal companion object {
         const val CONNECT = "connect"
+        const val SECTION = "invoicing"
         const val RETURN_RETRIES = 3
         const val RETURN_RETRY_MS = 3_000L
 

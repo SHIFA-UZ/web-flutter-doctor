@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.profile.ProfileRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.practiceTimezoneSaved
 import shifa.doctor.stopAll
@@ -59,6 +61,8 @@ class TimezoneViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val tracker = RecordingTracker()
+
     private fun opened(zone: String?): TimezoneViewModel {
         me =
             me.replace(
@@ -66,7 +70,7 @@ class TimezoneViewModelTest {
                 if (zone == null) "\"timeZone\":null" else "\"timeZone\":\"$zone\"",
             )
         runBlocking { repo.refresh() }
-        return TimezoneViewModel(repo) { "Asia/Tashkent" }.also { created += it }.apply { open() }
+        return TimezoneViewModel(repo, tracker) { "Asia/Tashkent" }.also { created += it }.apply { open() }
     }
 
     private fun settle(check: () -> Boolean) {
@@ -148,5 +152,25 @@ class TimezoneViewModelTest {
         classToTest.open()
         assertThat(classToTest.state.value.query).isEmpty()
         assertThat(classToTest.state.value.current).isEqualTo("Europe/Berlin")
+    }
+
+    @Test
+    fun `a zone change, a cancel at the warning and a failure are tracked`() {
+        val classToTest = opened("Asia/Tashkent")
+        classToTest.pick("Europe/Berlin")
+        classToTest.cancelConfirm()
+        failing = true
+        classToTest.pick("Europe/Berlin")
+        classToTest.confirm()
+        settle { tracker.events.size == 2 }
+        failing = false
+        classToTest.confirm()
+        settle { classToTest.state.value.done }
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.TimeZoneChangeCancelled,
+                ProfileEvents.SectionSaveFailed("time_zone", "server"),
+                ProfileEvents.TimeZoneChanged("Asia/Tashkent", "Europe/Berlin"),
+            ).inOrder()
     }
 }

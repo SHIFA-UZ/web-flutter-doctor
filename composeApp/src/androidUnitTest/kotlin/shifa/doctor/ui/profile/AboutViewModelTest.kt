@@ -18,6 +18,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.legal.LegalRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.contractLoadFailed
 import shifa.doctor.stopAll
@@ -103,5 +105,19 @@ class AboutViewModelTest {
         settle { doctor.state.value.pdfError != null }
         assertThat(doctor.state.value.pdfError?.text).isEqualTo(Res.string.contractLoadFailed)
         assertThat(doctor.state.value.pdfError?.requestId).isEqualTo("r-pdf")
+    }
+
+    @Test
+    fun `opening the contract and a failed PDF are tracked`() {
+        val tracker = RecordingTracker()
+        pdf = HttpStatusCode.InternalServerError
+        val classToTest =
+            AboutViewModel(true, { "uz" }, LegalRepository({ createHttpClient({ null }, engine) }), tracker)
+                .also { created += it }
+        classToTest.openContract()
+        settle { classToTest.state.value.pdfError != null }
+        assertThat(tracker.events)
+            .containsExactly(ProfileEvents.ContractOpened, ProfileEvents.ContractPdfFailed("server"))
+            .inOrder()
     }
 }

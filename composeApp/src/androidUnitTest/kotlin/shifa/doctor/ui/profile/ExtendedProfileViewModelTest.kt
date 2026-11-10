@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.profile.ProfileRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.extendedProfileSaved
 import shifa.doctor.generated.resources.serviceTagDuplicate
@@ -86,7 +88,9 @@ class ExtendedProfileViewModelTest {
         }
     }
 
-    private fun opened() = ExtendedProfileViewModel(repo).also { created += it }.apply { open() }
+    private val tracker = RecordingTracker()
+
+    private fun opened() = ExtendedProfileViewModel(repo, tracker).also { created += it }.apply { open() }
 
     @Test
     fun `tags save at once as the backend's JSON string, with the rules checked first`() {
@@ -185,5 +189,27 @@ class ExtendedProfileViewModelTest {
         classToTest.uploadPdf(DocumentPickerResult("content://x", "big.pdf", ByteArray(26 * 1024 * 1024)))
         assertThat(classToTest.state.value.uploading).isFalse()
         assertThat(sent).isEmpty()
+    }
+
+    @Test
+    fun `tag writes and a biography save are tracked, never their text`() {
+        val classToTest = opened()
+        classToTest.ui { it.copy(tagInput = "Root canal") }
+        classToTest.addTag()
+        settle { tracker.events.isNotEmpty() }
+        val tags = classToTest.state.value.tags.size
+        failing = true
+        classToTest.removeTag("Root canal")
+        settle { tracker.events.size == 2 }
+        failing = false
+        classToTest.edit { it.copy(biography = "Twenty years in orthodontics.") }
+        classToTest.save()
+        settle { classToTest.state.value.done }
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.TagsSaved(shifa.doctor.data.tracking.countBucket(tags)),
+                ProfileEvents.SectionSaveFailed("tags", "server"),
+                ProfileEvents.SectionSaved("extended", listOf("biography")),
+            ).inOrder()
     }
 }

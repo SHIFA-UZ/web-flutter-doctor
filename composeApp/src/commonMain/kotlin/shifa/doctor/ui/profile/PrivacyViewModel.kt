@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.account.AccountRepository
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.applock.AppLockRepository
 import shifa.doctor.data.applock.appLockRepository
@@ -19,6 +20,10 @@ import shifa.doctor.data.auth.otpCooldown
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.dataExportFailed
 import shifa.doctor.generated.resources.dataExportOncePerDay
@@ -58,6 +63,7 @@ class PrivacyViewModel(
     private val sessions: SessionRepository = sessionRepository,
     private val appLock: AppLockRepository = appLockRepository,
     private val cooldown: OtpCooldown = otpCooldown,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PrivacyUiState())
     val state: StateFlow<PrivacyUiState> = _state.asStateFlow()
@@ -73,11 +79,22 @@ class PrivacyViewModel(
                 account.exportData().fold(
                     onSuccess = { bytes ->
                         save(FILE_NAME, bytes).fold(
-                            { name -> CodeBanner(Res.string.dataExportSaved, error = false, args = listOf(name)) },
-                            { CodeBanner(Res.string.dataExportFailed) },
+                            { name ->
+                                tracker.track(ProfileEvents.DataExportSaved)
+                                CodeBanner(Res.string.dataExportSaved, error = false, args = listOf(name))
+                            },
+                            {
+                                tracker.track(ProfileEvents.DataExportFailed("save_failed"))
+                                CodeBanner(Res.string.dataExportFailed)
+                            },
                         )
                     },
                     onFailure = { e ->
+                        tracker.track(
+                            ProfileEvents.DataExportFailed(
+                                if (e is ApiException.RateLimit) "daily_limit" else e.toFailureReason(),
+                            ),
+                        )
                         val text =
                             if (e is ApiException.RateLimit) {
                                 Res.string.dataExportOncePerDay
@@ -94,7 +111,12 @@ class PrivacyViewModel(
     fun askDelete() = _state.update { it.copy(step = DeleteStep.Ask, banner = null) }
 
     /** Cancel, Back or a swipe on any of the sheets: nothing has happened yet. */
-    fun closeDelete() = _state.update { if (it.busy) it else it.copy(step = null, code = "", codeError = null) }
+    fun closeDelete() {
+        val s = _state.value
+        if (s.busy) return
+        s.step?.let { tracker.track(ProfileEvents.AccountDeletionCancelled(it.trackName())) }
+        _state.update { it.copy(step = null, code = "", codeError = null) }
+    }
 
     /** "Continue" on the question: the code goes out, or the reasons come back. */
     fun continueDelete() {
@@ -103,6 +125,7 @@ class PrivacyViewModel(
         viewModelScope.launch {
             account.requestDeletion().fold(
                 onSuccess = { sent ->
+                    tracker.track(ProfileEvents.AccountDeletionCodeSent)
                     cooldown.start(COOLDOWN_KEY, PURPOSE)
                     _state.update {
                         it.copy(
@@ -115,7 +138,7 @@ class PrivacyViewModel(
                     }
                     tick()
                 },
-                onFailure = { e -> refused(e) },
+                onFailure = { e -> refused(e, "request") },
             )
         }
     }
@@ -135,12 +158,14 @@ class PrivacyViewModel(
         viewModelScope.launch {
             account.confirmDeletion(s.code).fold(
                 onSuccess = {
+                    // Before the session ends: the reset that follows drops the identity.
+                    tracker.track(ProfileEvents.AccountDeleted)
                     _state.update { it.copy(busy = false, step = null) }
                     // The PIN of a deleted account must not stay on the device; the shell leaves on session end.
                     appLock.forget()
                     sessions.accountDeleted()
                 },
-                onFailure = { e -> refused(e) },
+                onFailure = { e -> refused(e, "confirm") },
             )
         }
     }
@@ -166,8 +191,21 @@ class PrivacyViewModel(
         }
     }
 
-    private fun refused(e: Throwable) {
+    private fun refused(
+        e: Throwable,
+        step: String,
+    ) {
         val code = (e as? ApiException)?.code
+        tracker.track(
+            when (code) {
+                "HAS_ACTIVE_OBLIGATIONS" ->
+                    ProfileEvents.AccountDeletionBlocked(
+                        (e as ApiException).details.filter { it in OBLIGATIONS }.map { it.lowercase() },
+                    )
+                "EMAIL_OTP_INVALID", "EMAIL_OTP_EXPIRED" -> ProfileEvents.AccountDeletionFailed(step, "wrong_code")
+                else -> ProfileEvents.AccountDeletionFailed(step, e.toFailureReason())
+            },
+        )
         when (code) {
             "HAS_ACTIVE_OBLIGATIONS" ->
                 _state.update {
@@ -210,6 +248,9 @@ class PrivacyViewModel(
 
         // One signed-in doctor: the cooldown is the account's, whatever its address.
         const val COOLDOWN_KEY = "me"
+
+        // The obligation codes sent with `account_deletion_blocked`; anything else is left out.
+        val OBLIGATIONS = setOf("UPCOMING_APPOINTMENTS", "ACTIVE_SUBSCRIPTION")
 
         /** The backend's `details` codes as sentences; an unknown code is left out, never shown raw. */
         fun obligationTexts(details: List<String>): List<StringResource> =

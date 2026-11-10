@@ -16,10 +16,14 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.offsetAt
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.ProfileUpdateRequest
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.cancel
 import shifa.doctor.generated.resources.changeTimezoneConfirm
@@ -114,6 +118,8 @@ data class TimezoneUiState(
  */
 class TimezoneViewModel(
     private val profile: ProfileRepository = profileRepository,
+    // Before the lambda: tests pass the device zone as a trailing lambda.
+    private val tracker: Tracker = Tracking,
     private val deviceZone: () -> String? = { TimeZones.device() },
 ) : ViewModel() {
     private val _state = MutableStateFlow(TimezoneUiState())
@@ -151,7 +157,10 @@ class TimezoneViewModel(
         if (!s.saving) s.confirm?.let(::save)
     }
 
-    fun cancelConfirm() = _state.update { it.copy(confirm = null) }
+    fun cancelConfirm() {
+        tracker.track(ProfileEvents.TimeZoneChangeCancelled)
+        _state.update { it.copy(confirm = null) }
+    }
 
     fun dismissBanner() = _state.update { it.copy(banner = null) }
 
@@ -161,11 +170,13 @@ class TimezoneViewModel(
         viewModelScope.launch {
             profile.update(ProfileUpdateRequest(timeZone = zone)).fold(
                 onSuccess = {
+                    tracker.track(ProfileEvents.TimeZoneChanged(_state.value.current?.ifBlank { null }, zone))
                     ShellNotice.pending.value = Notice(Res.string.practiceTimezoneSaved, success = true)
                     _state.update { it.copy(saving = false, current = zone, confirm = null, done = true) }
                 },
                 // The sheet stays with the old zone selected (flow 08/05 §5).
                 onFailure = { e ->
+                    tracker.track(ProfileEvents.SectionSaveFailed("time_zone", e.toFailureReason()))
                     _state.update {
                         it.copy(
                             saving = false,

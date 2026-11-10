@@ -2814,6 +2814,8 @@
     <string name="uploadingFile">Uploading file...</string>
     <string name="upperJaw">Upper jaw</string>
     <string name="usa">USA</string>
+    <string name="usageData">Share usage data</string>
+    <string name="usageDataHint">Helps us improve the app by sharing how it is used, without names, messages or medical data.</string>
     <string name="useBiometrics">Use Face ID / fingerprint</string>
     <string name="useEndAppointmentToSave">Use "End Appointment" to save all documentation</string>
     <string name="useEndDate">Use end date (otherwise use duration)</string>

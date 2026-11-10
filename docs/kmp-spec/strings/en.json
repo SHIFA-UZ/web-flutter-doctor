@@ -2891,6 +2891,8 @@
   "registrationOwnershipRequired": "This email already has a Shifa account. Confirm it with the code we sent to that email.",
   "privacyAndData": "Privacy & data",
   "privacyAndDataHint": "Download your data, permissions, delete account",
+  "usageData": "Share usage data",
+  "usageDataHint": "Helps us improve the app by sharing how it is used, without names, messages or medical data.",
   "yourData": "Your data",
   "yourDataBody": "Shifa stores your profile, schedule, appointments, chat messages and the documents you and your patients upload. Patient records belong to the patients and are kept according to medical record-keeping rules.",
   "downloadMyData": "Download a copy of my data",
