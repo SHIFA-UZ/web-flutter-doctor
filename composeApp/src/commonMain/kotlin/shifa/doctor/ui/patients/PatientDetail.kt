@@ -708,7 +708,8 @@ data class PatientDetailActions(
     val testSms: () -> Unit = {},
     val createAccount: () -> Unit = {},
     val medical: MedicalActions = MedicalActions(),
-    val book: () -> Unit = {},
+    // Null for clinic staff: the slot picker reads the signed-in doctor's own calendar, which they don't have.
+    val book: (() -> Unit)? = {},
     // CHAT-07: Quick actions → "Send message" (the Chat tab on this patient's thread).
     val message: () -> Unit = {},
     // TP-04: "Create treatment plan" (a clinic's patient only): the plan wizard with this patient.
@@ -800,7 +801,7 @@ fun PatientDetailScreen(
             smsHours = viewModel::setSmsHours,
             testSms = viewModel::testSms,
             createAccount = viewModel::createAccount,
-            book = viewModel::openBooking,
+            book = (viewModel::openBooking).takeIf { !staff },
             message = { state.patient?.let(onMessage) },
             newPlan = onNewPlan?.let { go -> { state.patient?.let(go) } },
             findPartner =
@@ -1267,8 +1268,8 @@ private fun MoreSheet(
 private fun QuickActions(actions: PatientDetailActions) =
     Card(tr(Res.string.quickActions)) {
         val tiles =
-            listOf(
-                Triple(Res.string.newAppointment, Res.drawable.ic_cal_plus_18, actions.book),
+            listOfNotNull(
+                actions.book?.let { Triple(Res.string.newAppointment, Res.drawable.ic_cal_plus_18, it) },
                 Triple(Res.string.sendMessage, Res.drawable.ic_chat_18, actions.message),
                 Triple(
                     Res.string.createDocument,

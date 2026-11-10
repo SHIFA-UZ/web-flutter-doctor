@@ -141,7 +141,7 @@ internal fun LazyListScope.appointmentRows(
                 style = ShifaTextStyles.panelTitle(),
                 color = ShifaColors.Text.Primary,
             )
-            ShifaPrimaryButton(tr(Res.string.newAppointment), actions.book, size = ShifaButtonSize.Compact)
+            actions.book?.let { ShifaPrimaryButton(tr(Res.string.newAppointment), it, size = ShifaButtonSize.Compact) }
         }
     }
     visitRows(state, actions, gap) { visits ->
