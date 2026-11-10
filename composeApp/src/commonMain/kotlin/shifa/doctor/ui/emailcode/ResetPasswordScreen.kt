@@ -24,12 +24,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.session.Session
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chooseNewPasswordFor
 import shifa.doctor.generated.resources.confirmPassword
@@ -69,6 +73,7 @@ class ResetPasswordViewModel(
     private val code: String,
     private val auth: AuthRepository = AuthRepository(),
     private val sessions: SessionRepository = sessionRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ResetPasswordUiState(email))
     val state: StateFlow<ResetPasswordUiState> = _state.asStateFlow()
@@ -89,6 +94,7 @@ class ResetPasswordViewModel(
         // Flow §9: the backend's policy (the first unmet rule, under the field), then the confirmation, inline only.
         val (pwError, confirmError) = newPasswordErrors(s.password, s.confirm)
         if (pwError != null || confirmError != null) {
+            tracker.track(AuthEvents.SignInFailed(METHOD, "invalid_input"))
             return _state.update { it.copy(passwordError = pwError, confirmError = confirmError) }
         }
         _state.update { it.copy(loading = true, banner = null) }
@@ -99,6 +105,18 @@ class ResetPasswordViewModel(
                     code,
                     s.password,
                 ).mapCatching { sessions.signIn(it).getOrThrow() }
+            result.fold(
+                { tracker.track(AuthEvents.SignInSucceeded(METHOD, AuthEvents.role(it))) },
+                { e ->
+                    val reason =
+                        when (e) {
+                            is ApiException.Unauthorized -> "wrong_code"
+                            is IllegalArgumentException -> "unusable_token"
+                            else -> e.toFailureReason()
+                        }
+                    tracker.track(AuthEvents.SignInFailed(METHOD, reason))
+                },
+            )
             _state.update {
                 result.fold(
                     onSuccess = { session -> it.copy(loading = false, signedIn = session) },
@@ -119,6 +137,10 @@ class ResetPasswordViewModel(
             e is ApiException.NetworkError && e.timeout -> Res.string.requestTimeout
             else -> e.toUserMessage(Res.string.resetPasswordFailed)
         }
+
+    private companion object {
+        const val METHOD = "password_reset"
+    }
 }
 
 /** AUTH-04 (DaAuth "reset"). Back returns to the code screen, where a new code can be asked for. */

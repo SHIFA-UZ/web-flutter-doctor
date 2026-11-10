@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.update
 import shifa.doctor.data.applock.AppLockRepository
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.cancel
 import shifa.doctor.generated.resources.ic_logout_22
@@ -39,13 +42,18 @@ data class SignOutUiState(
 class SignOutViewModel(
     private val sessions: SessionRepository = sessionRepository,
     private val appLock: AppLockRepository = AppLockRepository(),
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SignOutUiState())
     val state: StateFlow<SignOutUiState> = _state.asStateFlow()
 
     fun ask() = _state.update { SignOutUiState(asking = true, pinSet = appLock.hasPin) }
 
-    fun cancel() = _state.update { it.copy(asking = false) }
+    fun cancel() {
+        if (!_state.value.asking) return
+        tracker.track(AuthEvents.SignOutCancelled)
+        _state.update { it.copy(asking = false) }
+    }
 
     fun confirm() {
         if (!_state.value.asking) return // a second tap after the sheet closed

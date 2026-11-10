@@ -32,6 +32,8 @@ import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.TokenStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.doctorAccountExists
 import shifa.doctor.generated.resources.doctorPhoneExists
@@ -104,7 +106,10 @@ class RegisterViewModelTest {
         zone: String? = "Asia/Tashkent",
     ) = RegisterViewModel(invite, auth, sessions, {
         zone
-    }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository { client }, OtpCooldown()).also { created += it }
+    }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository { client }, OtpCooldown(), tracker)
+        .also { created += it }
+
+    private val tracker = RecordingTracker()
 
     private fun RegisterViewModel.settle() {
         repeat(200) {
@@ -567,5 +572,52 @@ class RegisterViewModelTest {
 
     private companion object {
         const val BUNDLED = """[{"english":"Dentist","uzbek":"Stomatolog"},{"english":"Urologist","uzbek":"Urolog"}]"""
+    }
+
+    @Test
+    fun `the registration funnel is tracked step by step`() {
+        replies["check-existing-doctor"] = HttpStatusCode.OK to """{"firstName":"N","lastName":"K"}"""
+        val vm = vm()
+        vm.next()
+        vm.toStep2() // the address is a doctor's
+        replies["check-existing-doctor"] =
+            HttpStatusCode.NotFound to """{"error":404,"status":404,"code":"NOT_FOUND","requestId":"r1"}"""
+        vm.next()
+        vm.settle()
+        vm.onAddress("Somewhere 1")
+        replies["register"] =
+            HttpStatusCode.BadRequest to """{"error":400,"status":400,"code":"EMAIL_OTP_INVALID","requestId":"r4"}"""
+        vm.registerWithCode("000000")
+        replies["register"] = HttpStatusCode.OK to """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""
+        vm.onCode("123456")
+        vm.settle()
+        assertThat(tracker.events)
+            .containsExactly(
+                AuthEvents.RegistrationFormFailed("invalid_input"),
+                AuthEvents.RegistrationFormFailed("doctor_exists"),
+                AuthEvents.RegistrationFormSubmitted(isExistingPatient = false),
+                AuthEvents.RegistrationCodeSent("doctor", isResend = false),
+                AuthEvents.RegistrationFailed("doctor", "wrong_code"),
+                AuthEvents.RegistrationCompleted(
+                    "doctor",
+                    isExistingPatient = false,
+                    hasDetails = true,
+                    isDetailsSaved = true,
+                ),
+            ).inOrder()
+    }
+
+    @Test
+    fun `leaving before an account exists is tracked with the step`() {
+        assertThat(vm().back()).isTrue()
+        val vm = vm(Invite("STAFF-4", true, email = "r@shifa.uz"))
+        vm.onFirstName("A")
+        assertThat(vm.back()).isFalse()
+        vm.discard()
+        assertThat(tracker.events)
+            .containsExactly(
+                AuthEvents.RegistrationAbandoned("doctor", "form"),
+                AuthEvents.RegistrationAbandoned("receptionist", "staff"),
+            ).inOrder()
     }
 }

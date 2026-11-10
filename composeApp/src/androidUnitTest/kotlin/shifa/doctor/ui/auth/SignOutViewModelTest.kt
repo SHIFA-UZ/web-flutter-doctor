@@ -10,6 +10,8 @@ import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.AppLockStorage
 import shifa.doctor.data.storage.TokenStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.AuthEvents
 
 class SignOutViewModelTest {
     private val tokens = TokenStorage(MapSettings())
@@ -45,4 +47,14 @@ class SignOutViewModelTest {
             if (pin) store.setPin("123456")
             AppLockRepository(storage = { store })
         }
+
+    @Test
+    fun `cancelling the question is tracked once`() {
+        val tracker = RecordingTracker()
+        val classToTest = SignOutViewModel(sessions, pinRepo(false), tracker)
+        classToTest.ask()
+        classToTest.cancel()
+        classToTest.cancel() // a second dismissal of a closed sheet
+        assertThat(tracker.events).containsExactly(AuthEvents.SignOutCancelled)
+    }
 }

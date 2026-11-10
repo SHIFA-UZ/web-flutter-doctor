@@ -29,6 +29,9 @@ import shifa.doctor.data.applock.PinCheck
 import shifa.doctor.data.applock.appLockRepository
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.appLock
 import shifa.doctor.generated.resources.appLockChangeFailed
@@ -85,6 +88,7 @@ data class AppLockSettingsUiState(
 class AppLockSettingsViewModel(
     private val lock: AppLockRepository = appLockRepository,
     private val sessions: SessionRepository = sessionRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(read())
     val state: StateFlow<AppLockSettingsUiState> = _state.asStateFlow()
@@ -97,7 +101,18 @@ class AppLockSettingsViewModel(
 
     private fun open(mode: PinSheetMode) = _state.update { it.copy(sheet = PinSheet(mode)) }
 
-    fun closeSheet() = _state.update { it.copy(sheet = null) }
+    fun closeSheet() {
+        _state.value.sheet?.let { tracker.track(AuthEvents.AppLockChangeCancelled(action(it))) }
+        _state.update { it.copy(sheet = null) }
+    }
+
+    // A Set sheet with the lock already on is the second half of Change PIN.
+    private fun action(sheet: PinSheet) =
+        when {
+            sheet.mode == PinSheetMode.Off -> "disable"
+            sheet.mode == PinSheetMode.Verify || _state.value.enabled -> "change_pin"
+            else -> "enable"
+        }
 
     fun onPin(v: String) =
         _state.update { s ->
@@ -122,16 +137,23 @@ class AppLockSettingsViewModel(
                                 sheet = sheet.copy(first = sheet.value, value = ""),
                             )
                         }
-                    sheet.first != sheet.value ->
+                    sheet.first != sheet.value -> {
+                        tracker.track(AuthEvents.AppLockChangeFailed(action(sheet), "mismatch"))
                         _state.update { it.copy(sheet = PinSheet(PinSheetMode.Set, error = Res.string.pinsDontMatch)) }
-                    lock.turnOn(sheet.value).isSuccess -> _state.value = read()
+                    }
+                    lock.turnOn(sheet.value).isSuccess -> {
+                        tracker.track(AuthEvents.AppLockChanged(action(sheet)))
+                        _state.value = read()
+                    }
                     // The secure store refused: say so and let the doctor try again (flow 01/11 §6).
-                    else ->
+                    else -> {
+                        tracker.track(AuthEvents.AppLockChangeFailed(action(sheet), "store_failed"))
                         _state.update {
                             it.copy(
                                 sheet = PinSheet(PinSheetMode.Set, error = Res.string.pinNotSaved),
                             )
                         }
+                    }
                 }
             PinSheetMode.Off, PinSheetMode.Verify -> checkCurrent(sheet)
         }
@@ -143,18 +165,25 @@ class AppLockSettingsViewModel(
         // The PIN was right but the lock couldn't be removed: keep the sheet open and say so.
         val result =
             outcome.getOrElse {
+                tracker.track(AuthEvents.AppLockChangeFailed(action(sheet), "store_failed"))
                 return _state.update {
                         s ->
                     s.copy(sheet = sheet.copy(value = "", error = Res.string.appLockChangeFailed))
                 }
             }
         when (result) {
-            PinCheck.Unlocked ->
+            PinCheck.Unlocked -> {
+                // Change PIN goes on to the new PIN; its outcome is the Set sheet's.
+                if (sheet.mode == PinSheetMode.Off) tracker.track(AuthEvents.AppLockChanged("disable"))
                 _state.value = read(PinSheet(PinSheetMode.Set).takeIf { sheet.mode == PinSheetMode.Verify })
-            is PinCheck.Wrong ->
+            }
+            is PinCheck.Wrong -> {
+                tracker.track(AuthEvents.AppLockPinFailed(SOURCE, result.attemptsLeft))
                 _state.update { it.copy(sheet = sheet.copy(value = "", error = Res.string.incorrectPin)) }
+            }
             // Five wrong PINs here count like on the lock screen.
             PinCheck.LockedOut -> {
+                tracker.track(AuthEvents.AppLockLockedOut(SOURCE))
                 _state.value = read()
                 sessions.session.value?.token?.let { sessions.end(SessionEndReason.PinLockout, it) }
             }
@@ -164,7 +193,12 @@ class AppLockSettingsViewModel(
     /** Turning biometrics on follows a successful system prompt (flow 01/11 §5 target). */
     fun setBiometric(on: Boolean) {
         lock.setBiometric(on)
+        tracker.track(AuthEvents.AppLockBiometricSet(on))
         _state.value = read(_state.value.sheet)
+    }
+
+    private companion object {
+        const val SOURCE = "settings"
     }
 }
 

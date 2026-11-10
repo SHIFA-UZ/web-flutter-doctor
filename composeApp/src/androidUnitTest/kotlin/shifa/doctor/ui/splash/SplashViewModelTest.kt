@@ -20,6 +20,8 @@ import shifa.doctor.data.session.Session
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.TokenStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.AuthEvents
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SplashViewModelTest {
@@ -33,7 +35,9 @@ class SplashViewModelTest {
 
     private var gate: BootGate = BootGate.None
 
-    private fun vm() = SplashViewModel({ Result.success(gate) }, sessions, { "en" }, splashLimitMs = 800)
+    private val tracker = RecordingTracker()
+
+    private fun vm() = SplashViewModel({ Result.success(gate) }, sessions, { "en" }, splashLimitMs = 800, tracker)
 
     @Test
     fun `a returning doctor goes to the shell after the short brand moment, not 1_8 s`() =
@@ -99,5 +103,25 @@ class SplashViewModelTest {
             vm.skip()
             advanceUntilIdle()
             assertThat(vm.state.value).isEqualTo(SplashUiState.Finished(null))
+        }
+
+    @Test
+    fun `a gate and a failed check are tracked, a clear launch is not`() =
+        runTest(dispatcher) {
+            vm()
+            advanceUntilIdle()
+            gate = BootGate.Maintenance(null)
+            val held = vm()
+            advanceUntilIdle()
+            held.retry()
+            advanceUntilIdle()
+            SplashViewModel({ Result.failure(IllegalStateException()) }, sessions, { "en" }, 800, tracker)
+            advanceUntilIdle()
+            assertThat(tracker.events)
+                .containsExactly(
+                    AuthEvents.BootGateShown("maintenance", isRetry = false),
+                    AuthEvents.BootGateShown("maintenance", isRetry = true),
+                    AuthEvents.BootGateFailed("client"),
+                ).inOrder()
         }
 }

@@ -25,6 +25,9 @@ import shifa.doctor.data.auth.OtpCooldown
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.TokenStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.TrackingRole
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.enterEmail
 import shifa.doctor.generated.resources.invalidEmail
@@ -244,5 +247,42 @@ class EmailCodeViewModelTest {
         sms.submit()
         waitFor { !sms.state.value.loading && sms.state.value.banner != null }
         assertThat(sms.state.value.banner?.text).isEqualTo(Res.string.noAccountForPhone)
+    }
+
+    @Test
+    fun `sending and verifying a code are tracked by mode and outcome`() {
+        val tracker = RecordingTracker()
+        val entry =
+            EmailEntryViewModel(EmailCodeMode.SmsSignIn, auth = auth, cooldown = cooldown, tracker = tracker)
+                .also { created += it }
+        entry.submit()
+        status = HttpStatusCode.NotFound
+        body = """{"code":"NOT_FOUND"}"""
+        entry.onEmail("90 123 45 67")
+        entry.submit()
+        waitFor { !entry.state.value.loading }
+        status = HttpStatusCode.OK
+        body = """{"sent":true,"channel":"email","smsFallbackUsed":true,"emailHint":"d***@shifa.dev"}"""
+        entry.submit()
+        waitFor { entry.state.value.sentTo != null }
+        val code =
+            CodeViewModel("+998901234567", EmailCodeMode.SmsSignIn, auth, sessions, cooldown, tracker)
+                .also { created += it }
+        status = HttpStatusCode.BadRequest
+        body = """{"code":"VALIDATION"}"""
+        code.onCode("111111")
+        waitFor { !code.state.value.loading }
+        status = HttpStatusCode.OK
+        body = """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""
+        code.onCode("123456")
+        waitFor { code.state.value.signedIn != null }
+        assertThat(tracker.events)
+            .containsExactly(
+                AuthEvents.AuthCodeFailed("sms_sign_in", isResend = false, "invalid_input"),
+                AuthEvents.AuthCodeFailed("sms_sign_in", isResend = false, "no_account"),
+                AuthEvents.AuthCodeSent("sms_sign_in", isResend = false, isEmailFallback = true),
+                AuthEvents.SignInFailed("sms_code", "wrong_code"),
+                AuthEvents.SignInSucceeded("sms_code", TrackingRole.Doctor),
+            ).inOrder()
     }
 }

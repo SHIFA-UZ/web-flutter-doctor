@@ -47,6 +47,9 @@ import shifa.doctor.data.applock.PinCheck
 import shifa.doctor.data.applock.appLockRepository
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.attemptsLeft
 import shifa.doctor.generated.resources.delete
@@ -90,6 +93,7 @@ data class LockUiState(
 class LockViewModel(
     private val lock: AppLockRepository = appLockRepository,
     private val sessions: SessionRepository = sessionRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(LockUiState(biometric = lock.biometricEnabled))
     val state: StateFlow<LockUiState> = _state.asStateFlow()
@@ -101,15 +105,31 @@ class LockViewModel(
         val entry = _state.value.entry
         if (entry.length < AppLockRepository.MIN_LENGTH) return
         when (val result = lock.check(entry)) {
-            PinCheck.Unlocked -> _state.update { LockUiState(biometric = it.biometric) }
-            is PinCheck.Wrong -> _state.update { it.copy(entry = "", wrong = true, attemptsLeft = result.attemptsLeft) }
-            PinCheck.LockedOut -> sessions.session.value?.token?.let { sessions.end(SessionEndReason.PinLockout, it) }
+            PinCheck.Unlocked -> {
+                tracker.track(AuthEvents.AppUnlocked("pin"))
+                _state.update { LockUiState(biometric = it.biometric) }
+            }
+            is PinCheck.Wrong -> {
+                tracker.track(AuthEvents.AppLockPinFailed(SOURCE, result.attemptsLeft))
+                _state.update { it.copy(entry = "", wrong = true, attemptsLeft = result.attemptsLeft) }
+            }
+            PinCheck.LockedOut -> {
+                tracker.track(AuthEvents.AppLockLockedOut(SOURCE))
+                sessions.session.value?.token?.let { sessions.end(SessionEndReason.PinLockout, it) }
+            }
         }
     }
 
     fun onBackspace() = _state.update { it.copy(entry = it.entry.dropLast(1), wrong = false) }
 
-    fun onBiometricSuccess() = lock.unlockWithBiometrics()
+    fun onBiometricSuccess() {
+        lock.unlockWithBiometrics()
+        tracker.track(AuthEvents.AppUnlocked("biometric"))
+    }
+
+    private companion object {
+        const val SOURCE = "lock_screen"
+    }
 }
 
 /**
