@@ -558,6 +558,8 @@ class ShellViewModel(
     fun openPath(path: String): Boolean {
         val parts = path.trim('/').split('/')
         val tab = ShellTab.fromKey(parts[0]) ?: return false
+        // Clinic staff have four tabs: a link to another one (a task) opens nothing, without a note about a plan.
+        if (_state.value.staff && tab !in _state.value.barTabs) return false
         val id = parts.getOrNull(1)?.toLongOrNull()
         val opened = currentInstant().toEpochMilliseconds()
         when {
