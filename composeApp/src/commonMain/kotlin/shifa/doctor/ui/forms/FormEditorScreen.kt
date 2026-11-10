@@ -57,6 +57,7 @@ import shifa.doctor.data.forms.DentalCode
 import shifa.doctor.data.forms.Dentition
 import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.PatientForm
+import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addReturnVisit
@@ -152,6 +153,7 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TabItem
+import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.tr
 
@@ -768,8 +770,11 @@ private fun Signature(
             Text(
                 tr(
                     Res.string.formSignedAt,
-                    form.patientSignedAt?.take(10)?.let {
-                        DentalChartCodec.displayHistoryDate(it)
+                    // The practice's day, not UTC's: a signature after midnight in Tashkent read as the day before.
+                    form.patientSignedAt?.let { at ->
+                        PracticeClock.parseInstant(at)?.let {
+                            displayDate(PracticeClock(profileRepository.me.value?.profile?.timeZone).local(it).date)
+                        } ?: DentalChartCodec.displayHistoryDate(at.take(10))
                     }.orEmpty(),
                 ),
                 style = ShifaTextStyles.metaSmall(),
