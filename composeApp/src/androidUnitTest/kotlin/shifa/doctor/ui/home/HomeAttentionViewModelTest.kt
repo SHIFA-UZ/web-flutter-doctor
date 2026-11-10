@@ -21,6 +21,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.tasks.TasksRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.stopAll
 import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.notifications.NotificationOpener
@@ -96,7 +98,10 @@ class HomeAttentionViewModelTest {
             }),
             TasksRepository({ client }),
             NotificationOpener(),
+            tracker,
         ).also { created += it }
+
+    private val tracker = RecordingTracker()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -199,5 +204,26 @@ class HomeAttentionViewModelTest {
         classToTest.refresh(withTasks = false)
         settle { classToTest.state.value.tasks == null }
         assertThat(classToTest.state.value.tasks).isNull()
+    }
+
+    @Test
+    fun `a row's tap sends its type, where it led and which list, a task its own event`() {
+        val classToTest = vm()
+        classToTest.refresh(withTasks = true)
+        settle { classToTest.state.value.tasks != null && classToTest.state.value.notifications != null }
+        val first = classToTest.state.value.notifications!!.first()
+        classToTest.open(first, staff = false, clock)
+        settle { classToTest.state.value.go != null }
+        classToTest.opened()
+        classToTest.open(first, staff = false, clock, read = false)
+        settle { classToTest.state.value.go != null }
+        classToTest.opened()
+        classToTest.openTask(classToTest.state.value.tasks!!.first())
+        assertThat(tracker.events)
+            .containsExactly(
+                HomeEvents.NotificationOpened("CHAT_MESSAGE", "chat", "home_attention"),
+                HomeEvents.NotificationOpened("CHAT_MESSAGE", "chat", "home_activity"),
+                HomeEvents.HomeAttentionTaskOpened,
+            ).inOrder()
     }
 }

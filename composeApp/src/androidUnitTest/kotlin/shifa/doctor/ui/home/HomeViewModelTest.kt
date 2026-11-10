@@ -20,6 +20,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.home.HomeRepository
 import shifa.doctor.data.home.RefreshGate
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.homeLoadFailed
 import shifa.doctor.stopAll
@@ -32,11 +34,16 @@ class HomeViewModelTest {
 
     private var status = HttpStatusCode.OK
     private var reads = 0
+
+    // Every day read has a free slot after "now" (04:12Z): the Video Call chip finds one.
+    private var freeSlot = false
+    private val tracker = RecordingTracker()
     private val engine =
         MockEngine {
             reads++
             val body =
                 """[{"type":"APPOINTMENT","startAt":"2026-11-05T05:00:00Z","endAt":"2026-11-05T05:30:00Z","appointmentId":3,"patientName":"Jasur","status":"CONFIRMED"}]"""
+                    .let { if (freeSlot) it.dropLast(1) + FREE_SLOT else it }
             respond(
                 if (status == HttpStatusCode.OK) body else """{"status":500}""",
                 status,
@@ -68,6 +75,7 @@ class HomeViewModelTest {
                 PracticeClock(zone, { Instant.parse("2026-11-05T04:12:00Z") })
             },
             RefreshGate(60.seconds, time),
+            tracker = tracker,
         ).also { created += it }
 
     @Test
@@ -134,5 +142,32 @@ class HomeViewModelTest {
         classToTest.focus { counts++ }
         settle { counts == 3 }
         assertThat(counts).isEqualTo(3)
+    }
+
+    @Test
+    fun `the video slot search is tracked by its outcome`() {
+        fun search() {
+            val classToTest = opened()
+            classToTest.practiceZone("Asia/Tashkent")
+            settle { !classToTest.state.value.loading }
+            classToTest.findVideoSlot()
+            settle { !classToTest.state.value.findingSlot }
+        }
+        freeSlot = true
+        search()
+        freeSlot = false
+        search()
+        status = HttpStatusCode.InternalServerError
+        search()
+        assertThat(tracker.events)
+            .containsExactly(
+                HomeEvents.HomeVideoSlotFound,
+                HomeEvents.HomeVideoSlotSearchFailed("no_slots"),
+                HomeEvents.HomeVideoSlotSearchFailed("server"),
+            ).inOrder()
+    }
+
+    private companion object {
+        const val FREE_SLOT = """,{"type":"FREE_SLOT","startAt":"2026-11-05T06:00:00Z","endAt":"2026-11-05T06:30:00Z","locationId":1}]"""
     }
 }

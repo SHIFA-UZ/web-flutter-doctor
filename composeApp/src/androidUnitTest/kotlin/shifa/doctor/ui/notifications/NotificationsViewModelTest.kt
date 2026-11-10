@@ -24,6 +24,8 @@ import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.notifications.NotificationFilter
 import shifa.doctor.data.notifications.NotificationsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accessApprovedBanner
 import shifa.doctor.generated.resources.accessDecisionFailed
@@ -140,7 +142,10 @@ class NotificationsViewModelTest {
         NotificationsViewModel(
             NotificationsRepository({ client }),
             NotificationOpener(AppointmentsRepository({ client }), CalendarRepository({ client })),
+            tracker = tracker,
         ).also { created += it }
+
+    private val tracker = RecordingTracker()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -327,5 +332,46 @@ class NotificationsViewModelTest {
         assertThat(classToTest.state.value.items!!.single().accessStatus).isEqualTo("pending")
         assertThat(ShellNotice.pending.value?.text).isEqualTo(Res.string.accessDecisionFailed)
         assertThat(ShellNotice.pending.value?.success).isFalse()
+    }
+
+    @Test
+    fun `inbox taps send the row's type and where it led, mark all its outcome`() {
+        val classToTest = loaded()
+        classToTest.open(classToTest.state.value.items!!.first(), staff = false, clock)
+        settle { classToTest.state.value.go != null }
+        classToTest.opened()
+        classToTest.open(classToTest.state.value.items!![1], staff = false, clock)
+        settle { tracker.events.size == 2 }
+        classToTest.select(NotificationFilter.Messages)
+        classToTest.markAll()
+        settle { tracker.events.size == 4 }
+        readStatus = HttpStatusCode.InternalServerError
+        classToTest.markAll()
+        settle { tracker.events.size == 5 }
+        assertThat(tracker.events)
+            .containsExactly(
+                HomeEvents.NotificationOpened("APPOINTMENT_BOOKED_BY_PATIENT", "appointment", "inbox"),
+                HomeEvents.NotificationOpened("APPOINTMENT_CANCELLED_BY_PATIENT", "none", "inbox"),
+                HomeEvents.NotificationsFilterSelected(NotificationFilter.Messages),
+                HomeEvents.NotificationsMarkedAllRead("1"),
+                HomeEvents.NotificationsMarkAllFailed("server"),
+            ).inOrder()
+    }
+
+    @Test
+    fun `an access decision is tracked by its outcome`() {
+        requestOnly = true
+        val classToTest = loaded()
+        classToTest.decide(classToTest.state.value.items!!.single(), approve = true)
+        settle { tracker.events.isNotEmpty() }
+        decisionStatus = HttpStatusCode.BadRequest
+        val again = loaded()
+        again.decide(again.state.value.items!!.single(), approve = false)
+        settle { tracker.events.size == 2 }
+        assertThat(tracker.events)
+            .containsExactly(
+                HomeEvents.AccessRequestDecided(approved = true),
+                HomeEvents.AccessRequestDecideFailed(approved = false, reason = "validation"),
+            ).inOrder()
     }
 }
