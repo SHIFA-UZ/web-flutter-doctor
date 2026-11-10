@@ -15,6 +15,10 @@ on:
           - production
         default: internal
 
+# The jobs only read the repository; nothing here needs to write to it.
+permissions:
+  contents: read
+
 concurrency:
   group: doctor-play-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -131,7 +135,7 @@ jobs:
           retention-days: 30
 
       - name: Upload to Google Play
-        uses: r0adkll/upload-google-play@v1
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
           serviceAccountJson: google-play-service-account.json
           packageName: com.shifa.doc
