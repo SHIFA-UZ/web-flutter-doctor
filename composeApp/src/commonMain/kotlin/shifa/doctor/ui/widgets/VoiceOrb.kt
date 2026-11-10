@@ -27,10 +27,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -124,9 +124,15 @@ fun VoiceOrb(
             )
         }
         // `ai-orb`: scale 1 → 1.08 at the board's energy (speaking 0.46 ≈ 0.08), more for a loud voice.
-        val scale = if (still) 1f else 1f + pulse * (PULSE_BASE + PULSE_PER_ENERGY * energy)
+        // Read in the layer, not in composition: the pulse changes on every frame.
         Box(
-            Modifier.size(ShifaSize.S112).scale(scale).dropShadow(CircleShape, ShifaShadow.Default),
+            Modifier
+                .size(ShifaSize.S112)
+                .graphicsLayer {
+                    val scale = if (still) 1f else 1f + pulse * (PULSE_BASE + PULSE_PER_ENERGY * energy)
+                    scaleX = scale
+                    scaleY = scale
+                }.dropShadow(CircleShape, ShifaShadow.Default),
             contentAlignment = Alignment.Center,
         ) {
             // `radial-gradient(circle at 35% 30%, …)`: light teal, the brand teal at half way, the deep teal at the

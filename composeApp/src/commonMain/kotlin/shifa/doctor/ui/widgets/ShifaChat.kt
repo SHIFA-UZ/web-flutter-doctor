@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -146,7 +147,7 @@ private fun RecordingWaveform(modifier: Modifier = Modifier) {
         val bars = (size.width / step).toInt()
         val x0 = (size.width - bars * step + gap.toPx()) / 2 + stroke.toPx() / 2
         repeat(bars) { i ->
-            val wave = (1 + sin(phase + i * WAVE_SPREAD)) / 2
+            val wave = (1 + sin((phase?.value ?: 0f) + i * WAVE_SPREAD)) / 2
             val half = size.height * (WAVE_MIN + (1 - WAVE_MIN) * wave) / 2
             val x = x0 + i * step
             drawLine(color, Offset(x, center.y - half), Offset(x, center.y + half), stroke.toPx(), StrokeCap.Round)
@@ -155,20 +156,22 @@ private fun RecordingWaveform(modifier: Modifier = Modifier) {
 }
 
 /**
- * 0..2π, looping every [WAVE_PERIOD_MS]. Static in previews and screenshot tests, where an infinite animation never
- * lets the UI idle (as ShifaButtons' spinner).
+ * 0..2π, looping every [WAVE_PERIOD_MS]: a State read in the draw lambda, so a frame redraws without recomposing.
+ * Null (still) in previews and screenshot tests, where an infinite animation never lets the UI idle (as ShifaButtons'
+ * spinner).
  */
 @Composable
-private fun wavePhase(): Float {
-    if (LocalInspectionMode.current) return 0f
-    val phase by rememberInfiniteTransition(label = "wave").animateFloat(
-        0f,
-        (2 * PI).toFloat(),
-        infiniteRepeatable(tween(WAVE_PERIOD_MS, easing = LinearEasing), RepeatMode.Restart),
-        label = "phase",
-    )
-    return phase
-}
+private fun wavePhase(): State<Float>? =
+    if (LocalInspectionMode.current) {
+        null
+    } else {
+        rememberInfiniteTransition(label = "wave").animateFloat(
+            0f,
+            (2 * PI).toFloat(),
+            infiniteRepeatable(tween(WAVE_PERIOD_MS, easing = LinearEasing), RepeatMode.Restart),
+            label = "phase",
+        )
+    }
 
 private const val WAVE_PERIOD_MS = 1200
 private const val WAVE_SPREAD = 0.7f
@@ -284,7 +287,7 @@ fun ShifaChatThinkingBubble(modifier: Modifier = Modifier) =
         Canvas(Modifier.height(ShifaSize.S20).width(dot * THINKING_DOTS + gap * (THINKING_DOTS - 1))) {
             val r = dot.toPx() / 2
             repeat(THINKING_DOTS) { i ->
-                val pulse = (1 + sin(phase - i * WAVE_SPREAD)) / 2
+                val pulse = (1 + sin((phase?.value ?: 0f) - i * WAVE_SPREAD)) / 2
                 drawCircle(
                     color,
                     r,
