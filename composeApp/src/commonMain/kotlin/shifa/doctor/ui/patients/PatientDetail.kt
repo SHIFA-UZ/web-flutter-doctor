@@ -823,7 +823,12 @@ fun PatientDetailScreen(
                     open = { opening = it },
                     requestAccess = documents::requestAccess,
                     ui = documents::ui,
-                    upload = { uploads.ui { it.copy(options = true) } },
+                    // The upload's progress, result and error are drawn on the Documents tab: started from Overview's
+                    // "Create document" it showed nothing, so a failed upload looked like a finished one.
+                    upload = {
+                        viewModel.select(RecordTab.Documents)
+                        uploads.ui { it.copy(options = true) }
+                    },
                     cancelUpload = uploads::cancelUpload,
                     retryUpload = uploads::retry,
                     dismissUpload = { uploads.ui { it.copy(banner = null) } },
