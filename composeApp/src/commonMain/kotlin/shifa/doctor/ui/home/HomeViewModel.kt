@@ -18,6 +18,7 @@ import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.couldNotLoad
 import shifa.doctor.generated.resources.homeLoadFailed
 import shifa.doctor.generated.resources.noSlotsAvailable
 import shifa.doctor.ui.emailcode.CodeBanner
@@ -144,8 +145,16 @@ class HomeViewModel(
         if (_state.value.findingSlot || !zoneKnown || zone == null) return
         _state.update { it.copy(findingSlot = true) }
         viewModelScope.launch {
-            val slot = repo.firstFreeSlot(clockFor(zone)).getOrNull()
-            if (slot == null) ShellNotice.pending.value = Notice(Res.string.noSlotsAvailable)
+            val found = repo.firstFreeSlot(clockFor(zone))
+            val slot = found.getOrNull()
+            // A failed read is not "no slots": the doctor would stop looking for a day that is in fact free.
+            found.fold(
+                { if (it == null) ShellNotice.pending.value = Notice(Res.string.noSlotsAvailable) },
+                { e ->
+                    ShellNotice.pending.value =
+                        Notice(e.toUserMessage(Res.string.couldNotLoad), requestId = e.requestId)
+                },
+            )
             _state.update { it.copy(findingSlot = false, videoSlot = slot) }
         }
     }
