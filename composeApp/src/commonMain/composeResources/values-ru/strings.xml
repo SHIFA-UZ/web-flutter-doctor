@@ -1142,6 +1142,7 @@
     <string name="documentCategory_OTHER_PRIVATE">Другой частный документ</string>
     <string name="documentCategory_PATHOLOGY">Патология</string>
     <string name="documentCategory_PRESCRIPTION">Рецепт</string>
+    <string name="documentCategory_PRE_APPOINTMENT">Перед приёмом</string>
     <string name="documentCategory_REFERRAL">Направление</string>
     <string name="documentCategory_REMOTE_TASK_DOCUMENT">Документ к удалённой задаче</string>
     <string name="documentCategory_STOOL_TEST">Анализ кала</string>
@@ -2292,7 +2293,7 @@
     <string name="requiresProPlan">Для Shifa Intelligence нужен тариф PRO.</string>
     <string name="reschedule">Перенести</string>
     <string name="resendCode">Отправить код снова</string>
-    <string name="resendCodeIn">Отправить код снова через %1$s</string>
+    <string name="resendCodeIn">Отправить код снова через %1$s с</string>
     <string name="reset">Сбросить</string>
     <string name="resetDoctorCalendar">Сбросить календарь врача</string>
     <string name="resetPassword">Сброс пароля</string>

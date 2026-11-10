@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -47,6 +48,7 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
+import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
@@ -102,7 +104,9 @@ internal fun WeekGrid(
 ) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
     val dates = weekOf(state.selected)
     val clock = state.clock
-    val days = dates.map { state.cache.days[DayKey(it, state.scope?.doctorId)].orEmpty().filter(state.filter::shows) }
+    // Null: the day hasn't been read (or its read failed). It is drawn as loading, never as a day with nothing in it.
+    val read = dates.map { state.cache.days[DayKey(it, state.scope?.doctorId)] }
+    val days = read.map { it.orEmpty().filter(state.filter::shows) }
     val minuteOf = { t: kotlinx.datetime.Instant -> clock.local(t).time.let { it.hour * MINUTES_PER_HOUR + it.minute } }
     val hours = gridHours(days, minuteOf)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
@@ -172,6 +176,7 @@ internal fun WeekGrid(
             dates.forEachIndexed { i, d ->
                 DayColumn(
                     days[i],
+                    read[i] != null,
                     hours,
                     minuteOf,
                     selected = d == state.selected,
@@ -187,6 +192,7 @@ internal fun WeekGrid(
 @Composable
 private fun DayColumn(
     entries: List<CalendarEntry>,
+    loaded: Boolean,
     hours: IntRange,
     minuteOf: (kotlinx.datetime.Instant) -> Int,
     selected: Boolean,
@@ -202,6 +208,7 @@ private fun DayColumn(
     val to = hours.last + 1
 
     fun y(minute: Int): Dp = HOUR * ((minute.coerceIn(from, to) - from) / MINUTES_PER_HOUR.toFloat())
+    if (!loaded) ShifaSkeleton(Modifier.fillMaxSize().padding(ShifaSize.S2), ShifaRadius.Xs)
     entries.forEach { e ->
         val s = minuteOf(e.start)
         val end = minuteOf(e.end).let { if (it <= s) MINUTES_PER_DAY else it }

@@ -3,6 +3,8 @@ package shifa.doctor.ui.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -384,12 +386,20 @@ class ShellViewModel(
             if (staff) {
                 val me = profile.meProfile().getOrNull()
                 _state.update { it.copy(avatarUrl = me?.photoUrl, hasClinic = true) }
+                // Their times (chat, notifications) are shown in their own zone, else their clinic's: never UTC.
+                profile.staffZone(me?.timeZone ?: clinics.mine().getOrNull()?.firstOrNull()?.timeZone)
                 if (!switched) startPath?.let(::openPath)
                 return@launch
             }
-            val clinicResult = clinics.mine()
-            _state.update { it.copy(hasClinic = clinicResult.getOrNull()?.isNotEmpty() ?: false) }
-            val me = readProfile()
+            // Together: Home's schedule and every plan gate wait for the profile, not for the clinics before it.
+            val me =
+                coroutineScope {
+                    val clinicResult = async { clinics.mine() }
+                    val profileRead = async { readProfile() }
+                    _state.update { it.copy(hasClinic = clinicResult.await().getOrNull()?.isNotEmpty() ?: false) }
+                    profileRead.await()
+                }
+            started = true
             _state.update { it.copy(gate = FeatureGate.of(me?.subscription)) }
             val waiting = pending
             pending = null
@@ -401,16 +411,16 @@ class ShellViewModel(
                     _state.update { it.copy(tab = clamp(start, it)) }
                 }
             }
-            // Loaded once per shell (01 §6.3), for doctors whose plan has Tasks.
-            if (_state.value.canTasks) {
-                badges.activeTasks().onSuccess { n -> _state.update { it.copy(activeTasks = n) } }
-            }
-            // Home's first focus may come before the plan is known.
+            // The Tasks badge and Home's follow-up count, for doctors whose plan has Tasks (01 §6.3); Home's first
+            // focus may come before the plan is known.
             refreshFollowUps()
             // Any later profile read (a resume refresh, a Profile save) may bring a new plan.
             profile.me.collect { me -> if (me != null) onPlan(FeatureGate.of(me.subscription)) }
         }
     }
+
+    // True once the start's own clinic and profile reads are back.
+    private var started = false
 
     /** `GET /doctors/me`; failed only while no profile is known at all (Home can't pick its day without one). */
     private suspend fun readProfile() =
@@ -548,6 +558,8 @@ class ShellViewModel(
     fun openPath(path: String): Boolean {
         val parts = path.trim('/').split('/')
         val tab = ShellTab.fromKey(parts[0]) ?: return false
+        // Clinic staff have four tabs: a link to another one (a task) opens nothing, without a note about a plan.
+        if (_state.value.staff && tab !in _state.value.barTabs) return false
         val id = parts.getOrNull(1)?.toLongOrNull()
         val opened = currentInstant().toEpochMilliseconds()
         when {
@@ -654,8 +666,17 @@ class ShellViewModel(
         followUpsRefresh?.cancel()
         followUpsRefresh =
             viewModelScope.launch {
-                badges.followUps().fold(
-                    { n -> _state.update { it.copy(followUps = n, followUpsFailed = false) } },
+                badges.taskCounts().fold(
+                    {
+                            n ->
+                        _state.update {
+                            it.copy(
+                                activeTasks = n.active,
+                                followUps = n.followUps,
+                                followUpsFailed = false,
+                            )
+                        }
+                    },
                     { _state.update { it.copy(followUpsFailed = true) } },
                 )
             }
@@ -743,12 +764,13 @@ class ShellViewModel(
      */
     fun onResume() {
         refreshNotifications()
-        if (_state.value.staff) return
+        // The first resume comes with the first composition, while the start is still reading the same two things.
+        if (_state.value.staff || !started) return
         // A newer resume cancels the older refresh still out; the profile also drops reads older than its latest.
         resumeRefresh?.cancel()
         resumeRefresh =
             viewModelScope.launch {
-                clinics.mine().onSuccess { list -> _state.update { it.copy(hasClinic = list.isNotEmpty()) } }
+                launch { clinics.mine().onSuccess { list -> _state.update { it.copy(hasClinic = list.isNotEmpty()) } } }
                 readProfile()
             }
     }

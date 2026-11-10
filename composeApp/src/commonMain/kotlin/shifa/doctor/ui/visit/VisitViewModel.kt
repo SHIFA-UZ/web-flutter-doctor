@@ -70,6 +70,7 @@ import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
 import shifa.doctor.generated.resources.aiNotesNeedPro
 import shifa.doctor.generated.resources.aiNotesNotReadyTryLater
 import shifa.doctor.generated.resources.aiNotesUploaded
+import shifa.doctor.generated.resources.amountGreaterThanZero
 import shifa.doctor.generated.resources.appointmentLoadFailed
 import shifa.doctor.generated.resources.appointmentPlanNoLinesOnTooth
 import shifa.doctor.generated.resources.dentalDocSaveFailed
@@ -82,6 +83,7 @@ import shifa.doctor.generated.resources.noShowMarked
 import shifa.doctor.generated.resources.notesSaveFailed
 import shifa.doctor.generated.resources.patientSignatureRequestSent
 import shifa.doctor.generated.resources.photoLimit
+import shifa.doctor.generated.resources.recordingAlreadyProcessing
 import shifa.doctor.generated.resources.saveFailed
 import shifa.doctor.generated.resources.scribeUploadFailed
 import shifa.doctor.generated.resources.signatureRequestFailed
@@ -345,9 +347,23 @@ class VisitViewModel(
         }
     }
 
-    /** The signature read again every 10 s while awaited; one reader at a time. */
+    // Whether the visit is on screen: the signature isn't polled from another tab or behind the app.
+    private var front = true
+
+    /** The screen came to the front or left it: the awaited signature is read again on return, never in between. */
+    fun foreground(on: Boolean) {
+        front = on
+        if (!on) {
+            watching?.cancel()
+        } else if (_state.value.signature == SignatureState.Waiting) {
+            watchSignature()
+        }
+    }
+
+    /** The signature read again every 10 s while awaited and on screen; one reader at a time. */
     private fun watchSignature() {
         watching?.cancel()
+        if (!front) return
         watching =
             viewModelScope.launch {
                 appointments.signatureUpdates(appointmentId).collect { r ->
@@ -390,6 +406,14 @@ class VisitViewModel(
      * the message to show.
      */
     suspend fun uploadScribe(
+        audio: ByteArray,
+        recordingId: String?,
+    ): CodeBanner =
+        // In this ViewModel's scope, not the caller's: the recorder's scope ends when the doctor opens the patient's
+        // record mid-upload, which cancelled the upload and left the recording with no "Upload again".
+        viewModelScope.async { sendScribe(audio, recordingId) }.await()
+
+    private suspend fun sendScribe(
         audio: ByteArray,
         recordingId: String?,
     ): CodeBanner {
@@ -441,7 +465,16 @@ class VisitViewModel(
     private var waitingScribe: Job? = null
     private var endedAt: LocalDateTime? = null
 
-    fun openEnd() = _state.update { if (it.end.running) it else it.copy(end = EndUiState(confirm = true)) }
+    fun openEnd() =
+        _state.update {
+            when {
+                it.end.running -> it
+                // The scribe's recording is still going up: ended now, the visit would be filed as if there were none
+                // (its notes are only waited for once the upload has answered).
+                it.scribeUploading -> it.copy(banner = CodeBanner(Res.string.recordingAlreadyProcessing, error = false))
+                else -> it.copy(end = EndUiState(confirm = true))
+            }
+        }
 
     /** Closes the sheet; a completed visit whose summary failed keeps that state for the footer's Retry summary. */
     fun closeEnd() =
@@ -464,6 +497,13 @@ class VisitViewModel(
         val s = _state.value
         if (s.end.running || s.visit == null) return
         val p = plan.state.value
+        // Before any step: the plan's ticks are applied (and lock the plan) before the payment is sent, so an amount
+        // that can't be paid must stop End here, not after them.
+        if (p.pendingPayment && p.amountInvalid) {
+            return _state.update {
+                it.copy(end = EndUiState(confirm = true, error = CodeBanner(Res.string.amountGreaterThanZero)))
+            }
+        }
         val steps =
             listOfNotNull(
                 EndStep.Notes,

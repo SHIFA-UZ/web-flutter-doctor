@@ -141,7 +141,7 @@ internal fun LazyListScope.appointmentRows(
                 style = ShifaTextStyles.panelTitle(),
                 color = ShifaColors.Text.Primary,
             )
-            ShifaPrimaryButton(tr(Res.string.newAppointment), actions.book, size = ShifaButtonSize.Compact)
+            actions.book?.let { ShifaPrimaryButton(tr(Res.string.newAppointment), it, size = ShifaButtonSize.Compact) }
         }
     }
     visitRows(state, actions, gap) { visits ->
@@ -226,7 +226,7 @@ private fun Event(
     v: Visit,
     today: LocalDate,
 ) = Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10), verticalAlignment = Alignment.CenterVertically) {
-    val (title, icon, tint) = event(v.status)
+    val (title, icon, tint) = event(v.status, v.upcoming)
     Tile(icon, tint.first, tint.second)
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
         Text(tr(title), style = ShifaTextStyles.buttonCompact(), color = ShifaColors.Text.Primary)
@@ -264,7 +264,10 @@ private fun times(v: Visit) = displayTime(v.start) + (v.end?.let { "–" + displ
 
 /** The board's event kinds (DaPatients `activity`): completed in teal, cancelled and no-show in red, the rest neutral. */
 @Composable
-private fun event(status: String?): Triple<StringResource, DrawableResource, Pair<Color, Color>> {
+private fun event(
+    status: String?,
+    upcoming: Boolean,
+): Triple<StringResource, DrawableResource, Pair<Color, Color>> {
     val teal = ShifaColors.Bg.SuccessSubtle to ShifaColors.Icon.Brand
     val red = ShifaColors.Bg.ErrorSubtle to ShifaColors.Text.Error
     val neutral = ShifaColors.Bg.Canvas to ShifaColors.Text.Primary
@@ -274,7 +277,13 @@ private fun event(status: String?): Triple<StringResource, DrawableResource, Pai
         "NO_SHOW" -> Triple(Res.string.visitNoShow, Res.drawable.ic_calendar_16, red)
         "IN_PROGRESS" -> Triple(Res.string.visitInProgress, Res.drawable.ic_calendar_16, teal)
         "REQUESTED" -> Triple(Res.string.visitRequested, Res.drawable.ic_calendar_16, neutral)
-        "CONFIRMED", "PENDING_PAYMENT" -> Triple(Res.string.upcomingVisit, Res.drawable.ic_calendar_16, teal)
+        // A booked visit whose time has passed (never started, never closed) is no longer "upcoming".
+        "CONFIRMED", "PENDING_PAYMENT" ->
+            if (upcoming) {
+                Triple(Res.string.upcomingVisit, Res.drawable.ic_calendar_16, teal)
+            } else {
+                Triple(Res.string.visitOther, Res.drawable.ic_calendar_16, neutral)
+            }
         // Anything else (EXPIRED, PAYMENT_FAILED, a new status) is neutral, its status named under it: never "upcoming".
         else -> Triple(Res.string.visitOther, Res.drawable.ic_calendar_16, neutral)
     }

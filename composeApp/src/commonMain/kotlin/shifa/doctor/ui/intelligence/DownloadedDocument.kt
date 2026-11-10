@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,7 +23,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.jetbrains.compose.resources.decodeToImageBitmap
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.cantPreview
 import shifa.doctor.generated.resources.couldNotLoadDocument
@@ -40,6 +38,7 @@ import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaSkeleton
+import shifa.doctor.ui.widgets.decodedImage
 import shifa.doctor.utils.PdfView
 import shifa.doctor.utils.tr
 
@@ -85,13 +84,15 @@ internal fun DownloadedDocument(
                         box,
                     ) { Message(box, tr(Res.string.couldNotLoadDocument), viewModel::load) }
                 file.isImage -> {
-                    val image = remember(file) { runCatching { file.bytes.decodeToImageBitmap() }.getOrNull() }
-                    if (image == null) {
-                        Message(box, tr(Res.string.cantPreview))
-                    } else {
-                        Box(box.padding(ShifaSpacing.Inset.Sm), contentAlignment = Alignment.Center) {
-                            Image(image, title, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                        }
+                    val decoded = decodedImage(file.bytes, file)
+                    val image = decoded?.getOrNull()
+                    when {
+                        decoded == null -> ShifaSkeleton(box.padding(ShifaSpacing.Inset.Sm), ShifaRadius.Xs)
+                        image == null -> Message(box, tr(Res.string.cantPreview))
+                        else ->
+                            Box(box.padding(ShifaSpacing.Inset.Sm), contentAlignment = Alignment.Center) {
+                                Image(image, title, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                            }
                     }
                 }
                 else -> Message(box, tr(Res.string.cantPreview))

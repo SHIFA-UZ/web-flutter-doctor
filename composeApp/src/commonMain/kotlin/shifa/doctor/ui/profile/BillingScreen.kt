@@ -244,8 +244,18 @@ class BillingViewModel(
         }
     }
 
-    /** The screen opened [openUrl]. */
-    fun urlOpened() = _state.update { it.copy(openUrl = null) }
+    /**
+     * The screen opened [openUrl]; not [opened] when the page couldn't be shown (a browser blocks a window that no
+     * click opened): the doctor is told, instead of a button that seemed to do nothing.
+     */
+    fun urlOpened(opened: Boolean = true) =
+        _state.update {
+            if (opened) {
+                it.copy(openUrl = null)
+            } else {
+                it.copy(openUrl = null, away = null, banner = CodeBanner(Res.string.checkoutFailed))
+            }
+        }
 
     /**
      * Back in the app after the hosted page: the profile is read again; after a checkout the plan is compared ("You're
@@ -368,10 +378,7 @@ fun BillingScreen(
     // Hosted pages open in a Custom Tab / SFSafariViewController, never the external browser (flow 08/09 §4).
     val browser = rememberInAppBrowser()
     LaunchedEffect(state.openUrl) {
-        state.openUrl?.let {
-            viewModel.urlOpened()
-            browser(it)
-        }
+        state.openUrl?.let { viewModel.urlOpened(browser(it)) }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.resumed() }
     BillingContent(

@@ -319,7 +319,8 @@ fun SettingsContent(
             }
             ShifaSection(null) {
                 Column {
-                    NotificationsItem()
+                    // Not for clinic staff: this device is never registered for their pushes.
+                    if (!state.staff) NotificationsItem()
                     actions.privacy?.let {
                         ShifaSettingsItem(
                             tr(Res.string.privacyAndData),

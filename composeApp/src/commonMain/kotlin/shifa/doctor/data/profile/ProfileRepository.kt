@@ -10,9 +10,11 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -21,6 +23,7 @@ import kotlinx.serialization.json.JsonElement
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.apiJson
+import shifa.doctor.data.api.fileTimeout
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.model.DoctorBilling
 import shifa.doctor.data.model.DoctorContact
@@ -42,6 +45,16 @@ class ProfileRepository(
 ) {
     private val _me = MutableStateFlow<DoctorMe?>(null)
     val me: StateFlow<DoctorMe?> = _me.asStateFlow()
+
+    // Clinic staff have no doctor profile (`/doctors/me` answers them 403): the shell sets their zone.
+    private val staffZone = MutableStateFlow<String?>(null)
+
+    /** The practice time zone: the doctor's own, or for clinic staff their own setting, else their clinic's. */
+    val zone: Flow<String?> = combine(_me, staffZone) { me, staff -> me?.profile?.timeZone ?: staff }
+
+    fun staffZone(zone: String?) {
+        staffZone.value = zone?.takeIf { it.isNotBlank() }
+    }
 
     // Bumped by [clear]: an answer to a request started before a sign-out never lands in the next session's profile.
     private var generation = 0
@@ -138,7 +151,7 @@ class ProfileRepository(
                         },
                     )
                 },
-            )
+            ) { fileTimeout() }
         }.map { it.photoUrl }
 
     private fun jsonList(values: List<String>) = apiJson.encodeToString(ListSerializer(String.serializer()), values)
@@ -182,6 +195,7 @@ class ProfileRepository(
         generation++
         uploaded = null
         _me.value = null
+        staffZone.value = null
     }
 
     private suspend inline fun <reified B, reified T> patch(

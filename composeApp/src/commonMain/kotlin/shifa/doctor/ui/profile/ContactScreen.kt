@@ -206,6 +206,8 @@ class ContactViewModel(
         val email = normalizedEmail(s.form.email)
         val phoneError =
             when {
+                // A doctor who registered without a phone (it is optional there) can still save an address.
+                s.form.phone.isBlank() && s.saved.phone.isBlank() -> null
                 s.form.phone.isBlank() -> Res.string.phoneNumberRequired
                 phone == null -> Res.string.invalidPhone
                 else -> null
@@ -214,7 +216,7 @@ class ContactViewModel(
         if (phoneError != null || emailError != null) {
             return _state.update { it.copy(phoneError = phoneError, emailError = emailError) }
         }
-        val f = s.form.copy(phone = PhoneE164.display(phone!!), email = email)
+        val f = s.form.copy(phone = phone?.let(PhoneE164::display).orEmpty(), email = email)
         val contactDirty = f.contact != s.saved.contact
         val addressDirty = f.address != s.saved.address
         _state.update { it.copy(saving = true, banner = null) }

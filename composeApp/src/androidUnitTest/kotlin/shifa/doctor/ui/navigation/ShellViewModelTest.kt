@@ -11,6 +11,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -62,7 +63,7 @@ class ShellViewModelTest {
                     } else if (req.url.encodedPath.endsWith("unread/count")) {
                         """{"count":${notifications++}}"""
                     } else if (req.url.encodedPath.endsWith("/tasks")) {
-                        """[{"id":1},{"id":2}]"""
+                        """[{"id":1,"status":"ACTIVE"},{"id":2,"status":"active"},{"id":3,"status":"DRAFT"},{"id":4,"status":"COMPLETED"}]"""
                     } else if (req.url.encodedPath.endsWith("me/profile")) {
                         """{"id":5,"role":"CLINIC_STAFF","firstName":"Dilfuza","lastName":"Y","photoUrl":"https://x/p.jpg"}"""
                     } else {
@@ -265,6 +266,20 @@ class ShellViewModelTest {
     }
 
     @Test
+    fun `clinic staff, who have no doctor profile, get their clinic's time zone`() {
+        clinics = """[{"clinicId":1,"name":"Shifa Demo Clinic","timeZone":"Asia/Tashkent"}]"""
+        val classToTest = vm(staff = true)
+        repeat(200) { if (classToTest.state.value.avatarUrl == null) Thread.sleep(10) }
+        val zone =
+            kotlinx.coroutines.runBlocking {
+                kotlinx.coroutines.withTimeout(5_000) { profile.zone.first { it != null } }
+            }
+        assertThat(zone).isEqualTo("Asia/Tashkent")
+        profile.clear()
+        assertThat(kotlinx.coroutines.runBlocking { profile.zone.first() }).isNull()
+    }
+
+    @Test
     fun `clinic staff start on Clinic with four tabs, never ask for the doctor profile, Back goes to Clinic`() {
         val classToTest = vm(staff = true)
         repeat(200) { if (classToTest.state.value.avatarUrl == null) Thread.sleep(10) }
@@ -371,6 +386,7 @@ class ShellViewModelTest {
         classToTest.settle()
         waitFor { classToTest.state.value.activeTasks == 2 }
         assertThat(classToTest.state.value.activeTasks).isEqualTo(2)
+        assertThat(classToTest.state.value.followUps).isEqualTo(3)
         classToTest.onForeground()
         classToTest.refreshNotifications()
         waitFor { classToTest.state.value.chatUnread == 1 && classToTest.state.value.notificationsUnread == 140 }
@@ -476,6 +492,8 @@ class ShellViewModelTest {
         classToTest.openPush(mapOf("type" to "CHAT_MESSAGE", "notificationId" to "7", "conversationId" to "42"))
         waitFor { classToTest.state.value.pushGo != null }
         assertThat(classToTest.state.value.pushGo).isEqualTo(NotificationGo.Conversation(42))
+        // The read is sent beside the opening, not before it: wait for it (it raced the assertion on a loaded machine).
+        waitFor { "/api/notifications/7/read" in paths }
         assertThat(paths).contains("/api/notifications/7/read")
         classToTest.pushOpened()
         assertThat(classToTest.state.value.pushGo).isNull()

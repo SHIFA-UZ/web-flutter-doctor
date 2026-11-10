@@ -407,7 +407,7 @@ internal fun ColumnScope.DoctorsContent(
     onSchedule: ((ClinicMember) -> Unit)?,
 ) {
     val canManage = clinic.mayManageFinanceSettings
-    codeBanner(state.banner) { actions.dismiss() }?.let { it() }
+    SectionBanner(state.banner) { actions.dismiss() }
     if (canManage) {
         Row(
             Modifier.fillMaxWidth().background(ShifaColors.Bg.InfoSubtle, ShifaRadius.ControlMd)
@@ -606,7 +606,7 @@ internal fun ColumnScope.InvitationsContent(
     state: ClinicPeopleUiState,
     actions: PeopleActions,
 ) {
-    codeBanner(state.banner) { actions.dismiss() }?.let { it() }
+    SectionBanner(state.banner) { actions.dismiss() }
     ShifaPrimaryButton(tr(Res.string.clinicInviteCreateTitle), { actions.openInvite() }, Modifier.fillMaxWidth())
     val invitations = state.invitations
     val clock = PracticeClock(clinic.timeZone)

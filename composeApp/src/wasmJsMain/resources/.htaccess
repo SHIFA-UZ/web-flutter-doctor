@@ -9,6 +9,13 @@ AddType application/javascript .js .mjs
 Options -Indexes -MultiViews
 RewriteEngine On
 
+# Plain http goes to https (the token and patient data must not travel in the clear). The host's nginx sits in front
+# and says how the browser came in; only an explicit "http" redirects, so a request nginx didn't label can't loop.
+# .well-known stays reachable over http for the host's automatic SSL.
+RewriteCond %{HTTP:X-Forwarded-Proto} =http
+RewriteCond %{REQUEST_URI} !^/\.well-known/
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
 # The deploy leaves a Brotli copy beside the code (*.wasm, about 22 MB, 5 MB compressed) and the strings (*.cvr): send
 # it. The host's nginx doesn't compress these, and may pass Apache no Accept-Encoding at all; an empty one gets Brotli
 # too, as every browser that runs this app (WebAssembly GC) reads it.
@@ -44,7 +51,19 @@ RewriteRule ^ index.html [L]
     <FilesMatch "\.(png|webp|svg|ico|ttf|otf|woff2?)$">
         Header set Cache-Control "public, max-age=86400"
     </FilesMatch>
+    # Browsers that have been here once never ask over http again; no other site may frame the app.
+    Header always set Strict-Transport-Security "max-age=31536000"
+    Header always set X-Frame-Options "DENY"
+    # The app asks for its strings, icons and fonts with the build's hash (?v=, main.kt): that URL never changes its
+    # content, so it is kept for a year instead of being checked again on every start. Without the hash (a local
+    # build) the rules above stay.
+    <If "%{QUERY_STRING} =~ /(^|&)v=[0-9a-f]+/ && %{REQUEST_URI} =~ m#^/composeResources/#">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </If>
     Header always set X-Content-Type-Options "nosniff"
+    # Report-only for now: the browser console lists what an enforced policy would block (Skia, Daily, Firebase and
+    # pdf.js are untested under one). Once a release shows no reports, rename it to Content-Security-Policy.
+    Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com https://*.daily.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https://api.shifa.uz https://api-dev.shifa.uz https://cdn.jsdelivr.net https://www.gstatic.com https://*.googleapis.com https://*.daily.co wss://*.daily.co https://tile.openstreetmap.org; worker-src 'self' blob: https://cdn.jsdelivr.net; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 

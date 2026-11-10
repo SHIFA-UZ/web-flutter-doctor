@@ -57,6 +57,7 @@ import shifa.doctor.data.forms.DentalCode
 import shifa.doctor.data.forms.Dentition
 import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.PatientForm
+import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addReturnVisit
@@ -152,6 +153,7 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TabItem
+import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.tr
 
@@ -323,7 +325,6 @@ fun FormEditorContent(
             ) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                        codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
                         // Dictation's messages (AI-06).
                         val dictation = LocalDictation.current
                         dictation?.state?.collectAsStateWithLifecycle()?.value?.banner?.let { b ->
@@ -435,6 +436,22 @@ fun FormEditorContent(
                 }
                 item { ReturnVisits(form, actions) }
                 item { Signature(form, state, actions) }
+            }
+            // Above the action bar, not in the list: a failed save, a sent signature request or a form that can't be
+            // saved yet shows wherever the doctor has scrolled to (in the list it sat off-screen at the top).
+            Column(
+                Modifier.padding(horizontal = ShifaSpacing.Inset.Md),
+                verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+            ) {
+                codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
+                if (state.tried && !state.valid) {
+                    Text(
+                        tr(Res.string.formNeedsDiagnosis),
+                        Modifier.padding(top = ShifaSize.S8),
+                        style = ShifaTextStyles.metaSmall(),
+                        color = ShifaColors.Text.Error,
+                    )
+                }
             }
             // The board's action bar: Cancel and Save Form.
             Row(
@@ -753,8 +770,11 @@ private fun Signature(
             Text(
                 tr(
                     Res.string.formSignedAt,
-                    form.patientSignedAt?.take(10)?.let {
-                        DentalChartCodec.displayHistoryDate(it)
+                    // The practice's day, not UTC's: a signature after midnight in Tashkent read as the day before.
+                    form.patientSignedAt?.let { at ->
+                        PracticeClock.parseInstant(at)?.let {
+                            displayDate(PracticeClock(profileRepository.me.value?.profile?.timeZone).local(it).date)
+                        } ?: DentalChartCodec.displayHistoryDate(at.take(10))
                     }.orEmpty(),
                 ),
                 style = ShifaTextStyles.metaSmall(),

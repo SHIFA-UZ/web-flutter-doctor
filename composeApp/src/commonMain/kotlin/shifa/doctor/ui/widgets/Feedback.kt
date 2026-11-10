@@ -25,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -251,7 +254,13 @@ fun ShifaDialogSheet(
     Column(
         modifier
             .trackActivity()
-            .fillMaxWidth()
+            // Enter in one of the sheet's fields confirms, as a form does on a computer. Only what no field took: a
+            // multi-line field keeps Enter as its new line. Never for a destructive question.
+            .onKeyEvent { e ->
+                val confirm = e.isPlainEnter && tone != DialogTone.Destructive && confirmEnabled && !confirmLoading
+                if (confirm && e.type == KeyEventType.KeyDown) onConfirm()
+                confirm
+            }.fillMaxWidth()
             .dropShadow(sheetShape, ShifaShadow.Tray)
             .background(ShifaColors.Bg.Surface, sheetShape)
             .navigationBarsPadding()

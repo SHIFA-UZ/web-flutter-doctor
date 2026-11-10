@@ -84,6 +84,7 @@ import shifa.doctor.generated.resources.notificationViewResult
 import shifa.doctor.generated.resources.notifications
 import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.refresh
+import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.timeJustNow
 import shifa.doctor.generated.resources.timeMinAgo
 import shifa.doctor.generated.resources.timeYesterday
@@ -105,6 +106,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.ShifaTertiaryButton
@@ -148,8 +150,7 @@ fun NotificationsScreen(
             onOpen(it)
         }
     }
-    val me by profileRepository.me.collectAsStateWithLifecycle()
-    val zone = me?.profile?.timeZone
+    val zone by profileRepository.zone.collectAsStateWithLifecycle(null)
     val clock = remember(zone) { PracticeClock(zone) }
     NotificationsContent(
         state,
@@ -254,8 +255,15 @@ internal fun NotificationsContent(
         ) {
             state.error?.let { e ->
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-                        codeBanner(e)?.invoke()
+                    if (state.items.isNullOrEmpty()) {
+                        // Nothing to show at all: the kit's load error, with its Retry.
+                        ShifaLoadError(tr(e.text), actions.refresh, requestId = e.requestId)
+                    } else {
+                        // Over the rows read before: the banner, and Retry under it.
+                        Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                            codeBanner(e)?.invoke()
+                            ShifaLink(tr(Res.string.retry), actions.refresh)
+                        }
                     }
                 }
             }

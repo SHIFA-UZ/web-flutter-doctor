@@ -17,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,7 +28,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.decodeToImageBitmap
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.documents.DocumentsRepository
@@ -56,6 +54,7 @@ import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.ShifaLoadError
@@ -64,6 +63,7 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ZoomState
+import shifa.doctor.ui.widgets.decodedImage
 import shifa.doctor.ui.widgets.zoomable
 import shifa.doctor.utils.FileSaver
 import shifa.doctor.utils.PdfView
@@ -315,13 +315,15 @@ private fun Shown(
         file.isPdf ->
             PdfView(file.bytes, modifier.zoomable(zoom)) { cantShow(tr(Res.string.couldNotOpenPdf), true) }
         file.isImage -> {
-            val image: ImageBitmap? = remember(file) { runCatching { file.bytes.decodeToImageBitmap() }.getOrNull() }
-            if (image == null) {
-                cantShow(tr(Res.string.cantPreview), false)
-            } else {
-                Box(modifier.zoomable(zoom).padding(ShifaSpacing.Inset.Md), contentAlignment = Alignment.Center) {
-                    Image(image, title, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                }
+            val decoded = decodedImage(file.bytes, file)
+            val image = decoded?.getOrNull()
+            when {
+                decoded == null -> ShifaSkeleton(modifier.padding(ShifaSpacing.Inset.Md), ShifaRadius.Xs)
+                image == null -> cantShow(tr(Res.string.cantPreview), false)
+                else ->
+                    Box(modifier.zoomable(zoom).padding(ShifaSpacing.Inset.Md), contentAlignment = Alignment.Center) {
+                        Image(image, title, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                    }
             }
         }
         else -> cantShow(tr(Res.string.cantPreview), false)

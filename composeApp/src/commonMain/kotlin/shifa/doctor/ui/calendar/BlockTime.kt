@@ -326,7 +326,7 @@ class BlockActions(
 fun BlockTimeContent(
     state: BlockUiState,
     actions: BlockActions,
-) = ProfileSheet(actions.close) { BlockTimeTray(state, actions) }
+) = ProfileSheet(actions.close, confirmHide = { !state.saving }) { BlockTimeTray(state, actions) }
 
 /** The drawn tray (previews and screenshots render it without the sheet). */
 @Composable

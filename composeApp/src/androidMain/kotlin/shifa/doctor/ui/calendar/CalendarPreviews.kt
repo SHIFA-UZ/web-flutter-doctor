@@ -108,7 +108,13 @@ internal fun CalendarWidePreview() =
 internal fun CalendarWeekPreview() =
     PreviewTheme {
         androidx.compose.runtime.CompositionLocalProvider(shifa.doctor.ui.widgets.LocalWideLayout provides true) {
-            CalendarContent(state(false).copy(week = true), CalendarActions())
+            // The whole week read: a day not read yet draws as loading, not as empty.
+            val week =
+                weekOf(LocalDate(2026, 11, 4)).associate {
+                    shifa.doctor.data.calendar.DayKey(it) to emptyList<shifa.doctor.data.model.CalendarEntry>()
+                }
+            val loaded = state(false).let { it.copy(week = true, cache = it.cache.copy(days = week + it.cache.days)) }
+            CalendarContent(loaded, CalendarActions())
         }
     }
 

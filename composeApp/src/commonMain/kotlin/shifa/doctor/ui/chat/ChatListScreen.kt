@@ -126,8 +126,7 @@ fun ChatListScreen(
         }
     }
     // The practice zone as the profile brings it (Chat can open before it has).
-    val me by profileRepository.me.collectAsStateWithLifecycle()
-    val zone = me?.profile?.timeZone
+    val zone by profileRepository.zone.collectAsStateWithLifecycle(null)
     val clock = remember(zone) { PracticeClock(zone) }
     ChatListContent(
         state,

@@ -16,7 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -110,6 +112,23 @@ class ClinicPatientsViewModel(
             }
     }
 
+    /**
+     * Back in front (a patient was added or edited meanwhile): the first page again, the rows kept until it answers.
+     * Not while the first read is still out, and not once more pages were added below (they would be dropped).
+     */
+    fun refresh() {
+        val s = _state.value
+        if (s.rows == null || s.page != 0 || s.loadingMore) return
+        val gen = ++generation
+        loading?.cancel()
+        loading =
+            viewModelScope.launch {
+                repo.patients(clinicId, 0, query).onSuccess { p ->
+                    if (gen == generation) _state.update { it.copy(rows = p.rows, total = p.total, last = p.last) }
+                }
+            }
+    }
+
     /** The search field: the server is asked once typing pauses, and only when the trimmed text changed. */
     fun type(text: String) {
         _state.update { it.copy(typed = text) }
@@ -130,6 +149,8 @@ class ClinicPatientsViewModel(
         val rows = s.rows ?: return
         if (s.last || s.loadingMore) return
         val gen = generation
+        // A resume's refresh still out would put page 0 back over the rows this adds to: it gives way.
+        loading?.cancel()
         _state.update { it.copy(loadingMore = true, error = null) }
         loading =
             viewModelScope.launch {
@@ -178,6 +199,7 @@ internal fun ColumnScope.ClinicPatientsSection(
         viewModel(key = "clinic-patients-${clinic.clinicId}") { ClinicPatientsViewModel(clinic.clinicId) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
     ClinicPatientsContent(state, ClinicPatientsActions(viewModel::type, viewModel::load, viewModel::loadMore, onOpen))
 }
 

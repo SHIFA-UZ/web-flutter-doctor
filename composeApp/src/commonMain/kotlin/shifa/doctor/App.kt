@@ -29,6 +29,7 @@ import shifa.doctor.data.clinical.clinicalEngineRepository
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.forms.formsRepository
+import shifa.doctor.data.intelligence.chatSessionStore
 import shifa.doctor.data.locations.locationsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
@@ -62,6 +63,7 @@ import shifa.doctor.utils.ProvideAppLocale
 import shifa.doctor.utils.ResourceWarmup
 import shifa.doctor.utils.currentPushToken
 import shifa.doctor.utils.isDebugBuild
+import shifa.doctor.utils.platformName
 import kotlin.time.Duration.Companion.hours
 
 /** Root of the app: language, theme, and the top-level screens (no navigation library: CLAUDE.md). */
@@ -70,8 +72,9 @@ fun App() {
     val language by languageStorage.language.collectAsState()
     val session by sessionRepository.session.collectAsState()
     // 01 §8: the backend gets the UI language on sign-in and on every change (deduped in the repository).
+    // Not for clinic staff: the route is the doctor's, and answers them 403 every time.
     LaunchedEffect(session != null, language) {
-        if (session != null) languageRepository.sync(language.backendCode)
+        if (session?.isClinicStaff == false) languageRepository.sync(language.backendCode)
     }
     // PUSH-01: this device on the doctor's account, once per session and token (FCM may refresh the token any time; iOS
     // reports it from Swift). A failure is tried again with the next session or token.
@@ -176,6 +179,11 @@ private fun AppScreens() {
             formsRepository.clear()
             clinicalEngineRepository.clear()
         }
+    }
+    // On the web the Intelligence chats sit in the browser's plain storage: they go when a session ends (sign-out,
+    // expiry, 401), not at every start, when the session is still being restored. The phones keep them, encrypted.
+    LaunchedEffect(Unit) {
+        if (platformName == "web") sessionRepository.ended.collect { chatSessionStore.forgetAll() }
     }
     val locked by appLockRepository.locked.collectAsState()
     // Presses and releases are activity (LOCK-02); separate windows (sheets, the lock) track it themselves.

@@ -32,7 +32,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import io.kamel.image.KamelImage
-import io.kamel.image.asyncPainterResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
@@ -76,7 +75,7 @@ fun ShifaAvatar(
             DefaultAvatar()
         } else {
             KamelImage(
-                resource = asyncPainterResource(url),
+                resource = fileImageResource(url),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,

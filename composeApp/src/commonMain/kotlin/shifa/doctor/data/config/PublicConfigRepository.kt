@@ -40,7 +40,13 @@ data class PerPlatform(
     val android: String? = null,
     val ios: String? = null,
 ) {
-    fun of(platform: String) = if (platform == "ios") ios else android
+    /** The web has no store version of its own: null there, so the Android minimum can't lock the web out. */
+    fun of(platform: String) =
+        when (platform) {
+            "ios" -> ios
+            "android" -> android
+            else -> null
+        }
 }
 
 @Serializable

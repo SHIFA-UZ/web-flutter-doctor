@@ -10,6 +10,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -37,6 +38,7 @@ import shifa.doctor.generated.resources.noShowMarked
 import shifa.doctor.generated.resources.noShowNotAllowed
 import shifa.doctor.generated.resources.patientSignatureRequestSent
 import shifa.doctor.generated.resources.photoLimit
+import shifa.doctor.generated.resources.recordingAlreadyProcessing
 import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.stopAll
 
@@ -244,6 +246,21 @@ class VisitViewModelTest {
     }
 
     @Test
+    fun `an awaited signature is read again when the visit comes back to the front, not while it is away`() {
+        val classToTest = opened()
+        classToTest.requestSignature()
+        settle { classToTest.state.value.signature == SignatureState.Waiting && !classToTest.state.value.signing }
+
+        fun reads() = calls.count { it == "GET appointments/7" }
+        classToTest.foreground(false)
+        Thread.sleep(50)
+        val away = reads()
+        classToTest.foreground(true)
+        settle { reads() > away }
+        assertThat(reads()).isEqualTo(away + 1)
+    }
+
+    @Test
     fun `helpers say when there is nothing, add their text to the notes, and modes save the notes`() {
         forms = "[]"
         val classToTest = opened()
@@ -297,6 +314,31 @@ class VisitViewModelTest {
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.aiNotesUploaded)
         assertThat(classToTest.state.value.scribeRetry).isFalse()
         assertThat(calls.count { it.startsWith("POST consultations/upload-recording") }).isEqualTo(2)
+    }
+
+    @Test
+    fun `a scribe upload outlives the screen that started it, and its failure still offers to send again`() {
+        val classToTest = opened()
+        uploadStatus = HttpStatusCode.InternalServerError
+        // The recorder's scope, cancelled as soon as the upload starts (the doctor opened the patient's record).
+        val screen = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+        val caller = screen.launch { classToTest.uploadScribe(byteArrayOf(1, 2, 3), "rec-1") }
+        caller.cancel()
+        settle { classToTest.state.value.scribeRetry }
+        assertThat(classToTest.state.value.scribeRetry).isTrue()
+        assertThat(classToTest.state.value.scribeUploading).isFalse()
+    }
+
+    @Test
+    fun `End waits while the scribe's recording is still uploading`() {
+        val classToTest = opened()
+        classToTest.ui { it.copy(scribeUploading = true) }
+        classToTest.openEnd()
+        assertThat(classToTest.state.value.end.confirm).isFalse()
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.recordingAlreadyProcessing)
+        classToTest.ui { it.copy(scribeUploading = false) }
+        classToTest.openEnd()
+        assertThat(classToTest.state.value.end.confirm).isTrue()
     }
 
     @Test

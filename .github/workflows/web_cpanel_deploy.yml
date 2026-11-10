@@ -24,6 +24,10 @@ on:
         default: production
 
 # One deploy at a time per site, from any branch: they all write to the same folder.
+# The jobs only read the repository; nothing here needs to write to it.
+permissions:
+  contents: read
+
 concurrency:
   group: doctor-web-cpanel-${{ inputs.site }}
   cancel-in-progress: false

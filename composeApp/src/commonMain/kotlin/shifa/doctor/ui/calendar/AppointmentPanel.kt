@@ -326,6 +326,8 @@ class AppointmentPanelViewModel(
     fun move() {
         val s = _state.value
         val target = s.target ?: return
+        // Before the sheet closes: a tap during another request closed it and moved nothing.
+        if (s.busy) return
         val from = date
         val to = s.clock.local(target.start).date
         _state.update { it.copy(rescheduleDate = null) }
@@ -461,8 +463,12 @@ fun AppointmentPanelScreen(
             ui = viewModel::ui,
             briefing = { briefingOpen = true },
             primary = { kind ->
-                // ponytail: Open summary waits for the summary document (PDF-01); Ended does nothing.
-                if (kind == CtaKind.Start || kind == CtaKind.Continue) onStart(appointment)
+                when (kind) {
+                    CtaKind.Start, CtaKind.Continue -> onStart(appointment)
+                    // The finished visit's own screen: its notes and its filed summary; never its call again.
+                    CtaKind.OpenSummary -> onStart(appointment.copy(videoFlag = false))
+                    CtaKind.Ended -> Unit
+                }
             },
             applyDuration = viewModel::applyDuration,
             remind = viewModel::remindPayment,
@@ -723,7 +729,8 @@ private fun CancelSheet(
             tr(Res.string.patientWillBeNotified),
             state.cancelError?.let { e -> listOfNotNull(tr(e.text), e.requestId).joinToString("\n") },
         ).joinToString("\n\n")
-    ProfileSheet({ if (!state.busy) actions.ui { it.copy(askCancel = false) } }) {
+    // Not hidden mid-request: a failure would land in a sheet the doctor no longer sees.
+    ProfileSheet({ if (!state.busy) actions.ui { it.copy(askCancel = false) } }, confirmHide = { !state.busy }) {
         ShifaDialogSheet(
             tr(Res.string.cancelAppointmentTitle),
             tr(Res.string.cancelAppointment),

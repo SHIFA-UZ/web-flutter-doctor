@@ -8,6 +8,9 @@ object ApiConfig {
     const val DEV_BASE_URL = "https://api-dev.shifa.uz/api/"
     const val TIMEOUT_MS = 30_000L
 
+    /** Uploads and file downloads: 25 MB on a slow uplink needs minutes, not [TIMEOUT_MS]. */
+    const val FILE_TIMEOUT_MS = 180_000L
+
     /** 01 §3 pre-flight: a token whose `exp` is less than this far ahead is treated as expired. */
     const val EXPIRY_GRACE_SECONDS = 30L
 
@@ -132,6 +135,11 @@ object ApiConfig {
         fun clinicMembers(clinicId: Long) = "clinics/$clinicId/members"
 
         fun clinicPatients(clinicId: Long) = "clinics/$clinicId/patients"
+
+        fun clinicPatientAppointments(
+            clinicId: Long,
+            patientId: Long,
+        ) = "clinics/$clinicId/patients/$patientId/appointments"
 
         fun clinicMemberShare(
             clinicId: Long,

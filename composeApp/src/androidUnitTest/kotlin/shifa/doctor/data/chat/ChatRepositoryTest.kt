@@ -14,6 +14,7 @@ import kotlinx.datetime.Instant
 import org.junit.Test
 import shifa.doctor.data.api.absoluteFileUrl
 import shifa.doctor.data.api.createHttpClient
+import shifa.doctor.data.api.fileCacheKey
 import shifa.doctor.data.model.MessageStatus
 import shifa.doctor.data.model.MessageType
 import shifa.doctor.data.model.SendMessageRequest
@@ -32,11 +33,11 @@ class ChatRepositoryTest {
                         """{"conversation":{"id":7,"participantId":11},"messages":[
                             {"id":2,"chatId":7,"senderRole":"patient","type":"voice","content":{"fileUrl":"chat-attachments/v.m4a","duration":14},"status":"sent","createdAt":"2026-11-05T05:01:00Z"},
                             {"id":1,"chatId":7,"senderRole":"doctor","type":"TEXT","content":{"text":"Hello"},"status":"READ","isMine":true,"createdAt":"2026-11-05T05:00:00Z"},
-                            {"id":3,"chatId":7,"type":"sticker","content":{"fileUrl":"https://cdn/x.bin"},"createdAt":"2026-11-05T05:02:00Z"},
+                            {"id":3,"chatId":7,"type":"sticker","content":{"fileUrl":"https://api-dev.shifa.uz/chat-attachments/x.bin"},"createdAt":"2026-11-05T05:02:00Z"},
                             {"id":4,"chatId":7,"type":"text","content":{"text":"no time"}}]}"""
                     path == "messages/search" -> """[{"id":11,"name":"Dilnoza","isDoctor":false,"photoUrl":"/uploads/p.jpg"}]"""
                     path == "messages/upload-attachment" -> """{"url":"https://api-dev.shifa.uz/chat-attachments/a.jpg?sig=1"}"""
-                    path == "messages/send" -> """{"id":9,"chatId":7,"type":"image","content":{"fileUrl":"https://x/a.jpg"},"status":"sent","isMine":true,"createdAt":"2026-11-05T05:03:00Z"}"""
+                    path == "messages/send" -> """{"id":9,"chatId":7,"type":"image","content":{"fileUrl":"https://api-dev.shifa.uz/chat-attachments/a.jpg"},"status":"sent","isMine":true,"createdAt":"2026-11-05T05:03:00Z"}"""
                     else -> "[]"
                 }
             respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -52,8 +53,29 @@ class ChatRepositoryTest {
         assertThat(
             absoluteFileUrl("chat-attachments/v.m4a", "https://api.shifa.uz/api/"),
         ).isEqualTo("https://api.shifa.uz/chat-attachments/v.m4a")
-        assertThat(absoluteFileUrl("HTTPS://cdn/x", "https://api.shifa.uz/api/")).isEqualTo("HTTPS://cdn/x")
+        val signed = "https://shifa-doc-backend-mvp-production.up.railway.app/chat-attachments/a.jpg?exp=1&sig=2"
+        assertThat(absoluteFileUrl(signed, "https://api.shifa.uz/api/")).isEqualTo(signed)
         assertThat(absoluteFileUrl("  ", "https://api.shifa.uz/api/")).isNull()
+    }
+
+    @Test
+    fun `a file URL on another host, over http or under the API is dropped`() {
+        val api = "https://api.shifa.uz/api/"
+        assertThat(absoluteFileUrl("https://evil.example/login.html", api)).isNull()
+        assertThat(absoluteFileUrl("https://api.shifa.uz.evil.example/a.jpg", api)).isNull()
+        assertThat(absoluteFileUrl("https://api.shifa.uz@evil.example/a.jpg", api)).isNull()
+        assertThat(absoluteFileUrl("http://api.shifa.uz/chat-attachments/a.jpg", api)).isNull()
+        assertThat(absoluteFileUrl("https://api.shifa.uz/api/patients/5", api)).isNull()
+        assertThat(absoluteFileUrl("/api/patients/5", api)).isNull()
+        assertThat(absoluteFileUrl("api/patients/5", api)).isNull()
+    }
+
+    @Test
+    fun `an image is cached under its URL without the signature`() {
+        assertThat(
+            fileCacheKey("https://api.shifa.uz/patients/a.jpg?exp=1&sig=2"),
+        ).isEqualTo("https://api.shifa.uz/patients/a.jpg")
+        assertThat(fileCacheKey("https://api.shifa.uz/patients/a.jpg")).isEqualTo("https://api.shifa.uz/patients/a.jpg")
     }
 
     @Test

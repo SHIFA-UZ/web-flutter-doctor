@@ -487,7 +487,14 @@ internal fun RegistrationCodeSheet(
         }
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             ShifaLink(
-                if (code.resendIn > 0) tr(Res.string.resendCodeIn, "${code.resendIn} s") else tr(Res.string.resendCode),
+                if (code.resendIn > 0) {
+                    tr(
+                        Res.string.resendCodeIn,
+                        code.resendIn.toString(),
+                    )
+                } else {
+                    tr(Res.string.resendCode)
+                },
                 actions.resendCode,
                 enabled = code.resendIn == 0 && !busy,
             )

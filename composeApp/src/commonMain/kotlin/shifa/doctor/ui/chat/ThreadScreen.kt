@@ -122,6 +122,7 @@ import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaLoadError
+import shifa.doctor.ui.widgets.sendOnEnter
 import shifa.doctor.utils.DocumentKinds
 import shifa.doctor.utils.Playback
 import shifa.doctor.utils.PracticeClock
@@ -253,8 +254,7 @@ fun ThreadScreen(
     // CHAT-05: pdf, doc, docx, jpg, png; a document message opens in the browser (the system shows or hands it on).
     val pickDocument = rememberDocumentPickerLauncher(DocumentKinds.ChatAttachment) { it?.let(viewModel::sendDocument) }
     val browser = rememberInAppBrowser()
-    val me by profileRepository.me.collectAsStateWithLifecycle()
-    val zone = me?.profile?.timeZone
+    val zone by profileRepository.zone.collectAsStateWithLifecycle(null)
     val clock = remember(zone) { PracticeClock(zone) }
     ThreadContent(
         state.copy(conversation = state.conversation ?: known),
@@ -850,6 +850,7 @@ private fun Composer(
             .clip(ShifaRadius.ControlLg)
             .background(ShifaColors.Bg.Canvas)
             .padding(horizontal = ShifaSize.S14, vertical = ShifaSize.S12)
+            .sendOnEnter { if (state.canSend) actions.send() }
             .semantics { contentDescription = hint },
         textStyle = style.copy(color = ShifaColors.Text.Primary),
         maxLines = 4,

@@ -145,7 +145,9 @@ import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.ic_x_16
 import shifa.doctor.generated.resources.icdToApply
 import shifa.doctor.generated.resources.inPerson
+import shifa.doctor.generated.resources.intelDiscardRecording
 import shifa.doctor.generated.resources.intelService
+import shifa.doctor.generated.resources.keepRecording
 import shifa.doctor.generated.resources.lastForm0252
 import shifa.doctor.generated.resources.lastVisitOn
 import shifa.doctor.generated.resources.leaveAnyway
@@ -237,6 +239,7 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.SegmentedTabs
 import shifa.doctor.ui.widgets.ShifaButtonSize
@@ -381,6 +384,10 @@ fun VisitScreen(
     var followUp by remember { mutableStateOf<Long?>(null) }
     val videoState = viewModel.video?.state?.collectAsStateWithLifecycle()?.value
     val callPart = viewModel.video?.let { v -> videoState?.let { VideoPart(it, v.call) } }
+    LifecycleResumeEffect(viewModel) {
+        viewModel.foreground(true)
+        onPauseOrDispose { viewModel.foreground(false) }
+    }
     viewModel.video?.let { v ->
         val permissions = rememberCallPermissions(v::permissions)
         // Asked once on open; read again on every return to the app, so permissions granted in Settings count at once
@@ -411,19 +418,32 @@ fun VisitScreen(
             VisitExit.Form -> patient?.let { onOpenForm(it, state.icd?.let { s -> Icd10Hit(s.code, s.title) }) }
         }
     }
+    val scribe = rememberDictation()
+    val scribeState by scribe.state.collectAsStateWithLifecycle()
+    // The AI scribe's recorder lives in this screen: whatever leaves it (or ends the visit) while it records asks
+    // first, instead of dropping the recording without a word.
+    var afterRecording by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val guarded = { action: () -> Unit ->
+        when {
+            // Recording: nothing is sent yet, so leaving discards it; ask.
+            scribeState.field != null && !scribeState.transcribing -> afterRecording = action
+            // ✓ was tapped and the recorder is handing the audio over (a moment): it would be lost with the screen.
+            scribeState.transcribing && !state.scribeUploading -> Unit
+            // Uploading: that runs in the ViewModel and survives leaving; End itself waits for it (openEnd).
+            else -> action()
+        }
+    }
     val back = {
         when {
             state.focus -> viewModel.ui { it.copy(focus = false) }
             // Back in a call asks to leave the call first, like the red button (flow 05/11).
             videoState?.live == true -> viewModel.video?.askLeave(true)
-            else -> viewModel.leave()
+            else -> guarded { viewModel.leave() }
         }
         Unit
     }
     BackHandler(onBack = back)
     val patientId = state.visit?.patientId
-    val scribe = rememberDictation()
-    val scribeState by scribe.state.collectAsStateWithLifecycle()
     val scribeAllowed = rememberAllowed(DoctorFeature.AiNotes)
     // AI-10: the scribe's facts, with the AI notes plan (the scribe makes them).
     val facts: (@Composable () -> Unit)? =
@@ -465,14 +485,14 @@ fun VisitScreen(
             discardDraft = viewModel.notes::discard,
             dismissNotesBanner = viewModel.notes::dismissBanner,
             requestSignature = viewModel::requestSignature,
-            openPatient = { if (patientId != null) viewModel.leave(VisitExit.Patient) },
-            openForm = { if (patientId != null) viewModel.leave(VisitExit.Form) },
+            openPatient = { if (patientId != null) guarded { viewModel.leave(VisitExit.Patient) } },
+            openForm = { if (patientId != null) guarded { viewModel.leave(VisitExit.Form) } },
             startScribe = askScribe,
             cancelScribe = scribe::cancel,
             finishScribe = { scribe.finishWith { audio, id -> viewModel.uploadScribe(audio, id) } },
             retryScribe = viewModel::retryScribe,
             dismissScribe = scribe::dismiss,
-            openEnd = viewModel::openEnd,
+            openEnd = { guarded(viewModel::openEnd) },
             retrySummary = viewModel::retrySummary,
             applyIcd = viewModel::applyIcd,
             clearIcd = { viewModel.ui { it.copy(icd = null) } },
@@ -543,7 +563,7 @@ fun VisitScreen(
                 dental,
                 planState,
                 actions,
-                onOpenDocument,
+                { patient, document, title -> guarded { onOpenDocument(patient, document, title) } },
                 scribeState,
                 scribeAllowed,
                 callPart,
@@ -571,6 +591,23 @@ fun VisitScreen(
             onConfirm = viewModel::noShow,
             onClose = { viewModel.askNoShow(false) },
         )
+    }
+    afterRecording?.let { action ->
+        val close = { afterRecording = null }
+        ProfileSheet(close) {
+            ShifaDialogSheet(
+                tr(Res.string.intelDiscardRecording),
+                tr(Res.string.discard),
+                {
+                    close()
+                    scribe.cancel()
+                    action()
+                },
+                tone = DialogTone.Destructive,
+                cancelText = tr(Res.string.keepRecording),
+                onCancel = close,
+            )
+        }
     }
     state.askLeave?.let { to ->
         // Photos, ticks or a payment would be lost (APPT-05, DENTAL-03); otherwise the notes couldn't be saved.

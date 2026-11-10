@@ -108,9 +108,8 @@ class Dictation(
         scope.launch {
             val audio = recorder.stop()
             if (audio == null) {
-                return@launch _state.update {
-                    DictationState(banner = CodeBanner(Res.string.noSpeechDetected, error = false))
-                }
+                // The recorder gave nothing back: a failed recording, not silence (chat says the same).
+                return@launch _state.update { DictationState(banner = CodeBanner(Res.string.errorRecordingVoice)) }
             }
             val result = repo.transcribe(audio, language(), id)
             val transcript = result.getOrNull()
@@ -151,9 +150,8 @@ class Dictation(
         scope.launch {
             val audio = recorder.stop()
             if (audio == null) {
-                return@launch _state.update {
-                    DictationState(banner = CodeBanner(Res.string.noSpeechDetected, error = false))
-                }
+                // The recorder gave nothing back: a failed recording, not silence (chat says the same).
+                return@launch _state.update { DictationState(banner = CodeBanner(Res.string.errorRecordingVoice)) }
             }
             val banner = process(audio, id)
             _state.update { DictationState(banner = banner) }

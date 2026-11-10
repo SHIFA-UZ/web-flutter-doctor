@@ -5,10 +5,13 @@ import org.junit.Test
 
 class DocumentModelsTest {
     @Test
-    fun `27 categories, the form one not offered for upload, lab results by category`() {
-        assertThat(DocumentCategory.entries).hasSize(27)
-        assertThat(DocumentCategory.entries.count { it.medical }).isEqualTo(22)
-        assertThat(DocumentCategory.entries.filterNot { it.pickable }).containsExactly(DocumentCategory.FORM_025_2)
+    fun `28 categories, the form and the booking ones not offered for upload, lab results by category`() {
+        assertThat(DocumentCategory.entries).hasSize(28)
+        assertThat(DocumentCategory.entries.count { it.medical }).isEqualTo(23)
+        assertThat(
+            DocumentCategory.entries.filterNot { it.pickable },
+        ).containsExactly(DocumentCategory.PRE_APPOINTMENT, DocumentCategory.FORM_025_2)
+        assertThat(DocumentCategory.of("PRE_APPOINTMENT")).isEqualTo(DocumentCategory.PRE_APPOINTMENT)
         assertThat(DocumentCategory.of(" blood_test ")).isEqualTo(DocumentCategory.BLOOD_TEST)
         assertThat(DocumentCategory.of("NEW_ONE")).isNull()
         assertThat(DocumentCategory.URINE_TEST.lab).isTrue()

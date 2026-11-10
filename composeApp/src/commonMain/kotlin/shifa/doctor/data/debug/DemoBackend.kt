@@ -509,6 +509,7 @@ class DemoBackend(
                 ok(saved)
             }
             get && path.matches(Regex("patients/\\d+/appointments")) -> ok(JsonArray(emptyList()))
+            get && path.matches(Regex("clinics/\\d+/patients/\\d+/appointments")) -> ok(JsonArray(emptyList()))
             // Documents (DOCS-01): a shared blood test anyone can open, and the patient's own ECG, locked (404 to download).
             get && path.matches(Regex("patients/\\d+/documents")) ->
                 ok(

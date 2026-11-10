@@ -87,6 +87,64 @@ class PatientsRepositoryTest {
     private val repo = PatientsRepository({ createHttpClient({ null }, engine) }, time, 60.seconds)
 
     @Test
+    fun `a Spring page with more pages reads them all, in order, and refuses more than the limit`() =
+        runBlocking<Unit> {
+            var total = 6
+            val paged =
+                MockEngine { req ->
+                    val page = req.url.parameters["page"]!!.toInt()
+                    respond(
+                        """{"content":[{"id":${page + 1},"name":"P$page"}],"last":${page == total - 1},"totalPages":$total}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            val classToTest = PatientsRepository({ createHttpClient({ null }, paged) }, time, 60.seconds)
+            assertThat(
+                classToTest.refresh().getOrThrow().map { it.id },
+            ).containsExactly(1L, 2L, 3L, 4L, 5L, 6L).inOrder()
+            total = 201
+            assertThat(classToTest.refresh().isFailure).isTrue()
+            assertThat(classToTest.patients.value).hasSize(6)
+        }
+
+    @Test
+    fun `in a clinic the visits are the clinic's, the doctor's own fuller rows only over the same visits`() =
+        runBlocking<Unit> {
+            var ownStatus = HttpStatusCode.OK
+            val visits =
+                MockEngine { req ->
+                    val json = headersOf(HttpHeaders.ContentType, "application/json")
+                    when (req.url.encodedPath.substringAfter("/api/")) {
+                        "clinics/3/patients/9/appointments" ->
+                            respond(
+                                """[{"id":2,"startAt":"2026-11-02T08:00:00Z","status":"COMPLETED"},{"id":1,"startAt":"2026-11-01T08:00:00Z","status":"COMPLETED"}]""",
+                                HttpStatusCode.OK,
+                                json,
+                            )
+                        else ->
+                            respond(
+                                """[{"id":1,"startAt":"2026-11-01T08:00:00Z","status":"COMPLETED","isVideo":true},{"id":5,"startAt":"2026-10-01T08:00:00Z","status":"CANCELLED"}]""",
+                                ownStatus,
+                                json,
+                            )
+                    }
+                }
+            val classToTest = PatientsRepository({ createHttpClient({ null }, visits) }, time, 60.seconds)
+            val merged = classToTest.appointments(9, clinicId = 3).getOrThrow()
+            // Visit 5 is the doctor's own outside this clinic: not part of the clinic's record.
+            assertThat(merged.map { it.id }).containsExactly(2L, 1L).inOrder()
+            assertThat(merged.first { it.id == 1L }.isVideo).isTrue()
+            // A colleague's patient: the doctor's own route answers 404, the clinic's visits still show.
+            ownStatus = HttpStatusCode.NotFound
+            assertThat(
+                classToTest.appointments(9, clinicId = 3).getOrThrow().map { it.id },
+            ).containsExactly(2L, 1L).inOrder()
+            // Outside a clinic nothing changes: the own route alone decides.
+            assertThat(classToTest.appointments(9).isFailure).isTrue()
+        }
+
+    @Test
     fun `the directory is read page by page, rows without an id dropped, each patient once`() =
         runBlocking<Unit> {
             val list = repo.refresh().getOrThrow()

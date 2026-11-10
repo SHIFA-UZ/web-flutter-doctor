@@ -10,6 +10,9 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +22,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.intOrNull
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.apiJson
@@ -68,22 +72,24 @@ class PatientsRepository(
         val mine = generation.incrementAndGet()
         return runCatching {
             val all = mutableListOf<Patient>()
-            for (page in 0 until MAX_PAGES) {
-                val json =
-                    apiCall<JsonElement> {
-                        client().get(ApiConfig.Endpoints.PATIENTS) {
-                            parameter("page", page)
-                            parameter("size", PAGE_SIZE)
-                            parameter("sort", "fullName,asc")
-                        }
-                    }.getOrThrow()
-                val (rows, last) = pageOf(json, PAGE_SIZE)
-                all += rows.rows(Patient.serializer(), "patients").filter { it.id != 0L }
-                if (last) break
-                if (page == MAX_PAGES - 1) {
-                    // Not silently cut: the list stays as it was and the caller sees the failure.
-                    httpLogger.log("FAILED patients: more than $MAX_PAGES pages")
-                    error("too many patients")
+            val first = page(0)
+            val (firstRows, firstLast) = pageOf(first, PAGE_SIZE)
+            all += firstRows.patients()
+            val total = ((first as? JsonObject)?.get("totalPages") as? JsonPrimitive)?.intOrNull
+            if (!firstLast && total != null) {
+                tooMany(total > MAX_PAGES)
+                // A Spring page says how many pages there are: the rest are read four at a time, in order.
+                (1 until total).chunked(BATCH).forEach { batch ->
+                    coroutineScope { batch.map { async { page(it) } }.awaitAll() }
+                        .forEach { all += pageOf(it, PAGE_SIZE).first.patients() }
+                }
+            } else if (!firstLast) {
+                // A bare list doesn't: page after page until a short one.
+                for (page in 1 until MAX_PAGES) {
+                    val (rows, last) = pageOf(page(page), PAGE_SIZE)
+                    all += rows.patients()
+                    if (last) break
+                    tooMany(page == MAX_PAGES - 1)
                 }
             }
             all.distinctBy { it.id }
@@ -93,6 +99,24 @@ class PatientsRepository(
                 readAt = time.markNow()
             }
         }
+    }
+
+    private suspend fun page(page: Int): JsonElement =
+        apiCall<JsonElement> {
+            client().get(ApiConfig.Endpoints.PATIENTS) {
+                parameter("page", page)
+                parameter("size", PAGE_SIZE)
+                parameter("sort", "fullName,asc")
+            }
+        }.getOrThrow()
+
+    private fun List<JsonElement>.patients() = rows(Patient.serializer(), "patients").filter { it.id != 0L }
+
+    // Not silently cut: the list stays as it was and the caller sees the failure.
+    private fun tooMany(reached: Boolean) {
+        if (!reached) return
+        httpLogger.log("FAILED patients: more than $MAX_PAGES pages")
+        error("too many patients")
     }
 
     /** The directory if it was read within [ttl], else read again (a tab switch doesn't refetch everything). */
@@ -140,8 +164,30 @@ class PatientsRepository(
         }.onSuccess { if (sessions.value == session) remember(it) }
     }
 
-    suspend fun appointments(id: Long): Result<List<PatientAppointment>> =
-        apiCall<List<JsonElement>> { client().get(ApiConfig.Endpoints.patientAppointments(id)) }
+    /**
+     * The patient's visits. The doctor's own route answers only the visits with that doctor (for staff: with one
+     * doctor of the clinic), and 404 for a clinic patient who only saw a colleague. So from a clinic's workspace the
+     * clinic's route decides which visits there are (every doctor's there, without the cancelled ones), and the own
+     * route only fills in place and reason for the same visits where it answers.
+     */
+    suspend fun appointments(
+        id: Long,
+        clinicId: Long? = null,
+    ): Result<List<PatientAppointment>> {
+        if (clinicId == null) return visits(ApiConfig.Endpoints.patientAppointments(id))
+        return coroutineScope {
+            val own = async { visits(ApiConfig.Endpoints.patientAppointments(id)) }
+            visits(ApiConfig.Endpoints.clinicPatientAppointments(clinicId, id)).map { clinic ->
+                // The clinic's rows decide which visits there are; the doctor's own row replaces the same visit only
+                // (their visits elsewhere don't belong in this clinic's record).
+                val mine = own.await().getOrNull().orEmpty().associateBy { it.id }
+                clinic.map { mine[it.id] ?: it }
+            }
+        }
+    }
+
+    private suspend fun visits(path: String): Result<List<PatientAppointment>> =
+        apiCall<List<JsonElement>> { client().get(path) }
             .map { it.rows(PatientAppointment.serializer(), "patient appointments") }
 
     suspend fun createAccount(id: Long): Result<PatientAccount> =
@@ -258,6 +304,7 @@ class PatientsRepository(
         const val PAGE_SIZE = 100
         const val ASSIGN_PAGE = 500
         const val MAX_PAGES = 200
+        const val BATCH = 4
     }
 }
 

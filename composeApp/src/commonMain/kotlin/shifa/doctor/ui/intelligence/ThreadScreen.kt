@@ -107,6 +107,7 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.VoiceOrbPanel
 import shifa.doctor.ui.widgets.VoicePhase
+import shifa.doctor.ui.widgets.sendOnEnter
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
 
@@ -401,6 +402,7 @@ internal fun Composer(
                     .weight(1f)
                     .heightIn(min = ShifaSize.S40)
                     .padding(horizontal = ShifaSize.S8, vertical = ShifaSize.S10)
+                    .sendOnEnter { if (state.canSend && voice.phase == VoicePhase.Idle) actions.send() }
                     .semantics { contentDescription = hint },
                 enabled = !state.busy && !listening && !speaking,
                 textStyle = style.copy(color = ShifaColors.Text.Primary),

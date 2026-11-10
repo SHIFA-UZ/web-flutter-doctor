@@ -45,6 +45,8 @@ import shifa.doctor.generated.resources.clinicFinanceReminderFailed
 import shifa.doctor.generated.resources.clinicFinanceReminderSent
 import shifa.doctor.generated.resources.clinicRecordsFormFailed
 import shifa.doctor.generated.resources.clinicRecordsFormSuccess
+import shifa.doctor.generated.resources.couldNotLoad
+import shifa.doctor.generated.resources.failedToLoadPatients
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.utils.Money
 import kotlin.time.Duration.Companion.milliseconds
@@ -529,7 +531,8 @@ class ClinicFinanceViewModel(
 
     fun savePay() {
         val sheet = _state.value.pay ?: return
-        if (sheet.busy) return
+        // Another action still running: the sheet must not start its spinner for a payment that won't be sent.
+        if (sheet.busy || _state.value.busy) return
         val amount = sheet.minor ?: return _state.update { it.copy(pay = sheet.copy(tried = true)) }
         _state.update { it.copy(pay = sheet.copy(tried = true, busy = true)) }
         record(sheet.row, amount, sheet.method, sheet.memo.trim().ifEmpty { null }) { e ->
@@ -689,15 +692,17 @@ class ClinicFinanceViewModel(
     fun pickPatient(patient: ClinicPatient) {
         editRecord { it.copy(patient = patient, matches = null, plans = null, plan = null) }
         viewModelScope.launch {
-            plans.plans(clinic.clinicId, patient.patientId).onSuccess { list ->
-                _state.update { s ->
-                    s.copy(
-                        record =
-                            s.record?.takeIf { it.patient?.patientId == patient.patientId }?.copy(
-                                plans = list,
-                            ) ?: s.record,
-                    )
-                }
+            val read = plans.plans(clinic.clinicId, patient.patientId)
+            // A failed read says so in the sheet: silently, the plan picker just never appeared.
+            _state.update { s ->
+                val mine = s.record?.takeIf { it.patient?.patientId == patient.patientId } ?: return@update s
+                s.copy(
+                    record =
+                        read.fold(
+                            { list -> mine.copy(plans = list) },
+                            { e -> mine.copy(error = failure(e, Res.string.couldNotLoad)) },
+                        ),
+                )
             }
         }
     }
@@ -712,11 +717,17 @@ class ClinicFinanceViewModel(
         patientSearch =
             viewModelScope.launch {
                 delay(SEARCH_DEBOUNCE)
-                clinics.patients(clinic.clinicId, 0, text, size = PATIENT_MATCHES).onSuccess { p ->
-                    _state.update {
-                            s ->
-                        s.copy(record = s.record?.takeIf { it.query == text }?.copy(matches = p.rows) ?: s.record)
-                    }
+                val found = clinics.patients(clinic.clinicId, 0, text, size = PATIENT_MATCHES)
+                // A failed search says so: silently it looked like a clinic without that patient.
+                _state.update { s ->
+                    val mine = s.record?.takeIf { it.query == text } ?: return@update s
+                    s.copy(
+                        record =
+                            found.fold(
+                                { p -> mine.copy(matches = p.rows, error = null) },
+                                { e -> mine.copy(error = failure(e, Res.string.failedToLoadPatients)) },
+                            ),
+                    )
                 }
             }
     }

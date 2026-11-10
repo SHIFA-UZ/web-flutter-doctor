@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -374,6 +375,8 @@ class PatientDetailViewModel(
                 refreshing = refresh && it.patient != null,
                 error = null,
                 notFound = false,
+                // A pull to refresh starts clean: an old message doesn't stay over the new read.
+                banner = if (refresh) null else it.banner,
             )
         }
         viewModelScope.launch {
@@ -408,7 +411,7 @@ class PatientDetailViewModel(
 
     // A failed read leaves "No recent visit" in the header and an error with Retry in the tabs (flow 06/03 §6).
     private suspend fun readVisits() {
-        repo.appointments(id).fold(
+        repo.appointments(id, clinicId).fold(
             onSuccess = {
                 appointments = it
                 _state.update { s -> s.copy(visitsError = null) }
@@ -708,7 +711,8 @@ data class PatientDetailActions(
     val testSms: () -> Unit = {},
     val createAccount: () -> Unit = {},
     val medical: MedicalActions = MedicalActions(),
-    val book: () -> Unit = {},
+    // Null for clinic staff: the slot picker reads the signed-in doctor's own calendar, which they don't have.
+    val book: (() -> Unit)? = {},
     // CHAT-07: Quick actions → "Send message" (the Chat tab on this patient's thread).
     val message: () -> Unit = {},
     // TP-04: "Create treatment plan" (a clinic's patient only): the plan wizard with this patient.
@@ -761,15 +765,17 @@ fun PatientDetailScreen(
     LaunchedEffect(Unit) { viewModel.load() }
     // Read each time the tab shows, back from the viewer included (access may have changed, flow 06/06 §5).
     // The documents tab reads the forms too: a form's PDF gets "Edit form" (flow 06/06).
-    LaunchedEffect(state.tab) {
+    // Not for clinic staff: the forms routes are the doctor's alone, so the tab is hidden and nothing is read.
+    val session by sessionRepository.session.collectAsStateWithLifecycle()
+    val staff = session?.isClinicStaff == true
+    LaunchedEffect(state.tab, staff) {
         if (state.tab == RecordTab.Documents) documents.load()
-        if (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms) forms.load()
+        if (!staff && (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms)) forms.load()
     }
     val titleOf = @Composable { d: PatientDocument -> documentTitle(d) }
     val back = { if (viewModel.back()) onBack() }
     BackHandler(onBack = back)
     // AI-09: the patient briefing (PRO, doctors only; hidden until the plan is known).
-    val session by sessionRepository.session.collectAsStateWithLifecycle()
     val briefingAllowed = rememberAllowed(DoctorFeature.PatientBriefing) && session?.isClinicStaff == false
     var briefingOpen by rememberSaveable { mutableStateOf(false) }
     val timelineAllowed = rememberAllowed(DoctorFeature.AiNotes) && session?.isClinicStaff == false
@@ -789,7 +795,7 @@ fun PatientDetailScreen(
             refresh = {
                 viewModel.load(refresh = true)
                 if (state.tab == RecordTab.Documents) documents.load()
-                if (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms) forms.load()
+                if (!staff && (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms)) forms.load()
             },
             ui = viewModel::ui,
             select = viewModel::select,
@@ -798,7 +804,7 @@ fun PatientDetailScreen(
             smsHours = viewModel::setSmsHours,
             testSms = viewModel::testSms,
             createAccount = viewModel::createAccount,
-            book = viewModel::openBooking,
+            book = (viewModel::openBooking).takeIf { !staff },
             message = { state.patient?.let(onMessage) },
             newPlan = onNewPlan?.let { go -> { state.patient?.let(go) } },
             findPartner =
@@ -820,7 +826,12 @@ fun PatientDetailScreen(
                     open = { opening = it },
                     requestAccess = documents::requestAccess,
                     ui = documents::ui,
-                    upload = { uploads.ui { it.copy(options = true) } },
+                    // The upload's progress, result and error are drawn on the Documents tab: started from Overview's
+                    // "Create document" it showed nothing, so a failed upload looked like a finished one.
+                    upload = {
+                        viewModel.select(RecordTab.Documents)
+                        uploads.ui { it.copy(options = true) }
+                    },
                     cancelUpload = uploads::cancelUpload,
                     retryUpload = uploads::retry,
                     dismissUpload = { uploads.ui { it.copy(banner = null) } },
@@ -851,6 +862,7 @@ fun PatientDetailScreen(
         formsState,
         timeline = if (timelineAllowed) ({ ClinicalTimeline(id) }) else null,
         prophylaxis = clinicId?.let { c -> { ProphylaxisCard(id, c) } },
+        tabs = if (staff) RecordTab.entries - RecordTab.Forms else RecordTab.entries,
     )
     UploadSheets(upload, uploads, sources)
     DocumentEditSheets(docs.edit, documents)
@@ -913,6 +925,8 @@ fun PatientDetailContent(
     timeline: (@Composable () -> Unit)? = null,
     // CLINIC-06: the clinic's prophylaxis card under Medical info; only in a clinic's scope.
     prophylaxis: (@Composable () -> Unit)? = null,
+    // Clinic staff get no Forms tab (the backend keeps patient forms to doctors).
+    tabs: List<RecordTab> = RecordTab.entries,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     // No title: the header below names the patient (flow 06/03 §3.1). ⋮ once the patient is read (CARE-02/03).
     val more = state.patient?.takeIf { actions.findPartner != null || actions.partnerships != null }
@@ -946,9 +960,9 @@ fun PatientDetailContent(
                     // The tabs pin under the app bar while the record scrolls (flow 06/03 §3.5).
                     stickyHeader {
                         UnderlineTabs(
-                            RecordTab.entries.map { TabItem(tr(it.label)) },
-                            state.tab.ordinal,
-                            { actions.select(RecordTab.entries[it]) },
+                            tabs.map { TabItem(tr(it.label)) },
+                            tabs.indexOf(state.tab).coerceAtLeast(0),
+                            { actions.select(tabs[it]) },
                             Modifier.background(ShifaColors.Bg.Canvas).then(gap),
                         )
                     }
@@ -1105,13 +1119,16 @@ private fun Stats(
                         verticalArrangement = Arrangement.spacedBy(ShifaSize.S2),
                     ) {
                         Text(tr(label), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
-                        Text(
-                            value,
-                            style = ShifaTextStyles.panelTitle(),
-                            color = ShifaColors.Text.Primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        // Selectable: a phone or a patient id is copied out of the record (the web has no long-press).
+                        SelectionContainer {
+                            Text(
+                                value,
+                                style = ShifaTextStyles.panelTitle(),
+                                color = ShifaColors.Text.Primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }
@@ -1163,11 +1180,13 @@ private fun Overview(
                         color = ShifaColors.Text.Primary,
                     )
                     p.username?.let {
-                        Text(
-                            it,
-                            style = ShifaTextStyles.metaSmall(),
-                            color = ShifaColors.Text.Secondary,
-                        )
+                        SelectionContainer {
+                            Text(
+                                it,
+                                style = ShifaTextStyles.metaSmall(),
+                                color = ShifaColors.Text.Secondary,
+                            )
+                        }
                     }
                 }
             }
@@ -1262,8 +1281,8 @@ private fun MoreSheet(
 private fun QuickActions(actions: PatientDetailActions) =
     Card(tr(Res.string.quickActions)) {
         val tiles =
-            listOf(
-                Triple(Res.string.newAppointment, Res.drawable.ic_cal_plus_18, actions.book),
+            listOfNotNull(
+                actions.book?.let { Triple(Res.string.newAppointment, Res.drawable.ic_cal_plus_18, it) },
                 Triple(Res.string.sendMessage, Res.drawable.ic_chat_18, actions.message),
                 Triple(
                     Res.string.createDocument,
