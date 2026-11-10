@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -31,7 +30,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
-import org.jetbrains.compose.resources.decodeToImageBitmap
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.api.fileCacheKey
 import shifa.doctor.data.chat.fileSizeLabel
@@ -74,6 +72,7 @@ import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.ZoomState
+import shifa.doctor.ui.widgets.decodedImage
 import shifa.doctor.ui.widgets.zoomable
 import shifa.doctor.utils.PdfView
 import shifa.doctor.utils.tr
@@ -98,8 +97,10 @@ internal fun ImageTile(
         .background(ShifaColors.Bg.Canvas)
         .then(if (url != null) Modifier.clickable(role = Role.Image, onClick = onOpen) else Modifier),
 ) {
-    val local: ImageBitmap? = remember(bytes) { bytes?.let { runCatching { it.decodeToImageBitmap() }.getOrNull() } }
+    val decoded = bytes?.let { decodedImage(it) }
+    val local = decoded?.getOrNull()
     when {
+        bytes != null && decoded == null -> ShifaSkeleton(Modifier.fillMaxSize(), ShifaRadius.Xs)
         local != null -> Image(local, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         url != null ->
             KamelImage(
