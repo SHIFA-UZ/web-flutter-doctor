@@ -38,6 +38,7 @@ import shifa.doctor.generated.resources.noShowMarked
 import shifa.doctor.generated.resources.noShowNotAllowed
 import shifa.doctor.generated.resources.patientSignatureRequestSent
 import shifa.doctor.generated.resources.photoLimit
+import shifa.doctor.generated.resources.recordingAlreadyProcessing
 import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.stopAll
 
@@ -326,6 +327,18 @@ class VisitViewModelTest {
         settle { classToTest.state.value.scribeRetry }
         assertThat(classToTest.state.value.scribeRetry).isTrue()
         assertThat(classToTest.state.value.scribeUploading).isFalse()
+    }
+
+    @Test
+    fun `End waits while the scribe's recording is still uploading`() {
+        val classToTest = opened()
+        classToTest.ui { it.copy(scribeUploading = true) }
+        classToTest.openEnd()
+        assertThat(classToTest.state.value.end.confirm).isFalse()
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.recordingAlreadyProcessing)
+        classToTest.ui { it.copy(scribeUploading = false) }
+        classToTest.openEnd()
+        assertThat(classToTest.state.value.end.confirm).isTrue()
     }
 
     @Test

@@ -423,7 +423,16 @@ fun VisitScreen(
     // The AI scribe's recorder lives in this screen: whatever leaves it (or ends the visit) while it records asks
     // first, instead of dropping the recording without a word.
     var afterRecording by remember { mutableStateOf<(() -> Unit)?>(null) }
-    val guarded = { action: () -> Unit -> if (scribeState.field != null) afterRecording = action else action() }
+    val guarded = { action: () -> Unit ->
+        when {
+            // Recording: nothing is sent yet, so leaving discards it; ask.
+            scribeState.field != null && !scribeState.transcribing -> afterRecording = action
+            // ✓ was tapped and the recorder is handing the audio over (a moment): it would be lost with the screen.
+            scribeState.transcribing && !state.scribeUploading -> Unit
+            // Uploading: that runs in the ViewModel and survives leaving; End itself waits for it (openEnd).
+            else -> action()
+        }
+    }
     val back = {
         when {
             state.focus -> viewModel.ui { it.copy(focus = false) }

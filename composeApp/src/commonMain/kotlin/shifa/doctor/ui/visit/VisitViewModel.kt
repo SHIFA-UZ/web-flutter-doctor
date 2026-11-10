@@ -83,6 +83,7 @@ import shifa.doctor.generated.resources.noShowMarked
 import shifa.doctor.generated.resources.notesSaveFailed
 import shifa.doctor.generated.resources.patientSignatureRequestSent
 import shifa.doctor.generated.resources.photoLimit
+import shifa.doctor.generated.resources.recordingAlreadyProcessing
 import shifa.doctor.generated.resources.saveFailed
 import shifa.doctor.generated.resources.scribeUploadFailed
 import shifa.doctor.generated.resources.signatureRequestFailed
@@ -464,7 +465,16 @@ class VisitViewModel(
     private var waitingScribe: Job? = null
     private var endedAt: LocalDateTime? = null
 
-    fun openEnd() = _state.update { if (it.end.running) it else it.copy(end = EndUiState(confirm = true)) }
+    fun openEnd() =
+        _state.update {
+            when {
+                it.end.running -> it
+                // The scribe's recording is still going up: ended now, the visit would be filed as if there were none
+                // (its notes are only waited for once the upload has answered).
+                it.scribeUploading -> it.copy(banner = CodeBanner(Res.string.recordingAlreadyProcessing, error = false))
+                else -> it.copy(end = EndUiState(confirm = true))
+            }
+        }
 
     /** Closes the sheet; a completed visit whose summary failed keeps that state for the footer's Retry summary. */
     fun closeEnd() =
