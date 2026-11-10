@@ -1,5 +1,7 @@
 package shifa.doctor.data.api
 
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 
@@ -37,3 +39,10 @@ private fun isApiPath(path: String) = path == "/api" || path.startsWith("/api/")
  * (`?exp=&sig=`), so the full URL would download and decode the same picture again on each poll.
  */
 fun fileCacheKey(url: String): String = url.substringBefore('?')
+
+/** A request that carries a file either way gets [ApiConfig.FILE_TIMEOUT_MS] instead of the 30 s of an API call. */
+fun HttpRequestBuilder.fileTimeout() =
+    timeout {
+        requestTimeoutMillis = ApiConfig.FILE_TIMEOUT_MS
+        socketTimeoutMillis = ApiConfig.FILE_TIMEOUT_MS
+    }

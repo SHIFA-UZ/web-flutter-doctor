@@ -20,6 +20,7 @@ import kotlinx.serialization.json.JsonElement
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.absoluteFileUrl
 import shifa.doctor.data.api.apiCall
+import shifa.doctor.data.api.fileTimeout
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.api.rows
 import shifa.doctor.data.api.usable
@@ -102,7 +103,7 @@ class ChatRepository(
 
     /** CHAT-05: a document's bytes for the in-app viewer, from the URL the message carries (absolute, 07 §1.5). */
     suspend fun file(url: String): Result<ByteArray> =
-        apiCall<HttpResponse> { client().get(url) }.map { it.readBytes() }
+        apiCall<HttpResponse> { client().get(url) { fileTimeout() } }.map { it.readBytes() }
 
     /** `POST /messages/conversations/{id}/read`; on success the shell's Chat badge reads its count again ([ChatReads]). */
     suspend fun markRead(id: Long): Result<Unit> =
@@ -153,7 +154,7 @@ class ChatRepository(
                         },
                     )
                 },
-            )
+            ) { fileTimeout() }
         }.mapCatching { it.url?.takeIf(String::isNotBlank) ?: error("upload without a url") }
 }
 

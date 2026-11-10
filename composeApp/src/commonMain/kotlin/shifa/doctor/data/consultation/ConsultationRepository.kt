@@ -1,7 +1,6 @@
 package shifa.doctor.data.consultation
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.timeout
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
@@ -21,6 +20,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
+import shifa.doctor.data.api.fileTimeout
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.api.rows
 import shifa.doctor.data.model.ApiException
@@ -148,10 +148,7 @@ class ConsultationRepository(
                     append("language", language.backendCode)
                 },
             ) {
-                timeout {
-                    requestTimeoutMillis = UPLOAD_TIMEOUT_MS
-                    socketTimeoutMillis = UPLOAD_TIMEOUT_MS
-                }
+                fileTimeout()
             }
         }
 
@@ -188,7 +185,6 @@ class ConsultationRepository(
 }
 
 // A long consultation is several MB over mobile data.
-private const val UPLOAD_TIMEOUT_MS = 180_000L
 
 val SCRIBE_POLL = 3.seconds
 val SCRIBE_TIMEOUT = 120.seconds

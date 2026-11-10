@@ -22,6 +22,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
+import shifa.doctor.data.api.fileTimeout
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.api.rows
 import shifa.doctor.data.model.DocumentFile
@@ -56,6 +57,7 @@ class DocumentsRepository(
         apiCall<HttpResponse> {
             client().get(ApiConfig.Endpoints.patientDocumentDownload(patientId, documentId)) {
                 clinicId?.let { parameter("clinicId", it) }
+                fileTimeout()
             }
         }.map { response ->
             val bytes = response.readBytes()
@@ -88,6 +90,7 @@ class DocumentsRepository(
                 },
             ) {
                 clinicId?.let { parameter("clinicId", it) }
+                fileTimeout()
                 onUpload {
                         sent,
                         total,
@@ -114,6 +117,7 @@ class DocumentsRepository(
             ) {
                 method = HttpMethod.Put
                 clinicId?.let { parameter("clinicId", it) }
+                fileTimeout()
             }
         }
 

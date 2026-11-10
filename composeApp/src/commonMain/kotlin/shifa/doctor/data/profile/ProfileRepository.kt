@@ -21,6 +21,7 @@ import kotlinx.serialization.json.JsonElement
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.apiJson
+import shifa.doctor.data.api.fileTimeout
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.model.DoctorBilling
 import shifa.doctor.data.model.DoctorContact
@@ -138,7 +139,7 @@ class ProfileRepository(
                         },
                     )
                 },
-            )
+            ) { fileTimeout() }
         }.map { it.photoUrl }
 
     private fun jsonList(values: List<String>) = apiJson.encodeToString(ListSerializer(String.serializer()), values)
