@@ -375,6 +375,8 @@ class PatientDetailViewModel(
                 refreshing = refresh && it.patient != null,
                 error = null,
                 notFound = false,
+                // A pull to refresh starts clean: an old message doesn't stay over the new read.
+                banner = if (refresh) null else it.banner,
             )
         }
         viewModelScope.launch {
