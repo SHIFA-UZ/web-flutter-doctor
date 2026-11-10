@@ -241,14 +241,7 @@ fun IntelligenceScreen(
             },
             export = {
                 viewModel.export()?.let {
-                    if (!share(
-                            it.fileName,
-                            "text/plain",
-                            it.bytes,
-                        )
-                    ) {
-                        viewModel.exportFailed()
-                    }
+                    if (share(it.fileName, "text/plain", it.bytes)) viewModel.exported() else viewModel.exportFailed()
                 }
             },
             dismissBanner = viewModel::dismissBanner,

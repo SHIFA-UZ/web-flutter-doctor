@@ -18,11 +18,14 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.chat.ChatRepository
 import shifa.doctor.data.chat.ConversationSort
 import shifa.doctor.data.model.UserSearchResult
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.stopAll
 import kotlin.time.Duration.Companion.milliseconds
 
 class ChatListViewModelTest {
     private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+    private val tracker = RecordingTracker()
 
     private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine =
@@ -64,6 +67,7 @@ class ChatListViewModelTest {
             }, { "https://api.shifa.uz/api/" }),
             every = 50.milliseconds,
             debounce = 30.milliseconds,
+            tracker = tracker,
         ).also { created += it }
 
     @Test
@@ -103,6 +107,25 @@ class ChatListViewModelTest {
         settle { classToTest.state.value.open?.id == 9L }
         assertThat(asked).contains("POST messages/conversations/start")
         assertThat(classToTest.state.value.conversations!!.map { it.id }).contains(9L)
+    }
+
+    @Test
+    fun `search, a started conversation and the order are tracked, never the text`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.conversations != null }
+        classToTest.type("Mal")
+        settle { classToTest.state.value.results != null }
+        classToTest.startWith(UserSearchResult(13, "Malika"))
+        settle { classToTest.state.value.open?.id == 9L }
+        classToTest.sort(ConversationSort.Oldest)
+        classToTest.sort(ConversationSort.Oldest)
+        assertThat(tracker.events)
+            .containsExactly(
+                ChatEvents.ChatUsersSearched("2-5"),
+                ChatEvents.ChatConversationStarted(isDoctor = false),
+                ChatEvents.ChatListSorted(ConversationSort.Oldest),
+            ).inOrder()
     }
 
     @Test

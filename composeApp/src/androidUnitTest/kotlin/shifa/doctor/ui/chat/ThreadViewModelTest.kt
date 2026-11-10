@@ -17,6 +17,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.chat.ChatRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chatRecordingTooShort
 import shifa.doctor.generated.resources.errorRecordingVoice
@@ -26,6 +28,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class ThreadViewModelTest {
     private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+    private val tracker = RecordingTracker()
 
     private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
@@ -135,6 +138,7 @@ class ThreadViewModelTest {
                 createHttpClient({ null }, engine)
             }, { "https://api.shifa.uz/api/" }),
             every = 40.milliseconds,
+            tracker = tracker,
         ).also { created += it }
 
     @Test
@@ -184,6 +188,31 @@ class ThreadViewModelTest {
         classToTest.retry(p.localId)
         settle { classToTest.state.value.pending.isEmpty() }
         assertThat(sent).containsExactly("lost?")
+    }
+
+    @Test
+    fun `sends are tracked by kind and outcome, never their text or file`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.messages != null }
+        failSend = true
+        classToTest.draft("lost?")
+        classToTest.send()
+        settle { classToTest.state.value.pending.singleOrNull()?.failed == true }
+        failSend = false
+        classToTest.retry(classToTest.state.value.pending.single().localId)
+        settle { classToTest.state.value.pending.isEmpty() }
+        classToTest.sendVoice(ByteArray(100), 0)
+        classToTest.sendImage(shifa.doctor.utils.PickedImage("a.jpg", ByteArray(10)))
+        settle { classToTest.state.value.pending.isEmpty() && tracker.events.size == 4 }
+        shifa.doctor.ui.navigation.ShellNotice.pending.value = null
+        assertThat(tracker.events)
+            .containsExactly(
+                ChatEvents.ChatMessageFailed("text", "server"),
+                ChatEvents.ChatMessageSent("text", isRetry = true),
+                ChatEvents.ChatMessageFailed("voice", "too_short"),
+                ChatEvents.ChatMessageSent("image", isRetry = false),
+            ).inOrder()
     }
 
     @Test

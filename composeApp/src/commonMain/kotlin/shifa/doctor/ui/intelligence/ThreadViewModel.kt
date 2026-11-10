@@ -20,6 +20,7 @@ import shifa.doctor.data.ai.aiCode
 import shifa.doctor.data.ai.aiRepository
 import shifa.doctor.data.ai.toAiMessage
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.appointments.BookRequest
@@ -42,6 +43,11 @@ import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.speech.TranscriptionRepository
 import shifa.doctor.data.speech.transcriptionRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.CalendarEvents
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.intelBookingFailed
 import shifa.doctor.generated.resources.intelBookingFailedNetwork
@@ -108,6 +114,7 @@ class ThreadViewModel(
     private val appointments: AppointmentsRepository = appointmentsRepository,
     transcription: TranscriptionRepository = transcriptionRepository,
     speechPlayer: () -> SpeechPlayer = ::createSpeechPlayer,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ThreadUiState())
     val state: StateFlow<ThreadUiState> = _state.asStateFlow()
@@ -126,6 +133,7 @@ class ThreadViewModel(
             cancelTurn = ::cancelTurn,
             busy = { _state.value.busy && !voiceTurn },
             clock = { now().toEpochMilliseconds() },
+            tracker = tracker,
         )
 
     // The turn running now came from the voice: its reply is spoken, in [replyLanguage].
@@ -135,6 +143,10 @@ class ThreadViewModel(
     // How the last question was asked, for Retry: spoken (and in which language) or typed.
     private var lastSpoken: String? = null
     private var lastWasVoice = false
+
+    // How the question was asked (`typed` / `starter` / `voice` / `card_answer`), for the turn's tracking event.
+    private var lastInput = "typed"
+    private var turnTrack = TurnTrack("typed", false, false)
 
     private var turn: Job? = null
 
@@ -153,13 +165,18 @@ class ThreadViewModel(
 
     fun draft(text: String) = _state.update { it.copy(draft = text) }
 
-    /** The composer's Send (or a starter prompt): the text as typed. */
-    fun send(text: String = _state.value.draft) {
+    /** The composer's Send (no [text]: the draft) or a starter prompt ([text]): the text as typed. */
+    fun send(text: String? = null) = submit(text ?: _state.value.draft, if (text == null) "typed" else "starter")
+
+    private fun submit(
+        text: String,
+        input: String,
+    ) {
         if (_state.value.busy || store.state.value.activeId in bookings) return
         val question = ChatTitles.stripWakePhrase(text).ifBlank { return }
         _state.update { it.copy(draft = "") }
         voice.typed()
-        ask(question)
+        ask(question, input = input)
     }
 
     /** A transcribed take as the question, in the language it was spoken in; false when a question can't go now. */
@@ -169,7 +186,7 @@ class ThreadViewModel(
     ): Boolean {
         if (_state.value.busy || store.state.value.activeId in bookings) return false
         val question = ChatTitles.stripWakePhrase(text).ifBlank { return false }
-        ask(question, language, voice = true)
+        ask(question, language, voice = true, input = "voice")
         return true
     }
 
@@ -179,7 +196,7 @@ class ThreadViewModel(
         _state.update { it.copy(error = null) }
         // A spoken question is retried as one: no re-listen meanwhile, and its answer is spoken.
         if (lastWasVoice) voice.retrying()
-        ask(q, lastSpoken, voice = lastWasVoice)
+        ask(q, lastSpoken, voice = lastWasVoice, input = lastInput, retry = true)
     }
 
     /**
@@ -229,6 +246,13 @@ class ThreadViewModel(
             if (store.state.value.activeId == chat.id) _state.update { it.copy(booking = false) }
             result.fold(
                 {
+                    tracker.track(
+                        if (card.move) {
+                            CalendarEvents.AppointmentRescheduled(card.isVideo, isOnBehalf = false)
+                        } else {
+                            CalendarEvents.AppointmentBooked("intelligence", card.isVideo, false, slot.minutes)
+                        },
+                    )
                     val key = if (card.move) IntelCard.KEY_MOVED else IntelCard.KEY_BOOKED
                     store.updateCard(chat.id, index) {
                         JsonObject(
@@ -238,7 +262,19 @@ class ThreadViewModel(
                     cardUi(index, chat.id) { CardUi() }
                     scheduleChanged(listOfNotNull(card.currentDate), listOf(start))
                 },
-                { e -> cardUi(index, chat.id) { it.copy(busy = false, error = bookingError(e, card.move)) } },
+                { e ->
+                    tracker.track(
+                        if (card.move) {
+                            CalendarEvents.AppointmentRescheduleFailed(e.toFailureReason(), isOnBehalf = false)
+                        } else {
+                            // As the booking form: 400 / 409 is the slot taken meanwhile.
+                            val taken = e is ApiException && e.status in setOf(400, HTTP_CONFLICT)
+                            val reason = if (taken) "slot_taken" else e.toFailureReason()
+                            CalendarEvents.BookingFailed(reason, "intelligence", card.isVideo, isOnBehalf = false)
+                        },
+                    )
+                    cardUi(index, chat.id) { it.copy(busy = false, error = bookingError(e, card.move)) }
+                },
             )
         }
     }
@@ -263,12 +299,14 @@ class ThreadViewModel(
             committing -= key
             result.fold(
                 { done ->
+                    tracker.track(ChatEvents.IntelligenceFactsDocumented(countBucket(done.committedFacts.size)))
                     store.updateCard(chat.id, index) {
                         JsonObject(it + (IntelCard.KEY_DOCUMENTED to JsonPrimitive(done.committedFacts.size)))
                     }
                     cardUi(index, chat.id) { CardUi() }
                 },
                 { e ->
+                    tracker.track(ChatEvents.IntelligenceFactsDocumentFailed(e.toFailureReason()))
                     val error =
                         if (e is ApiException && e !is ApiException.NetworkError) {
                             CodeBanner(e.toUserMessage(Res.string.intelDocumentFailed), requestId = e.requestId)
@@ -303,6 +341,7 @@ class ThreadViewModel(
     /** A proposal's Cancel: the card goes (nothing is cancelled; saying "no" to Shifa does the same), and stays gone. */
     fun dismiss(index: Int) {
         val chat = store.state.value.active ?: return
+        tracker.track(ChatEvents.IntelligenceProposalDismissed)
         store.updateCard(chat.id, index) { JsonObject(it + (IntelCard.KEY_DISMISSED to JsonPrimitive(true))) }
     }
 
@@ -313,7 +352,8 @@ class ThreadViewModel(
     fun answerCancel(yes: Boolean) {
         val chat = store.state.value.active ?: return
         val language = languages[chat.id] ?: appLanguage()
-        send((if (yes) CONFIRM else DECLINE)[language] ?: if (yes) "yes" else "no")
+        tracker.track(ChatEvents.IntelligenceCancelAnswered(yes))
+        submit((if (yes) CONFIRM else DECLINE)[language] ?: if (yes) "yes" else "no", "card_answer")
     }
 
     private fun cardUi(
@@ -350,6 +390,7 @@ class ThreadViewModel(
 
     // The running turn stops and its question goes (the voice's mic tap while "Reviewing…" too).
     private fun cancelTurn() {
+        if (_state.value.busy) tracker.track(ChatEvents.IntelligenceReplyStopped(turnTrack.input))
         turn?.cancel()
         turn = null
         voiceTurn = false
@@ -370,6 +411,8 @@ class ThreadViewModel(
         question: String,
         spokenIn: String? = null,
         voice: Boolean = false,
+        input: String,
+        retry: Boolean = false,
     ) {
         turn?.cancel()
         store.ensureLoaded()
@@ -382,6 +425,8 @@ class ThreadViewModel(
         lastWasVoice = voice
         lastSpoken = spokenIn
         lastQuestion = question
+        lastInput = input
+        turnTrack = TurnTrack(input, retry, ChatHistory.focusPatientId(stored) != null)
         val askedAt = now()
         _state.update {
             it.copy(asking = question, askedAt = askedAt, streaming = "", toolName = null, card = null, error = null)
@@ -427,11 +472,23 @@ class ThreadViewModel(
         if (store.state.value.activeId != chatId) return
         val s = _state.value
         val card = s.card
+        val track = turnTrack
         if (reply.isEmpty() && card == null) {
+            tracker.track(ChatEvents.IntelligenceReplyFailed("empty", track.input, track.isRetry))
             _state.update { it.copy(error = CodeBanner(Res.string.intelEmptyReply)) }
             if (voiceTurn.also { voiceTurn = false }) voice.turnFailed()
             return
         }
+        tracker.track(
+            ChatEvents.IntelligenceReplyReceived(
+                track.input,
+                card?.let { IntelCard.typeOf(s.toolName, it) },
+                card?.changesSchedule() == true,
+                (now() - askedAt).inWholeSeconds.toInt(),
+                track.isRetry,
+                track.hasPatientContext,
+            ),
+        )
         // A booking Shifa made says so; a reply without words falls back to the card's spoken line (02 §3.3 step 8).
         val said =
             when {
@@ -460,6 +517,8 @@ class ThreadViewModel(
     }
 
     private fun fail(e: Throwable) {
+        val reason = if (e is ApiException && e.code == "AI_UNAVAILABLE") "ai_unavailable" else e.toFailureReason()
+        tracker.track(ChatEvents.IntelligenceReplyFailed(reason, turnTrack.input, turnTrack.isRetry))
         _state.update {
             it.copy(
                 error = CodeBanner(e.toAiMessage(Res.string.somethingWentWrong), requestId = e.requestId),
@@ -470,6 +529,13 @@ class ThreadViewModel(
 }
 
 private const val HTTP_CONFLICT = 409
+
+// What the running turn's tracking event says about how it was asked (never the question).
+private data class TurnTrack(
+    val input: String,
+    val isRetry: Boolean,
+    val hasPatientContext: Boolean,
+)
 
 // Words the backend's `AppointmentActionPhrases` takes as a confirmation, by reply language; the "no"s are anything else.
 private val CONFIRM = mapOf("EN" to "yes", "UZ" to "ha", "RU" to "да")
