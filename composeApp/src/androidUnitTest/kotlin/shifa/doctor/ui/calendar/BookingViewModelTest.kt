@@ -33,6 +33,8 @@ import shifa.doctor.data.calendar.DayKey
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.PatientOption
 import shifa.doctor.data.patients.PatientsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.bookingRangeUnavailable
 import shifa.doctor.generated.resources.patientAssignedName
@@ -98,6 +100,7 @@ class BookingViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
     private val created = mutableListOf<BookingViewModel>()
+    private val tracker = RecordingTracker()
 
     @After fun tearDown() {
         screen.cancel()
@@ -131,6 +134,7 @@ class BookingViewModelTest {
                 AppointmentsRepository { createHttpClient({ null }, engine) },
                 PatientsRepository(client = { createHttpClient({ null }, engine) }),
                 scope = scope,
+                tracker = tracker,
             )
         screen.launch { vm.follow() }
         created += vm
@@ -194,6 +198,32 @@ class BookingViewModelTest {
         past.ui { it.copy(patient = shifa.doctor.data.model.PatientOption(3, "Anna")) }
         past.book()
         assertThat(posted).isEmpty()
+    }
+
+    @Test
+    fun `booking is tracked by its outcome, a taken range as slot_taken`() {
+        val classToTest = opened()
+        classToTest.pickPatient(classToTest.state.value.patients!!.first())
+        bookStatus = HttpStatusCode.Conflict
+        classToTest.book()
+        settle { classToTest.state.value.banner != null }
+        bookStatus = HttpStatusCode.OK
+        classToTest.book()
+        settle { classToTest.state.value.closed }
+        assertThat(tracker.events)
+            .containsExactly(
+                CalendarEvents.BookingFailed("slot_taken", "calendar", isVideo = false, isOnBehalf = false),
+                CalendarEvents.AppointmentBooked("calendar", isVideo = false, isOnBehalf = false, minutes = 30),
+            ).inOrder()
+    }
+
+    @Test
+    fun `a colleague's booking and a day that has ended are tracked`() {
+        val past =
+            opened(LocalDate(2026, 11, 3), scope = CalendarScope(22, "Bobur Aliyev", "Asia/Tashkent", "Amir Temur 1"))
+        past.book()
+        assertThat(tracker.events)
+            .containsExactly(CalendarEvents.BookingFailed("past_day", "calendar", isVideo = false, isOnBehalf = true))
     }
 
     @Test

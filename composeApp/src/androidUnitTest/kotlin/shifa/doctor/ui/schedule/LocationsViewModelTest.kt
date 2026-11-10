@@ -20,6 +20,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.locations.LocationsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.locationDeleteBlocked
 import shifa.doctor.generated.resources.locationSaved
@@ -31,6 +33,8 @@ class LocationsViewModelTest {
     private val writes = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var deleteStatus = HttpStatusCode.NoContent
     private var reads = 0
+    private var saveFails = false
+    private val tracker = RecordingTracker()
     private val engine =
         MockEngine { req ->
             val json = headersOf(HttpHeaders.ContentType, "application/json")
@@ -48,6 +52,7 @@ class LocationsViewModelTest {
                     }
                 }
                 else -> {
+                    if (saveFails) return@MockEngine respond("", HttpStatusCode.ServiceUnavailable)
                     writes += "${req.method.value} ${req.url.encodedPath} ${req.body.toByteArray().decodeToString()}"
                     respond("""{"id":3,"label":"x","isPrimary":false}""", HttpStatusCode.OK, json)
                 }
@@ -148,5 +153,34 @@ class LocationsViewModelTest {
         classToTest.save()
         settle { writes.isNotEmpty() }
         assertThat(writes.single()).contains(""""latitude":41.31,"longitude":69.28""")
+    }
+
+    @Test
+    fun `saving and deleting a location are tracked by their outcome, a refused delete as in_use`() {
+        val classToTest = LocationsViewModel(repo, tracker).also { created += it }
+        classToTest.load()
+        settle { classToTest.state.value.locations != null }
+        classToTest.open(null)
+        classToTest.edit { it.copy(label = "Home", latitude = 41.3, longitude = 69.2) }
+        saveFails = true
+        classToTest.save()
+        settle { classToTest.state.value.banner != null }
+        saveFails = false
+        classToTest.save()
+        settle { classToTest.state.value.draft == null }
+        classToTest.open(classToTest.state.value.locations!![1])
+        deleteStatus = HttpStatusCode.Conflict
+        classToTest.delete()
+        settle { classToTest.state.value.banner?.error == true }
+        deleteStatus = HttpStatusCode.NoContent
+        classToTest.delete()
+        settle { classToTest.state.value.draft == null }
+        assertThat(tracker.events)
+            .containsExactly(
+                CalendarEvents.PracticeLocationSaveFailed("server", isNew = true),
+                CalendarEvents.PracticeLocationSaved(isNew = true, isPrimary = false, hasPin = true),
+                CalendarEvents.PracticeLocationDeleteFailed("in_use"),
+                CalendarEvents.PracticeLocationDeleted,
+            ).inOrder()
     }
 }

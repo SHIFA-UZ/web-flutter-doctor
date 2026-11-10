@@ -36,9 +36,11 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.calendarRepository
@@ -57,6 +59,9 @@ import shifa.doctor.data.schedule.periodFits
 import shifa.doctor.data.schedule.rangeProblem
 import shifa.doctor.data.schedule.scheduleRepository
 import shifa.doctor.data.storage.ActiveLocationStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.add
 import shifa.doctor.generated.resources.addFirstLocationHint
@@ -233,6 +238,7 @@ class ScheduleViewModel(
     clock: PracticeClock = PracticeClock(profileRepository.me.value?.profile?.timeZone),
     private val active: ActiveLocationStorage = ActiveLocationStorage(),
     private val doctorId: () -> Long? = { profileRepository.me.value?.profile?.id },
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ScheduleUiState(clock))
     val state: StateFlow<ScheduleUiState> = _state.asStateFlow()
@@ -330,6 +336,7 @@ class ScheduleViewModel(
     /** Discard confirmed: either switch to the pending location or leave the screen. */
     fun discard() {
         val pending = _state.value.pendingLocation
+        tracker.track(CalendarEvents.ScheduleChangesDiscarded)
         _state.update {
             it.copy(
                 askDiscard = false,
@@ -425,17 +432,21 @@ class ScheduleViewModel(
             fun failed(
                 e: Throwable,
                 text: StringResource,
-            ) = _state.update {
-                it.copy(
-                    saving = false,
-                    banner = CodeBanner(e.toUserMessage(text), requestId = e.requestId),
-                )
+                stage: String,
+            ) {
+                tracker.track(CalendarEvents.ScheduleSaveFailed(e.toFailureReason(), stage))
+                _state.update {
+                    it.copy(
+                        saving = false,
+                        banner = CodeBanner(e.toUserMessage(text), requestId = e.requestId),
+                    )
+                }
             }
             if (s.week != s.saved) {
                 schedule.saveRules(
                     locationId,
                     s.week,
-                ).onFailure { return@launch failed(it, Res.string.scheduleSaveFailed) }
+                ).onFailure { return@launch failed(it, Res.string.scheduleSaveFailed, "hours") }
                 _state.update { it.copy(saved = s.week) }
                 // Every day's free slots may have changed: the calendar reads its days again when shown (also when the
                 // period below fails), and answers already on their way are dropped.
@@ -455,10 +466,18 @@ class ScheduleViewModel(
                 schedule.addPeriod(period.first, period.second, today).onFailure {
                     // The period stays pending (also the first setup's default), so Save can try it again.
                     _state.update { s2 -> s2.copy(newFrom = period.first, newUntil = period.second) }
-                    return@launch failed(it, Res.string.scheduleSavedPeriodFailed)
+                    return@launch failed(it, Res.string.scheduleSavedPeriodFailed, "period")
                 }
                 calendar.invalidateAll()
             }
+            tracker.track(
+                CalendarEvents.ScheduleSaved(
+                    hasHoursChanged = s.week != s.saved,
+                    hasPeriod = period != null,
+                    isFirstSetup = s.periods.isEmpty(),
+                    workingDays = s.week.days.count { it.value.isNotEmpty() },
+                ),
+            )
             ShellNotice.pending.value = Notice(Res.string.scheduleSaved, success = true)
             _state.update { it.copy(saving = false, newFrom = null, newUntil = null, closed = true) }
         }
@@ -499,10 +518,12 @@ class ScheduleViewModel(
                 )
             schedule.addDateSpecific(rule).fold(
                 onSuccess = { saved ->
+                    tracker.track(CalendarEvents.ScheduleDateHoursAdded(d.from.daysUntil(d.to) + 1))
                     calendar.invalidateAll()
                     _state.update { it.copy(dateBusy = false, dateDraft = null, dates = it.dates + saved) }
                 },
                 onFailure = { e ->
+                    tracker.track(CalendarEvents.ScheduleDateHoursAddFailed(e.toFailureReason()))
                     _state.update {
                         it.copy(
                             dateBusy = false,
@@ -520,10 +541,12 @@ class ScheduleViewModel(
         viewModelScope.launch {
             schedule.deleteDateSpecific(id).fold(
                 onSuccess = {
+                    tracker.track(CalendarEvents.ScheduleDateHoursDeleted)
                     calendar.invalidateAll()
                     _state.update { s -> s.copy(dateBusy = false, dates = s.dates.filterNot { it.id == id }) }
                 },
                 onFailure = { e ->
+                    tracker.track(CalendarEvents.ScheduleDateHoursDeleteFailed(e.toFailureReason()))
                     _state.update {
                         it.copy(
                             dateBusy = false,
