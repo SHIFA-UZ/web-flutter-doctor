@@ -2,7 +2,6 @@ package shifa.doctor.data.badges
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -29,21 +28,20 @@ class BadgesRepository(
     suspend fun notificationsUnread(): Result<Int> =
         apiCall<CountDto> { client().get(ApiConfig.Endpoints.NOTIFICATIONS_UNREAD) }.map { it.count.toInt() }
 
-    /** Active remote-care tasks: `GET /tasks?status=ACTIVE`, counted (no count endpoint exists). */
-    suspend fun activeTasks(): Result<Int> =
-        apiCall<List<JsonElement>> {
-            client().get(ApiConfig.Endpoints.TASKS) { parameter("status", "ACTIVE") }
-        }.map { it.size }
-
     /**
-     * Home's follow-up count (flow 02/02 §4): active and draft remote-care tasks, from one `GET /tasks` (no count
-     * endpoint, and the status filter takes one value).
+     * The Tasks badge (active remote-care tasks) and Home's follow-up count (active and draft, flow 02/02 §4), both
+     * from one `GET /tasks`: no count endpoint exists, and the status filter takes one value.
      */
-    suspend fun followUps(): Result<Int> =
+    suspend fun taskCounts(): Result<TaskCounts> =
         apiCall<List<JsonElement>> { client().get(ApiConfig.Endpoints.TASKS) }.map { rows ->
-            rows.count { row ->
-                val status = ((row as? JsonObject)?.get("status") as? JsonPrimitive)?.contentOrNull?.uppercase()
-                status == "ACTIVE" || status == "DRAFT"
-            }
+            val statuses =
+                rows.map { ((it as? JsonObject)?.get("status") as? JsonPrimitive)?.contentOrNull?.uppercase() }
+            val active = statuses.count { it == "ACTIVE" }
+            TaskCounts(active = active, followUps = active + statuses.count { it == "DRAFT" })
         }
 }
+
+data class TaskCounts(
+    val active: Int,
+    val followUps: Int,
+)

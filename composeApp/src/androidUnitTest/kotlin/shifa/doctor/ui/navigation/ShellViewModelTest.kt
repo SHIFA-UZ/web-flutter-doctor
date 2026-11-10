@@ -62,7 +62,7 @@ class ShellViewModelTest {
                     } else if (req.url.encodedPath.endsWith("unread/count")) {
                         """{"count":${notifications++}}"""
                     } else if (req.url.encodedPath.endsWith("/tasks")) {
-                        """[{"id":1},{"id":2}]"""
+                        """[{"id":1,"status":"ACTIVE"},{"id":2,"status":"active"},{"id":3,"status":"DRAFT"},{"id":4,"status":"COMPLETED"}]"""
                     } else if (req.url.encodedPath.endsWith("me/profile")) {
                         """{"id":5,"role":"CLINIC_STAFF","firstName":"Dilfuza","lastName":"Y","photoUrl":"https://x/p.jpg"}"""
                     } else {
@@ -371,6 +371,7 @@ class ShellViewModelTest {
         classToTest.settle()
         waitFor { classToTest.state.value.activeTasks == 2 }
         assertThat(classToTest.state.value.activeTasks).isEqualTo(2)
+        assertThat(classToTest.state.value.followUps).isEqualTo(3)
         classToTest.onForeground()
         classToTest.refreshNotifications()
         waitFor { classToTest.state.value.chatUnread == 1 && classToTest.state.value.notificationsUnread == 140 }

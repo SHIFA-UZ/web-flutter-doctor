@@ -409,11 +409,8 @@ class ShellViewModel(
                     _state.update { it.copy(tab = clamp(start, it)) }
                 }
             }
-            // Loaded once per shell (01 §6.3), for doctors whose plan has Tasks.
-            if (_state.value.canTasks) {
-                badges.activeTasks().onSuccess { n -> _state.update { it.copy(activeTasks = n) } }
-            }
-            // Home's first focus may come before the plan is known.
+            // The Tasks badge and Home's follow-up count, for doctors whose plan has Tasks (01 §6.3); Home's first
+            // focus may come before the plan is known.
             refreshFollowUps()
             // Any later profile read (a resume refresh, a Profile save) may bring a new plan.
             profile.me.collect { me -> if (me != null) onPlan(FeatureGate.of(me.subscription)) }
@@ -665,8 +662,17 @@ class ShellViewModel(
         followUpsRefresh?.cancel()
         followUpsRefresh =
             viewModelScope.launch {
-                badges.followUps().fold(
-                    { n -> _state.update { it.copy(followUps = n, followUpsFailed = false) } },
+                badges.taskCounts().fold(
+                    {
+                            n ->
+                        _state.update {
+                            it.copy(
+                                activeTasks = n.active,
+                                followUps = n.followUps,
+                                followUpsFailed = false,
+                            )
+                        }
+                    },
                     { _state.update { it.copy(followUpsFailed = true) } },
                 )
             }
