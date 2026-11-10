@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -1116,13 +1117,16 @@ private fun Stats(
                         verticalArrangement = Arrangement.spacedBy(ShifaSize.S2),
                     ) {
                         Text(tr(label), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
-                        Text(
-                            value,
-                            style = ShifaTextStyles.panelTitle(),
-                            color = ShifaColors.Text.Primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        // Selectable: a phone or a patient id is copied out of the record (the web has no long-press).
+                        SelectionContainer {
+                            Text(
+                                value,
+                                style = ShifaTextStyles.panelTitle(),
+                                color = ShifaColors.Text.Primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }
@@ -1174,11 +1178,13 @@ private fun Overview(
                         color = ShifaColors.Text.Primary,
                     )
                     p.username?.let {
-                        Text(
-                            it,
-                            style = ShifaTextStyles.metaSmall(),
-                            color = ShifaColors.Text.Secondary,
-                        )
+                        SelectionContainer {
+                            Text(
+                                it,
+                                style = ShifaTextStyles.metaSmall(),
+                                color = ShifaColors.Text.Secondary,
+                            )
+                        }
                     }
                 }
             }

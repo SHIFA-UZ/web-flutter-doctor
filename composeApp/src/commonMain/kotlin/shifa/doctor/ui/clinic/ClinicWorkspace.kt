@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -533,7 +534,9 @@ private fun ColumnScope.Settings(clinic: MyClinic) {
         ).filter { !it.second.isNullOrBlank() }.forEach { (label, value) ->
             Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
                 Text(label, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
-                Text(value.orEmpty(), style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+                SelectionContainer {
+                    Text(value.orEmpty(), style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+                }
             }
         }
     }

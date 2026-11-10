@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -1366,11 +1367,16 @@ private fun InfoSheetView(
     actions: FinanceActions,
 ) = ProfileSheet({ actions.info(null) }) {
     ShifaTray(sheet.title, { actions.info(null) }) {
-        sheet.lines.forEachIndexed {
-                i,
-                (k, v),
-            ->
-            ShifaSettingsItem(k, {}, subtitle = v, divider = i < sheet.lines.lastIndex)
+        // Label over value, selectable (a payment id, an amount), not rows that look tappable and do nothing.
+        SelectionContainer {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
+                sheet.lines.forEach { (k, v) ->
+                    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
+                        Text(k, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+                        Text(v, style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+                    }
+                }
+            }
         }
     }
 }
