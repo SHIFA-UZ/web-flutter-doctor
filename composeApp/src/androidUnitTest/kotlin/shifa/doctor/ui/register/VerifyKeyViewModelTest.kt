@@ -21,6 +21,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.Invite
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.invalidInviteKey
 import shifa.doctor.generated.resources.pleaseEnterOneTimeKey
@@ -113,5 +115,23 @@ class VerifyKeyViewModelTest {
         hold.complete(Unit)
         vm.settle()
         assertThat(vm.state.value.banner?.requestId).isEqualTo("req-42")
+    }
+
+    @Test
+    fun `a key is tracked by its kind or why it failed, never the key`() {
+        val tracker = RecordingTracker()
+        val vm = VerifyKeyViewModel(auth, tracker).also { created += it }
+        vm.onKey("NOT-A-REAL-KEY")
+        vm.submit()
+        vm.settle()
+        body = """{"valid":true,"purpose":"CLINIC_RECEPTIONIST_INVITE","clinicId":7,"clinicName":"x","emailSentTo":null}"""
+        vm.onKey("K1")
+        vm.submit()
+        vm.settle()
+        assertThat(tracker.events)
+            .containsExactly(
+                AuthEvents.InviteKeyFailed("invalid_key"),
+                AuthEvents.InviteKeyVerified("receptionist"),
+            ).inOrder()
     }
 }

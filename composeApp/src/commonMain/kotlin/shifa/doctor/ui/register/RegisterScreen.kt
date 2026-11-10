@@ -44,6 +44,7 @@ import shifa.doctor.data.catalog.Clinic
 import shifa.doctor.data.catalog.Profession
 import shifa.doctor.data.profile.Gender
 import shifa.doctor.data.session.Session
+import shifa.doctor.data.tracking.TrackScreen
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accountInformation
 import shifa.doctor.generated.resources.confirmPassword
@@ -95,6 +96,7 @@ import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaTag
 import shifa.doctor.ui.widgets.ShifaTagType
 import shifa.doctor.ui.widgets.ShifaTray
+import shifa.doctor.ui.widgets.TrackScreenView
 import shifa.doctor.utils.tr
 
 /** The callbacks of [RegisterScreenContent], so the stateless content takes one value instead of twenty lambdas. */
@@ -145,6 +147,8 @@ fun RegisterScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val signedIn by rememberUpdatedState(onSignedIn)
     LaunchedEffect(state.signedIn) { state.signedIn?.let(signedIn) }
+    // B1 owns `register`: App.kt can't see the step (again on every step change).
+    TrackScreenView(TrackScreen.Register, "kind" to invite.trackKind, "step" to state.step, step = state.step)
     val back = { if (viewModel.back()) onExit() }
     BackHandler(onBack = back)
     RegisterScreenContent(
@@ -176,7 +180,10 @@ fun RegisterScreen(
             pickGender = viewModel::pickGender,
             onAddress = viewModel::onAddress,
             keepEditing = viewModel::keepEditing,
-            discard = onExit,
+            discard = {
+                viewModel.discard()
+                onExit()
+            },
             onCode = viewModel::onCode,
             verifyCode = viewModel::verifyCode,
             resendCode = viewModel::resendCode,

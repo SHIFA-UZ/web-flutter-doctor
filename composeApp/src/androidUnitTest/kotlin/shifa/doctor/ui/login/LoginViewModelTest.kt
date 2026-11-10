@@ -30,6 +30,9 @@ import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.TokenStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.TrackingRole
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accountDisabledBanner
 import shifa.doctor.generated.resources.enterEmailOrPhone
@@ -73,7 +76,9 @@ class LoginViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun vm() = LoginViewModel(auth, sessions).also { created += it }
+    private val tracker = RecordingTracker()
+
+    private fun vm() = LoginViewModel(auth, sessions, tracker).also { created += it }
 
     // MockEngine answers on another thread: wait for the request to finish.
     private fun LoginViewModel.settle() {
@@ -160,5 +165,25 @@ class LoginViewModelTest {
         sessions.signIn(jwt(4_000_000_000L))
         sessions.end(SessionEndReason.Inactivity, sessions.session.value!!.token)
         assertThat(vm().state.value.banner).isEqualTo(LoginBanner(Res.string.signedOutInactivity, error = false))
+    }
+
+    @Test
+    fun `sign in is tracked by its outcome, never the identifier`() {
+        val vm = vm()
+        vm.submit()
+        reply = { HttpStatusCode.Unauthorized to """{"code":"UNAUTHORIZED"}""" }
+        vm.onIdentifier("a@b.cd")
+        vm.onPassword("Secret1!")
+        vm.submit()
+        vm.settle()
+        reply = { HttpStatusCode.OK to """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}""" }
+        vm.submit()
+        vm.settle()
+        assertThat(tracker.events)
+            .containsExactly(
+                AuthEvents.SignInFailed("password", "invalid_input"),
+                AuthEvents.SignInFailed("password", "invalid_credentials"),
+                AuthEvents.SignInSucceeded("password", TrackingRole.Doctor),
+            ).inOrder()
     }
 }

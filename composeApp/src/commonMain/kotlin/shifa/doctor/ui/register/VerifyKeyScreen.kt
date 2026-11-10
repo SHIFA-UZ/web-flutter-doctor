@@ -26,10 +26,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.invalidInviteKey
 import shifa.doctor.generated.resources.inviteKeyHint
@@ -65,6 +69,7 @@ data class VerifyKeyUiState(
 /** AUTH-05, flow 01/06: the invitation key decides between the doctor and the receptionist registration. */
 class VerifyKeyViewModel(
     private val auth: AuthRepository = AuthRepository(),
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(VerifyKeyUiState())
     val state: StateFlow<VerifyKeyUiState> = _state.asStateFlow()
@@ -80,10 +85,25 @@ class VerifyKeyViewModel(
         if (s.loading) return
         // Keys pasted from an e-mail often carry spaces or line breaks around them (flow §8).
         val key = s.key.trim()
-        if (key.isEmpty()) return _state.update { it.copy(error = Res.string.pleaseEnterOneTimeKey) }
+        if (key.isEmpty()) {
+            tracker.track(AuthEvents.InviteKeyFailed("invalid_input"))
+            return _state.update { it.copy(error = Res.string.pleaseEnterOneTimeKey) }
+        }
         _state.update { it.copy(loading = true, banner = null) }
         viewModelScope.launch {
             val result = auth.verifyKey(key)
+            result.fold(
+                { invite ->
+                    tracker.track(
+                        if (invite == null) {
+                            AuthEvents.InviteKeyFailed("invalid_key")
+                        } else {
+                            AuthEvents.InviteKeyVerified(invite.trackKind)
+                        },
+                    )
+                },
+                { tracker.track(AuthEvents.InviteKeyFailed(it.toFailureReason())) },
+            )
             _state.update {
                 result.fold(
                     onSuccess = { invite ->

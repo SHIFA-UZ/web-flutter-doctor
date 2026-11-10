@@ -24,6 +24,9 @@ import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.TokenStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.TrackingRole
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.passwordRequirementSpecialChar
 import shifa.doctor.generated.resources.passwordTooLong
@@ -121,5 +124,26 @@ class ResetPasswordViewModelTest {
         vm.onPassword("Aa1!" + "x".repeat(130))
         vm.submit()
         assertThat(vm.state.value.passwordError).isEqualTo(Res.string.passwordTooLong)
+    }
+
+    @Test
+    fun `a reset is tracked as a sign-in by password reset`() {
+        val tracker = RecordingTracker()
+        val vm = ResetPasswordViewModel("doctor@shifa.dev", "123456", auth, sessions, tracker).also { created += it }
+        vm.onPassword("Abcdefg1!")
+        vm.onConfirm("Abcdefg1!")
+        status = HttpStatusCode.Unauthorized
+        body = """{"code":"UNAUTHORIZED"}"""
+        vm.submit()
+        vm.settle()
+        status = HttpStatusCode.OK
+        body = """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""
+        vm.submit()
+        vm.settle()
+        assertThat(tracker.events)
+            .containsExactly(
+                AuthEvents.SignInFailed("password_reset", "wrong_code"),
+                AuthEvents.SignInSucceeded("password_reset", TrackingRole.Doctor),
+            ).inOrder()
     }
 }
