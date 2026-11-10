@@ -8,12 +8,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.legal.DoctorContract
 import shifa.doctor.data.legal.LegalLinks
 import shifa.doctor.data.legal.LegalRepository
 import shifa.doctor.data.legal.legalRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.contractLoadFailed
 import shifa.doctor.ui.emailcode.CodeBanner
@@ -38,6 +42,7 @@ class AboutViewModel(
     private val doctor: Boolean,
     private val language: () -> String = { languageStorage.language.value.backendCode },
     private val repo: LegalRepository = legalRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(AboutUiState())
     val state: StateFlow<AboutUiState> = _state.asStateFlow()
@@ -48,6 +53,7 @@ class AboutViewModel(
     }
 
     fun openContract() {
+        tracker.track(ProfileEvents.ContractOpened)
         _state.update { it.copy(viewing = true) }
         if (_state.value.pdf == null) loadPdf()
     }
@@ -60,6 +66,7 @@ class AboutViewModel(
             repo.contractPdf().fold(
                 { bytes -> _state.update { it.copy(pdf = bytes) } },
                 { e ->
+                    tracker.track(ProfileEvents.ContractPdfFailed(e.toFailureReason()))
                     _state.update {
                         it.copy(
                             pdfError =

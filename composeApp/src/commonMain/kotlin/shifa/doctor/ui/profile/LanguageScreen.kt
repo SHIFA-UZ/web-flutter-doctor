@@ -15,6 +15,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.english
 import shifa.doctor.generated.resources.russian
@@ -37,7 +39,14 @@ import shifa.doctor.utils.tr
 @Composable
 fun LanguageScreen(onBack: () -> Unit) {
     val current by languageStorage.language.collectAsStateWithLifecycle()
-    LanguageContent(current, languageStorage::set, onBack)
+    LanguageContent(
+        current,
+        { picked ->
+            if (picked != current) Tracking.track(ProfileEvents.LanguageChanged(current, picked))
+            languageStorage.set(picked)
+        },
+        onBack,
+    )
 }
 
 @Composable

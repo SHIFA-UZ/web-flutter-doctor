@@ -30,6 +30,8 @@ import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.AppLockStorage
 import shifa.doctor.data.storage.TokenStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.dataExportOncePerDay
 import shifa.doctor.generated.resources.dataExportSaved
@@ -70,6 +72,8 @@ class PrivacyViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val tracker = RecordingTracker()
+
     private fun vm() =
         PrivacyViewModel(
             AccountRepository {
@@ -78,6 +82,7 @@ class PrivacyViewModelTest {
             sessions,
             appLock,
             OtpCooldown(),
+            tracker,
         ).also { created += it }
 
     private fun PrivacyViewModel.settle() {
@@ -144,5 +149,44 @@ class PrivacyViewModelTest {
             assertThat(sessions.session.value).isNull()
             assertThat(sessions.ended.first()).isEqualTo(SessionEndReason.AccountDeleted)
             assertThat(appLock.hasPin).isFalse()
+        }
+
+    @Test
+    fun `exports and the deletion steps are tracked by outcome`() =
+        runBlocking {
+            sessions.signIn(jwt(4_000_000_000L)).getOrThrow()
+            val vm = vm()
+            vm.export { name, _ -> Result.success(name) }
+            vm.settle()
+            replies["export"] = HttpStatusCode.TooManyRequests to """{"status":429,"code":"RATE_LIMITED"}"""
+            vm.export { name, _ -> Result.success(name) }
+            vm.settle()
+            replies["request"] =
+                HttpStatusCode.Conflict to
+                """{"status":409,"code":"HAS_ACTIVE_OBLIGATIONS","details":["UPCOMING_APPOINTMENTS","SOMETHING_NEW"]}"""
+            vm.askDelete()
+            vm.continueDelete()
+            vm.settle()
+            vm.closeDelete()
+            replies["request"] = HttpStatusCode.OK to """{"maskedEmail":"a***@example.uz","expiresInSeconds":600}"""
+            vm.askDelete()
+            vm.continueDelete()
+            vm.settle()
+            replies["confirm"] = HttpStatusCode.BadRequest to """{"status":400,"code":"EMAIL_OTP_EXPIRED"}"""
+            vm.onCode("000000")
+            vm.settle()
+            replies["confirm"] = HttpStatusCode.OK to """{"success":true}"""
+            vm.onCode("123456")
+            vm.settle()
+            assertThat(tracker.events)
+                .containsExactly(
+                    ProfileEvents.DataExportSaved,
+                    ProfileEvents.DataExportFailed("daily_limit"),
+                    ProfileEvents.AccountDeletionBlocked(listOf("upcoming_appointments")),
+                    ProfileEvents.AccountDeletionCancelled("blocked"),
+                    ProfileEvents.AccountDeletionCodeSent,
+                    ProfileEvents.AccountDeletionFailed("confirm", "wrong_code"),
+                    ProfileEvents.AccountDeleted,
+                ).inOrder()
         }
 }

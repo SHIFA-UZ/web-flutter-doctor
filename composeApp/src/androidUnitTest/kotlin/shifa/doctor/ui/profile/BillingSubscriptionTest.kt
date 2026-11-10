@@ -23,6 +23,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.subscription.DoctorTier
 import shifa.doctor.data.subscription.SubscriptionRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.checkoutFailed
 import shifa.doctor.generated.resources.planChanged
@@ -195,5 +197,30 @@ class BillingSubscriptionTest {
         settle { classToTest.state.value.banner != null }
         assertThat(classToTest.state.value.openUrl).isNull()
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.checkoutFailed)
+    }
+
+    @Test
+    fun `checkout and onboarding are tracked by outcome, the plan price only as a range`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            BillingViewModel(repo, subscriptions, retryDelayMs = 0, tracker = tracker).also { created += it }.apply {
+                open()
+                settle { state.value.plans.isNotEmpty() }
+            }
+        classToTest.upgrade(classToTest.state.value.plans[1])
+        settle { classToTest.state.value.openUrl != null }
+        classToTest.urlOpened()
+        tier = "PRO"
+        classToTest.resumed()
+        settle { classToTest.state.value.banner != null }
+        failCheckout = true
+        classToTest.connect()
+        settle { tracker.events.size == 3 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.CheckoutOpened("PRO", DoctorTier.Basic, "foreign"),
+                ProfileEvents.CheckoutReturned(isTierChanged = true, tier = DoctorTier.Pro),
+                ProfileEvents.BillingLinkFailed("connect", "server"),
+            ).inOrder()
     }
 }

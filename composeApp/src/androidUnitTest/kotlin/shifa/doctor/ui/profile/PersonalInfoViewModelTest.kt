@@ -25,6 +25,8 @@ import shifa.doctor.data.catalog.CatalogRepository
 import shifa.doctor.data.catalog.Profession
 import shifa.doctor.data.profile.Gender
 import shifa.doctor.data.profile.ProfileRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.enterFirstName
 import shifa.doctor.generated.resources.nameInvalid
@@ -110,8 +112,10 @@ class PersonalInfoViewModelTest {
         }
     }
 
+    private val tracker = RecordingTracker()
+
     private fun opened(): PersonalInfoViewModel {
-        val vm = PersonalInfoViewModel(repo, catalog).also { created += it }
+        val vm = PersonalInfoViewModel(repo, catalog, tracker).also { created += it }
         vm.open()
         settle { vm.state.value.catalog.isNotEmpty() }
         return vm
@@ -253,5 +257,28 @@ class PersonalInfoViewModelTest {
         classToTest.save()
         assertThat(classToTest.state.value.saving).isFalse()
         assertThat(sent).isEmpty()
+    }
+
+    @Test
+    fun `saves and photo uploads are tracked by outcome, with field names and no values`() {
+        val classToTest = opened()
+        fail = """{"status":500,"code":"INTERNAL"}"""
+        classToTest.edit { it.copy(firstName = "Zarina") }
+        classToTest.save()
+        settle { !classToTest.state.value.saving }
+        classToTest.upload(PickedImage("photo.jpg", byteArrayOf(1)))
+        settle { !classToTest.state.value.uploading }
+        fail = null
+        classToTest.save()
+        settle { classToTest.state.value.done }
+        classToTest.upload(PickedImage("photo.jpg", byteArrayOf(1)))
+        settle { !classToTest.state.value.uploading }
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.SectionSaveFailed("personal_info", "server"),
+                ProfileEvents.FileUploadFailed("photo", "server"),
+                ProfileEvents.SectionSaved("personal_info", listOf("first_name")),
+                ProfileEvents.FileUploaded("photo"),
+            ).inOrder()
     }
 }

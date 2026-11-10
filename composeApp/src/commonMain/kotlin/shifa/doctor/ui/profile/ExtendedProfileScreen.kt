@@ -34,10 +34,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.ProfileUpdateRequest
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.add
 import shifa.doctor.generated.resources.addService
@@ -131,6 +136,7 @@ data class ExtendedUiState(
  */
 class ExtendedProfileViewModel(
     private val profile: ProfileRepository = profileRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ExtendedUiState())
     val state: StateFlow<ExtendedUiState> = _state.asStateFlow()
@@ -175,7 +181,10 @@ class ExtendedProfileViewModel(
         }
     }
 
-    fun discard() = _state.update { it.copy(form = it.saved, askDiscard = false, done = true) }
+    fun discard() {
+        tracker.track(ProfileEvents.EditDiscarded(SECTION))
+        _state.update { it.copy(form = it.saved, askDiscard = false, done = true) }
+    }
 
     fun closed() = _state.update { it.copy(done = false) }
 
@@ -214,7 +223,10 @@ class ExtendedProfileViewModel(
                 val target = _state.value.tags
                 if (target == confirmedTags) return@withLock
                 profile.saveServiceTags(target).fold(
-                    onSuccess = { confirmedTags = target },
+                    onSuccess = {
+                        confirmedTags = target
+                        tracker.track(ProfileEvents.TagsSaved(countBucket(target.size)))
+                    },
                     onFailure = { e -> failed(e, tags = true) },
                 )
             }
@@ -229,6 +241,7 @@ class ExtendedProfileViewModel(
         e: Throwable,
         tags: Boolean,
     ) {
+        tracker.track(ProfileEvents.SectionSaveFailed(if (tags) "tags" else "certificates", e.toFailureReason()))
         val me = profile.refresh().getOrNull()
         _state.update {
             if (tags) {
@@ -254,13 +267,18 @@ class ExtendedProfileViewModel(
             pdf?.let { Triple(it.fileName, it.fileBytes, "application/pdf") },
         )
 
-    fun cameraDenied() = _state.update { it.copy(uploadSheet = false, cameraDenied = true) }
+    fun cameraDenied() {
+        tracker.track(ProfileEvents.CameraDenied(SECTION))
+        _state.update { it.copy(uploadSheet = false, cameraDenied = true) }
+    }
 
     private fun upload(file: Triple<String, ByteArray, String>?) {
         _state.update { it.copy(uploadSheet = false) }
         if (file == null || _state.value.uploading) return
+        val kind = if (file.third == "application/pdf") "certificate_pdf" else "certificate_image"
         // The backend takes 25 MB at most; say so here rather than after sending it.
         if (file.second.size > UPLOAD_MAX_MB * 1024 * 1024) {
+            tracker.track(ProfileEvents.FileUploadFailed(kind, "too_large"))
             return _state.update { it.copy(banner = CodeBanner(Res.string.fileTooLarge)) }
         }
         _state.update { it.copy(uploading = true, banner = null) }
@@ -268,6 +286,7 @@ class ExtendedProfileViewModel(
             lists.withLock {
                 profile.uploadCertificate(file.first, file.second, file.third).fold(
                     onSuccess = { url ->
+                        tracker.track(ProfileEvents.FileUploaded(kind))
                         if (url !in confirmedCertificates) confirmedCertificates = confirmedCertificates + url
                         _state.update {
                             it.copy(
@@ -278,6 +297,7 @@ class ExtendedProfileViewModel(
                         }
                     },
                     onFailure = { e ->
+                        tracker.track(ProfileEvents.FileUploadFailed(kind, e.toFailureReason()))
                         _state.update {
                             it.copy(
                                 uploading = false,
@@ -299,7 +319,10 @@ class ExtendedProfileViewModel(
                 val target = _state.value.certificates
                 if (target == confirmedCertificates) return@withLock
                 profile.saveCertificates(target).fold(
-                    onSuccess = { confirmedCertificates = target },
+                    onSuccess = {
+                        confirmedCertificates = target
+                        tracker.track(ProfileEvents.CertificateDeleted)
+                    },
                     onFailure = { e -> failed(e, tags = false) },
                 )
             }
@@ -342,10 +365,18 @@ class ExtendedProfileViewModel(
             // In the same queue: its answer carries the whole profile, so it must not land before a list write's.
             lists.withLock { profile.update(request) }.fold(
                 onSuccess = {
+                    val changed =
+                        listOfNotNull(
+                            "biography".takeIf { request.biography != null },
+                            "telegram".takeIf { request.telegram != null },
+                            "instagram".takeIf { request.instagram != null },
+                        )
+                    tracker.track(ProfileEvents.SectionSaved(SECTION, changed))
                     ShellNotice.pending.value = Notice(Res.string.extendedProfileSaved, success = true)
                     _state.update { it.copy(saving = false, saved = f, form = f, done = true) }
                 },
                 onFailure = { e ->
+                    tracker.track(ProfileEvents.SectionSaveFailed(SECTION, e.toFailureReason()))
                     _state.update {
                         it.copy(
                             saving = false,
@@ -358,6 +389,7 @@ class ExtendedProfileViewModel(
     }
 
     internal companion object {
+        const val SECTION = "extended"
         const val TAG_MAX = 40
         const val TAGS_MAX = 30
         const val BIOGRAPHY_MAX = 2000

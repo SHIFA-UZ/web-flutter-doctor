@@ -28,6 +28,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
 import shifa.doctor.generated.resources.aboutContractFrom
@@ -104,10 +106,25 @@ fun AboutScreen(
                 me?.profile?.timeZone,
             )
         clipboard.setText(AnnotatedString(line))
+        Tracking.track(ProfileEvents.DiagnosticsCopied)
         ShellNotice.pending.value = Notice(Res.string.aboutDiagnosticsCopied, success = true)
     }
     var taps by remember { mutableIntStateOf(0) }
-    val open = { url: String -> if (!browser(url)) ShellNotice.pending.value = Notice(Res.string.aboutOpenFailed) }
+    val open = { url: String ->
+        if (!browser(url)) {
+            ShellNotice.pending.value = Notice(Res.string.aboutOpenFailed)
+        } else {
+            val links = state.links
+            // The public privacy page stands in when the backend lists none.
+            val link =
+                when (url) {
+                    links?.terms -> "terms"
+                    links?.licences -> "licences"
+                    else -> "privacy"
+                }
+            Tracking.track(ProfileEvents.LegalLinkOpened(link))
+        }
+    }
     if (state.viewing) {
         // System Back closes the contract, not About.
         BackHandler(onBack = viewModel::closeContract)

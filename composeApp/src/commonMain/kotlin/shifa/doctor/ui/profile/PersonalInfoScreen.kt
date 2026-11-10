@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.catalog.CatalogRepository
 import shifa.doctor.data.catalog.Profession
@@ -37,6 +38,9 @@ import shifa.doctor.data.model.ProfileUpdateRequest
 import shifa.doctor.data.profile.Gender
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.changePhoto
 import shifa.doctor.generated.resources.chooseFromGallery
@@ -126,6 +130,7 @@ data class PersonalInfoUiState(
 class PersonalInfoViewModel(
     private val profile: ProfileRepository = profileRepository,
     private val catalogs: CatalogRepository = CatalogRepository(),
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PersonalInfoUiState())
     val state: StateFlow<PersonalInfoUiState> = _state.asStateFlow()
@@ -143,10 +148,16 @@ class PersonalInfoViewModel(
     fun closed() = _state.update { it.copy(done = false) }
 
     /** The camera permission was refused: say why and offer the OS settings (flow 08/02 §5). */
-    fun cameraDenied() = _state.update { it.copy(photoSheet = false, cameraDenied = true) }
+    fun cameraDenied() {
+        tracker.track(ProfileEvents.CameraDenied(SECTION))
+        _state.update { it.copy(photoSheet = false, cameraDenied = true) }
+    }
 
     /** Back on the discard question: the edits go and the next open starts from the saved profile. */
-    fun discard() = _state.update { it.copy(form = it.saved, askDiscard = false, done = true) }
+    fun discard() {
+        tracker.track(ProfileEvents.EditDiscarded(SECTION))
+        _state.update { it.copy(form = it.saved, askDiscard = false, done = true) }
+    }
 
     private fun fresh(old: PersonalInfoUiState): PersonalInfoUiState {
         val p = profile.me.value?.profile
@@ -246,10 +257,20 @@ class PersonalInfoViewModel(
         viewModelScope.launch {
             profile.update(request).fold(
                 onSuccess = {
+                    val changed =
+                        listOfNotNull(
+                            "first_name".takeIf { request.firstName != null },
+                            "last_name".takeIf { request.lastName != null },
+                            "dob".takeIf { request.dob != null },
+                            "gender".takeIf { request.gender != null },
+                            "profession".takeIf { request.profession != null },
+                        )
+                    tracker.track(ProfileEvents.SectionSaved(SECTION, changed))
                     ShellNotice.pending.value = Notice(Res.string.profileInformationSaved, success = true)
                     _state.update { it.copy(saving = false, saved = f, form = f, done = true) }
                 },
                 onFailure = { e ->
+                    tracker.track(ProfileEvents.SectionSaveFailed(SECTION, e.toFailureReason()))
                     _state.update {
                         it.copy(
                             saving = false,
@@ -269,6 +290,7 @@ class PersonalInfoViewModel(
         viewModelScope.launch {
             profile.uploadPhoto(photo).fold(
                 onSuccess = { url ->
+                    tracker.track(ProfileEvents.FileUploaded("photo"))
                     _state.update {
                         it.copy(
                             uploading = false,
@@ -278,6 +300,7 @@ class PersonalInfoViewModel(
                     }
                 },
                 onFailure = { e ->
+                    tracker.track(ProfileEvents.FileUploadFailed("photo", e.toFailureReason()))
                     _state.update {
                         it.copy(
                             uploading = false,
@@ -290,6 +313,8 @@ class PersonalInfoViewModel(
     }
 
     private companion object {
+        const val SECTION = "personal_info"
+
         fun List<Profession>.withLabels(catalog: List<Profession>): List<Profession> {
             val byEnglish = catalog.associateBy { it.english }
             return map { byEnglish[it.english] ?: it }
