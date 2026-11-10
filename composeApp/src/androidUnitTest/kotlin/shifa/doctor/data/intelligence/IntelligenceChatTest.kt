@@ -187,6 +187,22 @@ class IntelligenceChatTest {
     }
 
     @Test
+    fun `forgetting removes every doctor's chats and nothing else`() {
+        val settings = MapSettings()
+        settings.putString("other", "kept")
+        var doctor = "7"
+        val store = ChatSessionStore(settings, { doctor }, { at })
+        store.ensureLoaded()
+        doctor = "8"
+        store.ensureLoaded()
+
+        store.forgetAll()
+
+        assertThat(settings.keys).containsExactly("other")
+        assertThat(store.state.value.loaded).isFalse()
+    }
+
+    @Test
     fun `the store opens on an empty chat, keeps its semantics and is per doctor`() {
         val settings = MapSettings()
         var doctor = "7"

@@ -54,6 +54,16 @@ class ChatSessionStore(
         save(ChatStoreState(sessions, welcome.id, loaded = true))
     }
 
+    /**
+     * Forgets every doctor's chats on this device. For the web at the end of a session: there the store is the
+     * browser's plain localStorage, readable by the next person at a shared computer (the phones keep them encrypted).
+     */
+    fun forgetAll() {
+        settings.keys.filter { it.startsWith(KEY_PREFIX) }.forEach(settings::remove)
+        loadedFor = null
+        _state.value = ChatStoreState()
+    }
+
     /** A new, empty chat on top, opened (a new `conversationId` for the backend). */
     fun create(): ChatSession {
         ensureLoaded()
