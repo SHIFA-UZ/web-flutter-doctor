@@ -3,6 +3,7 @@ package shifa.doctor.data.tracking
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Test
+import shifa.doctor.data.tracking.events.ApiEvents
 import shifa.doctor.data.tracking.events.SessionTrackEvents
 import shifa.doctor.data.tracking.events.ShellEvents
 import shifa.doctor.data.tracking.events.TrackEvent
@@ -24,6 +25,7 @@ class TrackEventCatalogueTest {
     fun `the walk finds the events`() {
         assertThat(catalogue.map { it::class.java })
             .containsAtLeast(
+                ApiEvents.ApiError::class.java,
                 SessionTrackEvents.SessionStarted::class.java,
                 SessionTrackEvents.SessionEnded::class.java,
                 ShellEvents.TabSelected::class.java,
@@ -42,7 +44,11 @@ class TrackEventCatalogueTest {
     fun `no event carries personal data, an id or an exact amount`() {
         catalogue.forEach { event ->
             val all = event.properties + event.personProperties + event.personPropertiesSetOnce
-            assertWithMessage("${event::class.java.name} (${event.name})").that(propertyProblems(all)).isEmpty()
+            // The one exception to the blocked key `code`: `api_error.code` is the backend's error code
+            // (`APPOINTMENT_LOCKED_24H`, shape-checked in apiCall), not a one-time code or PIN, and keeps the patient
+            // app's name so the shared alert chart reads both apps.
+            val checked = if (event is ApiEvents.ApiError) all - "code" else all
+            assertWithMessage("${event::class.java.name} (${event.name})").that(propertyProblems(checked)).isEmpty()
         }
     }
 

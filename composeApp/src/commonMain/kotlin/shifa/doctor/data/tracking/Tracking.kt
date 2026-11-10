@@ -1,5 +1,7 @@
 package shifa.doctor.data.tracking
 
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import shifa.doctor.data.storage.languageStorage
@@ -31,10 +33,11 @@ enum class TrackingRole(
  * is then, so nothing can be sent in a debug build, in demo mode, on the development backend, on a web site other
  * than production or after an opt-out, whoever forgot to call [refresh].
  *
- * Calls come from the main thread (ViewModels, composition, app start).
- * ponytail: no lock; add one if a background caller ever appears (an `apiCall` hook).
+ * Calls come from the main thread (ViewModels, composition, app start) and, through `apiCall`'s `api_error` /
+ * `api_slow`, from whatever dispatcher a repository runs on (`PushRegistration` uses `Dispatchers.Default`): every
+ * entry point holds the object's lock (reentrant; nested calls such as `track` → `refresh` are fine).
  */
-object Tracking : Tracker {
+object Tracking : SynchronizedObject(), Tracker {
     private var sink: TrackingSink? = null
     private var webHost: String? = null
     private var optOut = false
@@ -61,14 +64,16 @@ object Tracking : Tracker {
         sink: TrackingSink,
         webHost: String? = null,
     ) {
-        this.sink = sink
-        this.webHost = webHost
-        optOut = settings.optedOut
-        applied = null
-        superProperties["app"] = TRACKING_APP
-        superProperties["app_language"] = language()
-        refresh()
-        sink.register(superProperties.toMap())
+        synchronized(this) {
+            this.sink = sink
+            this.webHost = webHost
+            optOut = settings.optedOut
+            applied = null
+            superProperties["app"] = TRACKING_APP
+            superProperties["app_language"] = language()
+            refresh()
+            sink.register(superProperties.toMap())
+        }
     }
 
     /**
@@ -77,28 +82,34 @@ object Tracking : Tracker {
      * nothing collected before is sent later or joins the next user.
      */
     fun refresh(): TrackingStatus {
-        val sink = sink ?: return _status.value
-        val status = trackingStatus(environment(), optOut, webHost)
-        if (status.on != applied) {
-            sink.optOut(!status.on)
-            if (applied == true) reset()
-            applied = status.on
+        synchronized(this) {
+            val sink = sink ?: return _status.value
+            val status = trackingStatus(environment(), optOut, webHost)
+            if (status.on != applied) {
+                sink.optOut(!status.on)
+                if (applied == true) reset()
+                applied = status.on
+            }
+            _status.value = status
+            return status
         }
-        _status.value = status
-        return status
     }
 
     private fun active(): TrackingSink? = sink?.takeIf { refresh().on }
 
     override fun track(event: TrackEvent) {
-        active()?.capture(event.name, event.properties, event.personProperties, event.personPropertiesSetOnce)
+        synchronized(this) {
+            active()?.capture(event.name, event.properties, event.personProperties, event.personPropertiesSetOnce)
+        }
     }
 
     override fun screen(
         screen: TrackScreen,
         properties: Map<String, Any?>,
     ) {
-        active()?.screen(screen.id, trackProperties(properties.toList()))
+        synchronized(this) {
+            active()?.screen(screen.id, trackProperties(properties.toList()))
+        }
     }
 
     /**
@@ -114,17 +125,19 @@ object Tracking : Tracker {
         personProperties: Map<String, Any?> = emptyMap(),
         personPropertiesSetOnce: Map<String, Any?> = emptyMap(),
     ) {
-        val id = userId.trim().ifEmpty { return }
-        val sink = active() ?: return
-        val distinctId = "${role.prefix}_$id"
-        val held = settings.identified
-        if (held != null && held != distinctId) reset()
-        sink.identify(
-            distinctId,
-            trackProperties(listOf("app" to TRACKING_APP) + personProperties.toList()),
-            trackProperties(personPropertiesSetOnce.toList()),
-        )
-        settings.identified = distinctId
+        synchronized(this) {
+            val id = userId.trim().ifEmpty { return }
+            val sink = active() ?: return
+            val distinctId = "${role.prefix}_$id"
+            val held = settings.identified
+            if (held != null && held != distinctId) reset()
+            sink.identify(
+                distinctId,
+                trackProperties(listOf("app" to TRACKING_APP) + personProperties.toList()),
+                trackProperties(personPropertiesSetOnce.toList()),
+            )
+            settings.identified = distinctId
+        }
     }
 
     /**
@@ -132,10 +145,12 @@ object Tracking : Tracker {
      * the next user. The SDK's reset drops the super properties too, so they are put back.
      */
     fun reset() {
-        val sink = sink ?: return
-        sink.reset()
-        settings.identified = null
-        sink.register(superProperties.toMap())
+        synchronized(this) {
+            val sink = sink ?: return
+            sink.reset()
+            settings.identified = null
+            sink.register(superProperties.toMap())
+        }
     }
 
     /** A super property on every event. Registered even while off, so it is there once tracking is back on. */
@@ -143,8 +158,10 @@ object Tracking : Tracker {
         key: String,
         value: Any,
     ) {
-        superProperties[key] = value
-        sink?.register(mapOf(key to value))
+        synchronized(this) {
+            superProperties[key] = value
+            sink?.register(mapOf(key to value))
+        }
     }
 
     /** Whether the doctor switched tracking off (Settings, D3). Reads the device's storage. */
@@ -152,13 +169,17 @@ object Tracking : Tracker {
 
     /** Settings → the usage-data switch. Saved on the device; off resets the identity, on needs a new [identify]. */
     fun setOptOut(out: Boolean) {
-        settings.optedOut = out
-        optOut = out
-        refresh()
+        synchronized(this) {
+            settings.optedOut = out
+            optOut = out
+            refresh()
+        }
     }
 
     fun flush() {
-        active()?.flush()
+        synchronized(this) {
+            active()?.flush()
+        }
     }
 
     /** Tests only: the object is a singleton, so each test starts from nothing. */
