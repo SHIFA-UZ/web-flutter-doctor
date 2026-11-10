@@ -662,3 +662,60 @@ paths), and a decision whether "encrypted documents" means anything beyond the s
 
 **App until then:** the two switches are hidden on every platform (2026-11-09, the user's call); the saved values go
 back unchanged in each settings save.
+
+## BE-39 Patient forms for clinic staff
+
+**Needed by:** flow `06/07` (the record's Forms tab); found in the 2026-11-10 audit.
+
+**Now:** `SecurityConfig` lets `CLINIC_STAFF` into `/api/patients/**`, but every handler of `PatientFormController` and
+`PatientFormPdfController` takes a `DoctorPrincipal`, which is null for staff: the forms routes fail for them (read
+in the code, not run as staff).
+
+**Change:** either `principal: Any` with `clinicAccess.assertPatientVisible`, or a 403 for staff.
+
+**App until then:** clinic staff get no Forms tab and the forms are never read for them.
+
+## BE-40 A count of the doctor's remote-care tasks
+
+**Needed by:** the Tasks badge and Home's follow-up count (01 §6.3, flow 02/02 §4).
+
+**Now:** no count endpoint, and `GET /tasks?status=` takes one status: the app reads the whole list to show two numbers.
+
+**Change:** `GET /tasks/counts` → `{active, draft}`.
+
+**App until then:** one `GET /tasks`, both numbers counted from it.
+
+## BE-41 Only the backend's own URLs as chat attachments and photos
+
+**Needed by:** chat (07 §1.5); found in the 2026-11-10 audit.
+
+**Now:** `POST /messages/send` stores any `attachmentUrl` / `thumbnailUrl` up to 2048 characters, and patient photo
+URLs on other hosts pass through: a sender can make the doctor's app fetch or open a page of their choosing.
+
+**Change:** accept only paths under `/chat-attachments/` (and the photo folders) on the backend's own host.
+
+**App until then:** `absoluteFileUrl` drops a file URL that isn't https on a backend host, or that points under `/api/`.
+
+## BE-42 A file's signed URL that stays the same for a while
+
+**Needed by:** every avatar and chat image.
+
+**Now:** `FileUrlSigner` signs with `exp = now + 1 h` to the second, so each read returns a new URL for the same file:
+image caches (the app's and the browser's) miss on every poll.
+
+**Change:** round `exp` up to a fixed step (for example the next full hour plus one), so the URL is stable within it.
+
+**App until then:** a loaded picture is kept while only its URL's signature changes (`fileCacheKey`); it is still
+downloaded again when the row is drawn anew.
+
+## BE-43 The clinic's visit list for a patient lacks place, reason and cancelled visits
+
+**Needed by:** a clinic patient's Appointments and Activity tabs (CLINIC-06).
+
+**Now:** `GET /patients/{id}/appointments` answers only the signed-in doctor's visits (for staff: one doctor of the
+clinic's) and 404 for a colleague's patient; `GET /clinics/{clinicId}/patients/{patientId}/appointments` answers every
+doctor's, without `location`, `isVideo`, `reason` and without cancelled visits.
+
+**Change:** the clinic route with the same fields and statuses as the doctor's.
+
+**App until then:** from a clinic's workspace both are read and merged (the doctor's fuller rows over the clinic's).
