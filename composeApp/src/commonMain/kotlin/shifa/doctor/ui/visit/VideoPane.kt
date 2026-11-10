@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,6 +67,7 @@ import shifa.doctor.generated.resources.youLeftTheCall
 import shifa.doctor.generated.resources.yourCameraPreview
 import shifa.doctor.ui.navigation.openPermissionSettings
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -136,6 +138,8 @@ internal fun PreJoin(
     ) {
         Box(
             Modifier
+                .align(Alignment.CenterHorizontally)
+                .widthIn(max = ShifaDimens.Layout.Form)
                 .fillMaxWidth()
                 .aspectRatio(PREVIEW_RATIO)
                 .clip(ShifaRadius.ControlLg)
@@ -318,7 +322,14 @@ internal fun VideoPane(
     verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
 ) {
     Box(
-        Modifier.fillMaxWidth().aspectRatio(PANE_RATIO).clip(ShifaRadius.ControlMd).background(ShifaColors.Bg.Media),
+        // Capped: at desktop widths a full-width 4:3 picture pushed the call's controls and the notes off the screen.
+        Modifier
+            .align(Alignment.CenterHorizontally)
+            .widthIn(max = ShifaDimens.Layout.Form)
+            .fillMaxWidth()
+            .aspectRatio(PANE_RATIO)
+            .clip(ShifaRadius.ControlMd)
+            .background(ShifaColors.Bg.Media),
         contentAlignment = Alignment.Center,
     ) {
         when {
