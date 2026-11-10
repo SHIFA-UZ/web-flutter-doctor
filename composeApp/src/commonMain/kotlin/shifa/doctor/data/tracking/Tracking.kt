@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.data.tracking.events.TrackEvent
+import shifa.doctor.utils.isDebugBuild
 
 /** For ViewModels: constructor-injected with [Tracking] as the default, a recording fake in tests. */
 interface Tracker {
@@ -27,9 +28,9 @@ enum class TrackingRole(
 }
 
 /**
- * The app's one way into product analytics (docs/posthog). Without a sink it does nothing at all and reads nothing:
- * that is the state in tests, previews and builds without a key, so `tracker: Tracker = Tracking` is safe as a
- * default everywhere. With one, every call first applies the on/off rule ([trackingStatus]) to the app's state as it
+ * The app's one way into product analytics (docs/posthog). Without a sink it sends nothing and reads nothing (a debug
+ * build only keeps [recent] in memory): that is the state in tests, previews and builds without a key, so
+ * `tracker: Tracker = Tracking` is safe as a default everywhere. With one, every call first applies the on/off rule ([trackingStatus]) to the app's state as it
  * is then, so nothing can be sent in a debug build, in demo mode, on the development backend, on a web site other
  * than production or after an opt-out, whoever forgot to call [refresh].
  *
@@ -49,6 +50,18 @@ object Tracking : SynchronizedObject(), Tracker {
 
     /** On or off and why, as of the last call or [refresh]. For the debug menu, and to identify again once back on. */
     val status: StateFlow<TrackingStatus> get() = _status
+
+    private val _recent = MutableStateFlow(emptyList<String>())
+
+    /**
+     * Debug builds only (always empty in a release build): the last [RECENT_MAX] events and screen views, newest first,
+     * for the debug menu. Recorded before the on/off rule and without a sink, since a debug build never sends any.
+     */
+    val recent: StateFlow<List<String>> get() = _recent
+
+    private fun recordRecent(line: String) {
+        if (isDebugBuild) _recent.value = (listOf(line) + _recent.value).take(RECENT_MAX)
+    }
 
     // Seams for tests; the real ones need a platform `Settings`.
     internal var environment: () -> TrackingEnvironment = ::appTrackingEnvironment
@@ -99,6 +112,7 @@ object Tracking : SynchronizedObject(), Tracker {
 
     override fun track(event: TrackEvent) {
         synchronized(this) {
+            recordRecent(event.label)
             active()?.capture(event.name, event.properties, event.personProperties, event.personPropertiesSetOnce)
         }
     }
@@ -108,7 +122,9 @@ object Tracking : SynchronizedObject(), Tracker {
         properties: Map<String, Any?>,
     ) {
         synchronized(this) {
-            active()?.screen(screen.id, trackProperties(properties.toList()))
+            val props = trackProperties(properties.toList())
+            recordRecent(if (props.isEmpty()) "screen ${screen.id}" else "screen ${screen.id} $props")
+            active()?.screen(screen.id, props)
         }
     }
 
@@ -190,8 +206,11 @@ object Tracking : SynchronizedObject(), Tracker {
         applied = null
         superProperties.clear()
         _status.value = TrackingStatus(TrackingOffReason.NoSink)
+        _recent.value = emptyList()
         environment = ::appTrackingEnvironment
         settings = TrackingSettings()
         language = { languageStorage.language.value.tag }
     }
 }
+
+private const val RECENT_MAX = 50

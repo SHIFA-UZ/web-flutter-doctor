@@ -5,17 +5,19 @@ feature group adds its own file in this folder; the coordinator keeps this table
 
 | Chunk | What | Status |
 |---|---|---|
-| A1 | Core in `data/tracking` | Built 2026-11-10, not committed |
-| A2 | Android sink | Not started |
-| A3 | iOS sink | Not started |
-| A4 | Web sink | Not started |
-| A5 | Identity and session | Not started |
-| A6 | Screen views from the shell | Not started |
-| A7 | Debug menu | Not started |
+| A1 | Core in `data/tracking` | Done 2026-11-10 (`a987f8e`) |
+| A1b | `api_error` / `api_slow` from `apiCall` (`ApiEvents.kt`, `ENDPOINT_WORDS`) | Done 2026-11-10 (`c845d42`) |
+| A2 | Android sink (`PostHogSink`) | Done 2026-11-10 (`8aa3a89`) |
+| A3 | iOS sink (Swift over posthog-ios, `TrackingBridge`) | Done 2026-11-10 (`c1833f0`) |
+| A4 | Web sink (`PostHogWebSink`, posthog-js) | Done 2026-11-10 (`6c9a8e0`) |
+| A5 | Identity and session (`TrackingSession`) | Done 2026-11-10 (`f26b6e0`; queue kept on a session end: `6451979`) |
+| A6 | Screen views from the shell and `App.kt`; tab, More and push events | Done 2026-11-10 (`4b4249d`) |
+| A7 | Debug menu: tracking status and recent events | Done 2026-11-10 |
 | B1–B9 | Feature events | Not started |
 | C1–C4 | Catalogue document, device checks, dashboards, store forms | Not started |
 
-Nothing is sent by any build yet: no SDK is attached, so `Tracking` is inert.
+The three SDKs are attached when a key is present; only a release build on the production backend (and on the web
+`doctor.shifa.uz`) sends. `Tracking` is synchronized (A1b calls it from repository dispatchers).
 
 ## A1: the core (2026-11-10)
 
@@ -66,3 +68,30 @@ No design board and no flow file: tracking has no UI in this chunk.
 - A global `api_error` event from `apiCall`: not in the plan's chunks; polling would flood it while offline.
 - The opt-out switch and its strings: group B9.
 - No lock in `Tracking`: every caller is on the main thread today.
+
+## A6: screen views from the shell (2026-11-10)
+
+- `shellScreen(ShellUiState)` (`ui/navigation/ShellViewModel.kt`, beside `shellPath`) maps what the shell shows (a
+  tab, a pushed route, a profile section, Shifa Intelligence or a screen opened over it) to a fixed `TrackScreen`;
+  null for the debug menu. `MainScreen` sends it through `TrackScreenView`, keyed on the stack under it: More or a
+  sheet over a screen sends nothing, Back to it or another tab and back sends it again. Android keeps the activity on
+  configuration changes (`configChanges`), so a rotation sends nothing.
+- `App.kt` sends the signed-out screens (`splash`, `sign_in`, `email_entry` / `email_code` with `mode`,
+  `reset_password`, `verify_key`) and `lock`. `register` is B1's (its kind and step live in `RegisterViewModel`).
+- One owner per screen id: the list is in `docs/posthog/03-developer-guide.md` §2.4.
+- `ShellViewModel` (tracker before its trailing `scheduleRefresh` lambda): `tab_selected(tab, source)` from
+  `tapTab` (the bar, More, the sidebar; other `select` calls such as Home's cards are not the doctor's tab choice),
+  `tab_refused(tab)` when the plan or the clinic membership turns a tab into Home (also a gated tab picked before the
+  plan was known), `more_opened`, `push_opened(type, target)` once a tapped push's target is found (`type` only from
+  its data, `unknown` without one; `target` `home` when its appointment is gone).
+- Tests: `ShellScreenTest` (the mapping), two `ShellViewModelTest` cases (tab/More/refused, push).
+
+## A7: debug menu (2026-11-10)
+
+- `Tracking.recent`: the last 50 events and screen views, newest first, in debug builds only, recorded before the
+  on/off rule and the sink check (a debug build never sends). `TrackingTest` covers it.
+- `ui/debug/DebugTrackingSection.kt` in the debug menu: a "Tracking" row (*On*, or *Off: <reason id>*; a tap applies
+  the rule again) and the recent list. Not in the design (debug only, English, built from `ShifaSection` /
+  `ShifaSettingsItem` like the push checks). No screenshot test exists for the debug menu.
+- `docs/posthog/03-developer-guide.md`: the debug list (§5) and the coordinator's notes (§5a: `ENDPOINT_WORDS`,
+  `TrackingSession` owns identity, `reset(dropQueue)`).

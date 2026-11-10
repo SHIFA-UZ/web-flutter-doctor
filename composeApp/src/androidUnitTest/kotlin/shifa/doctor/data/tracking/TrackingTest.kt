@@ -285,4 +285,21 @@ class TrackingTest {
         assertThat(tracker.events).containsExactly(ShellEvents.TabSelected("home", "bar"))
         assertThat(tracker.screens).containsExactly(TrackScreen.Home to emptyMap<String, Any>())
     }
+
+    @Test
+    fun `a debug build lists the last events and screens, even with nothing sent`() {
+        Tracking.clearForTests() // no sink, as in a debug build without a key
+
+        Tracking.screen(TrackScreen.EmailEntry, mapOf("mode" to "reset"))
+        repeat(60) { Tracking.track(ShellEvents.TabSelected("chat", "bar")) }
+        Tracking.track(ShellEvents.MoreOpened)
+
+        val recent = Tracking.recent.value
+        assertThat(recent).hasSize(50)
+        assertThat(recent.first()).isEqualTo("more_opened")
+        assertThat(recent[1]).isEqualTo("tab_selected {tab=chat, source=bar}")
+        Tracking.clearForTests()
+        Tracking.screen(TrackScreen.EmailEntry, mapOf("mode" to "reset"))
+        assertThat(Tracking.recent.value).containsExactly("screen email_entry {mode=reset}")
+    }
 }

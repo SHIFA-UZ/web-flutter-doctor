@@ -232,8 +232,26 @@ property list.
 a change take effect at once. Turning off opts the SDK out and resets it (identity and queue); turning back on needs a
 new `identify`. Feature code never checks any of this: it calls the tracker and nothing else.
 
-Seeing events arrive needs a release build on production. In a debug build, the debug menu will list what would have
-been sent (chunk A7).
+Seeing events arrive needs a release build on production. A debug build never sends, but it keeps the last 50
+events and screen views in memory (`Tracking.recent`, recorded before the on/off rule and without a sink; a release
+build records nothing). **Debug menu → Tracking** shows them newest first, as `name {properties}` or
+`screen <id> {properties}`, under a "Tracking" row that says *On* or *Off: <reason>* (`TrackingOffReason.id`; a tap
+applies the rule again). That list is how to check a feature's events by hand: do the action, open the debug menu
+(Profile → Debug, or the sign-in screen's link), read the top lines.
+
+## 5a. Notes from the coordinator
+
+- **A new endpoint** (a path a repository calls that is not in `ApiConfig.Endpoints` yet): add its literal path words
+  to `ENDPOINT_WORDS` in `data/api/ApiHelper.kt`, or the `endpoint` label of its `api_error` / `api_slow` shows
+  `{id}` where the word should be (`ApiTrackingTest` covers the existing ones). Ids are masked whatever you do.
+- **Identity and sessions belong to `TrackingSession`** (A5, `data/tracking/TrackingSession.kt`, started once from
+  `App()`): it sends `session_started` / `session_ended`, calls `Tracking.identify` (`doctor_<sub>` / `staff_<sub>`,
+  again when a person property changes) and `Tracking.reset()` at every session end. Features never call `identify`,
+  `reset` or `register`; a usage fact about the doctor rides on an event as a person property instead.
+- **`reset(dropQueue)`:** a session end calls `reset()` (keeps the SDK's queue, so the `session_ended` captured just
+  before, under the old identity, still goes out); tracking turning off (`refresh()`: demo data, the development
+  backend, an opt-out) resets with `dropQueue = true`, so nothing collected before is sent later. Either way the
+  identity goes and `Tracking` registers the super properties again.
 
 ## 6. For the platform and shell chunks
 
@@ -257,11 +275,12 @@ Tracking.optedOut; Tracking.setOptOut(out)
 - Start the SDK opted out and let `Tracking.start` opt it in: `start` calls `sink.optOut(...)` before anything else.
   Start it even in debug builds if a key is present; the rule keeps it silent. No key means no `start`, and the app
   runs with tracking off.
-- `TrackingSink.reset()` must drop the identity and the queue. `Tracking` re-registers the super properties after
-  every reset and resets before identifying a different user; the id last identified is kept in plain Settings
+- `TrackingSink.reset(dropQueue)` drops the identity always and the queue only when `dropQueue` (see §5a).
+  `Tracking` re-registers the super properties after every reset and resets before identifying a different user; the id last identified is kept in plain Settings
   (`tracking_identified`), because the SDK keeps its own across launches.
 - iOS: turn every `KotlinBoolean` into a `Bool` in Swift, inside lists too, or it arrives as 1/0.
 - An admin token is never identified and should not be tracked at all (A5 decides how: the simplest is not starting
   the session collector's events for a role that is neither doctor nor staff).
-- `Tracking.status` is a `StateFlow<TrackingStatus>`: the debug menu's "would this build track?" row (A7), and A5's
-  signal to identify again when it turns on.
+- `Tracking.status` is a `StateFlow<TrackingStatus>`: the debug menu's "would this build track?" row (A7,
+  `ui/debug/DebugTrackingSection.kt`), and A5's signal to identify again when it turns on. `Tracking.recent` is the
+  debug menu's list (§5).
