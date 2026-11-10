@@ -66,11 +66,16 @@ class NotificationOpener(
                     target.startAt
                         ?: appointments.detail(target.id).getOrThrow().startAt.let(PracticeClock::parseInstant)
                 start?.let { at ->
-                    calendar
-                        .day(DayKey(clock.local(at).date))
-                        .getOrThrow()
-                        .filterIsInstance<CalendarEntry.Appointment>()
-                        .firstOrNull { it.appointmentId == target.id }
+                    val key = DayKey(clock.local(at).date)
+
+                    suspend fun find(force: Boolean) =
+                        calendar
+                            .day(key, force)
+                            .getOrThrow()
+                            .filterIsInstance<CalendarEntry.Appointment>()
+                            .firstOrNull { it.appointmentId == target.id }
+                    // A day cached a moment before the booking doesn't have it yet: read once more before "gone".
+                    find(force = false) ?: find(force = true)
                 }
             }
         return found.fold(
