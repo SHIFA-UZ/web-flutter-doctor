@@ -1817,7 +1817,7 @@
   "registrationConflict": "This email or phone number belongs to another account. Use matching details or contact support.",
   "requiresProPlan": "Shifa Intelligence requires the PRO plan.",
   "resendCode": "Resend code",
-  "resendCodeIn": "Resend code in {{time}}",
+  "resendCodeIn": "Resend code in {{time}} s",
   "resetDoctorCalendar": "Reset Doctor Calendar",
   "resetPassword": "Reset Password",
   "resetPasswordFailed": "Could not reset the password. Please try again.",

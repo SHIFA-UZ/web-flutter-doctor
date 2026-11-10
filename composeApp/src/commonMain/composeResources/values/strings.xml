@@ -2293,7 +2293,7 @@
     <string name="requiresProPlan">Shifa Intelligence requires the PRO plan.</string>
     <string name="reschedule">Reschedule</string>
     <string name="resendCode">Resend code</string>
-    <string name="resendCodeIn">Resend code in %1$s</string>
+    <string name="resendCodeIn">Resend code in %1$s s</string>
     <string name="reset">Reset</string>
     <string name="resetDoctorCalendar">Reset Doctor Calendar</string>
     <string name="resetPassword">Reset Password</string>

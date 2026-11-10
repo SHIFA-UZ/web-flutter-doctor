@@ -195,7 +195,14 @@ fun CodeScreenContent(
     // "Resend code (59 s)": disabled with the countdown, a link once it's 0.
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         ShifaLink(
-            if (state.resendIn > 0) tr(Res.string.resendCodeIn, "${state.resendIn} s") else tr(Res.string.resendCode),
+            if (state.resendIn > 0) {
+                tr(
+                    Res.string.resendCodeIn,
+                    state.resendIn.toString(),
+                )
+            } else {
+                tr(Res.string.resendCode)
+            },
             onResend,
             enabled = state.resendIn == 0 && !state.loading,
         )

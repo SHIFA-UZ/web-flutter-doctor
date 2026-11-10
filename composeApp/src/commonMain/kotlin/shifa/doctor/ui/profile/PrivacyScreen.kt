@@ -238,7 +238,7 @@ internal fun DeleteCodeSheet(
                 if (state.resendIn > 0) {
                     tr(
                         Res.string.resendCodeIn,
-                        "${state.resendIn} s",
+                        state.resendIn.toString(),
                     )
                 } else {
                     tr(Res.string.resendCode)

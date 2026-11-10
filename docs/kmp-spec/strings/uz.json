@@ -1817,7 +1817,7 @@
   "registrationConflict": "Bu email yoki telefon raqami boshqa hisobga tegishli. Mos ma'lumotlarni kiriting yoki qo'llab-quvvatlash xizmatiga murojaat qiling.",
   "requiresProPlan": "Shifa intellekti uchun PRO tarif kerak.",
   "resendCode": "Kodni qayta yuborish",
-  "resendCodeIn": "Kodni {{time}} da qayta yuborish",
+  "resendCodeIn": "Kodni {{time}} soniyadan keyin qayta yuborish",
   "resetDoctorCalendar": "Shifokor taqvimini qayta o'rnatish",
   "resetPassword": "Parolni tiklash",
   "resetPasswordFailed": "Parolni tiklab bo'lmadi. Iltimos, qayta urinib ko'ring.",

@@ -1817,7 +1817,7 @@
   "registrationConflict": "Этот email или номер телефона принадлежит другому аккаунту. Укажите совпадающие данные или обратитесь в поддержку.",
   "requiresProPlan": "Для Shifa Intelligence нужен тариф PRO.",
   "resendCode": "Отправить код снова",
-  "resendCodeIn": "Отправить код снова через {{time}}",
+  "resendCodeIn": "Отправить код снова через {{time}} с",
   "resetDoctorCalendar": "Сбросить календарь врача",
   "resetPassword": "Сброс пароля",
   "resetPasswordFailed": "Не удалось сбросить пароль. Попробуйте ещё раз.",

@@ -2293,7 +2293,7 @@
     <string name="requiresProPlan">Shifa intellekti uchun PRO tarif kerak.</string>
     <string name="reschedule">Ko'chirish</string>
     <string name="resendCode">Kodni qayta yuborish</string>
-    <string name="resendCodeIn">Kodni %1$s da qayta yuborish</string>
+    <string name="resendCodeIn">Kodni %1$s soniyadan keyin qayta yuborish</string>
     <string name="reset">Tiklash</string>
     <string name="resetDoctorCalendar">Shifokor taqvimini qayta o'rnatish</string>
     <string name="resetPassword">Parolni tiklash</string>
