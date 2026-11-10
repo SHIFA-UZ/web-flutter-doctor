@@ -109,6 +109,41 @@ class PatientsRepositoryTest {
         }
 
     @Test
+    fun `in a clinic the visits come from the clinic's route, the doctor's own fuller rows over them`() =
+        runBlocking<Unit> {
+            var ownStatus = HttpStatusCode.OK
+            val visits =
+                MockEngine { req ->
+                    val json = headersOf(HttpHeaders.ContentType, "application/json")
+                    when (req.url.encodedPath.substringAfter("/api/")) {
+                        "clinics/3/patients/9/appointments" ->
+                            respond(
+                                """[{"id":2,"startAt":"2026-11-02T08:00:00Z","status":"COMPLETED"},{"id":1,"startAt":"2026-11-01T08:00:00Z","status":"COMPLETED"}]""",
+                                HttpStatusCode.OK,
+                                json,
+                            )
+                        else ->
+                            respond(
+                                """[{"id":1,"startAt":"2026-11-01T08:00:00Z","status":"COMPLETED","isVideo":true},{"id":5,"startAt":"2026-10-01T08:00:00Z","status":"CANCELLED"}]""",
+                                ownStatus,
+                                json,
+                            )
+                    }
+                }
+            val classToTest = PatientsRepository({ createHttpClient({ null }, visits) }, time, 60.seconds)
+            val merged = classToTest.appointments(9, clinicId = 3).getOrThrow()
+            assertThat(merged.map { it.id }).containsExactly(2L, 1L, 5L).inOrder()
+            assertThat(merged.first { it.id == 1L }.isVideo).isTrue()
+            // A colleague's patient: the doctor's own route answers 404, the clinic's visits still show.
+            ownStatus = HttpStatusCode.NotFound
+            assertThat(
+                classToTest.appointments(9, clinicId = 3).getOrThrow().map { it.id },
+            ).containsExactly(2L, 1L).inOrder()
+            // Outside a clinic nothing changes: the own route alone decides.
+            assertThat(classToTest.appointments(9).isFailure).isTrue()
+        }
+
+    @Test
     fun `the directory is read page by page, rows without an id dropped, each patient once`() =
         runBlocking<Unit> {
             val list = repo.refresh().getOrThrow()

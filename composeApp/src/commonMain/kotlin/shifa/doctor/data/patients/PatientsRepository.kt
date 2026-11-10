@@ -164,8 +164,28 @@ class PatientsRepository(
         }.onSuccess { if (sessions.value == session) remember(it) }
     }
 
-    suspend fun appointments(id: Long): Result<List<PatientAppointment>> =
-        apiCall<List<JsonElement>> { client().get(ApiConfig.Endpoints.patientAppointments(id)) }
+    /**
+     * The patient's visits. The doctor's own route answers only the visits with that doctor (for staff: with one
+     * doctor of the clinic), and 404 for a clinic patient who only saw a colleague. So from a clinic's workspace the
+     * clinic's route decides (every doctor's visits there, but without place, reason or the cancelled ones), and the
+     * own route's fuller rows replace the same visits where it answers.
+     */
+    suspend fun appointments(
+        id: Long,
+        clinicId: Long? = null,
+    ): Result<List<PatientAppointment>> {
+        if (clinicId == null) return visits(ApiConfig.Endpoints.patientAppointments(id))
+        return coroutineScope {
+            val own = async { visits(ApiConfig.Endpoints.patientAppointments(id)) }
+            visits(ApiConfig.Endpoints.clinicPatientAppointments(clinicId, id)).map { clinic ->
+                val mine = own.await().getOrNull().orEmpty()
+                (mine + clinic).distinctBy { it.id }.sortedByDescending { it.startAt }
+            }
+        }
+    }
+
+    private suspend fun visits(path: String): Result<List<PatientAppointment>> =
+        apiCall<List<JsonElement>> { client().get(path) }
             .map { it.rows(PatientAppointment.serializer(), "patient appointments") }
 
     suspend fun createAccount(id: Long): Result<PatientAccount> =

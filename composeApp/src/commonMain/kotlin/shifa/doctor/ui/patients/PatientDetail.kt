@@ -408,7 +408,7 @@ class PatientDetailViewModel(
 
     // A failed read leaves "No recent visit" in the header and an error with Retry in the tabs (flow 06/03 §6).
     private suspend fun readVisits() {
-        repo.appointments(id).fold(
+        repo.appointments(id, clinicId).fold(
             onSuccess = {
                 appointments = it
                 _state.update { s -> s.copy(visitsError = null) }
