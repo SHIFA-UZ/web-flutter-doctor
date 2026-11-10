@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		5A1F00000000000000000001 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 5A1F00000000000000000003 /* FirebaseMessaging */; };
 		5A1F00000000000000000004 /* Daily in Frameworks */ = {isa = PBXBuildFile; productRef = 5A1F00000000000000000006 /* Daily */; };
+		5A1F00000000000000000007 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 5A1F00000000000000000009 /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +58,7 @@
 			files = (
 				5A1F00000000000000000001 /* FirebaseMessaging in Frameworks */,
 				5A1F00000000000000000004 /* Daily in Frameworks */,
+				5A1F00000000000000000007 /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,6 +105,7 @@
 			packageProductDependencies = (
 				5A1F00000000000000000003 /* FirebaseMessaging */,
 				5A1F00000000000000000006 /* Daily */,
+				5A1F00000000000000000009 /* PostHog */,
 			);
 			productName = iosApp;
 			productReference = CEC2309642DF22DD1EDA4BC9 /* ShifaDoctor.app */;
@@ -135,6 +138,7 @@
 			packageReferences = (
 				5A1F00000000000000000002 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				5A1F00000000000000000005 /* XCRemoteSwiftPackageReference "daily-client-ios" */,
+				5A1F00000000000000000008 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 94273B3F7ADF96192843D46F /* Products */;
@@ -410,6 +414,14 @@
 				minimumVersion = 0.40.0;
 			};
 		};
+		5A1F00000000000000000008 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.93.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -422,6 +434,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5A1F00000000000000000005 /* XCRemoteSwiftPackageReference "daily-client-ios" */;
 			productName = Daily;
+		};
+		5A1F00000000000000000009 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A1F00000000000000000008 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
