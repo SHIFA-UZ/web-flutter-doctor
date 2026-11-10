@@ -109,7 +109,7 @@ class PatientsRepositoryTest {
         }
 
     @Test
-    fun `in a clinic the visits come from the clinic's route, the doctor's own fuller rows over them`() =
+    fun `in a clinic the visits are the clinic's, the doctor's own fuller rows only over the same visits`() =
         runBlocking<Unit> {
             var ownStatus = HttpStatusCode.OK
             val visits =
@@ -132,7 +132,8 @@ class PatientsRepositoryTest {
                 }
             val classToTest = PatientsRepository({ createHttpClient({ null }, visits) }, time, 60.seconds)
             val merged = classToTest.appointments(9, clinicId = 3).getOrThrow()
-            assertThat(merged.map { it.id }).containsExactly(2L, 1L, 5L).inOrder()
+            // Visit 5 is the doctor's own outside this clinic: not part of the clinic's record.
+            assertThat(merged.map { it.id }).containsExactly(2L, 1L).inOrder()
             assertThat(merged.first { it.id == 1L }.isVideo).isTrue()
             // A colleague's patient: the doctor's own route answers 404, the clinic's visits still show.
             ownStatus = HttpStatusCode.NotFound

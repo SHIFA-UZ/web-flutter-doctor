@@ -167,8 +167,8 @@ class PatientsRepository(
     /**
      * The patient's visits. The doctor's own route answers only the visits with that doctor (for staff: with one
      * doctor of the clinic), and 404 for a clinic patient who only saw a colleague. So from a clinic's workspace the
-     * clinic's route decides (every doctor's visits there, but without place, reason or the cancelled ones), and the
-     * own route's fuller rows replace the same visits where it answers.
+     * clinic's route decides which visits there are (every doctor's there, without the cancelled ones), and the own
+     * route only fills in place and reason for the same visits where it answers.
      */
     suspend fun appointments(
         id: Long,
@@ -178,8 +178,10 @@ class PatientsRepository(
         return coroutineScope {
             val own = async { visits(ApiConfig.Endpoints.patientAppointments(id)) }
             visits(ApiConfig.Endpoints.clinicPatientAppointments(clinicId, id)).map { clinic ->
-                val mine = own.await().getOrNull().orEmpty()
-                (mine + clinic).distinctBy { it.id }.sortedByDescending { it.startAt }
+                // The clinic's rows decide which visits there are; the doctor's own row replaces the same visit only
+                // (their visits elsewhere don't belong in this clinic's record).
+                val mine = own.await().getOrNull().orEmpty().associateBy { it.id }
+                clinic.map { mine[it.id] ?: it }
             }
         }
     }
