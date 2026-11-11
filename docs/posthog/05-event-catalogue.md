@@ -271,7 +271,7 @@ Group B9: profile, settings, subscription and billing, security, legal, privacy 
 | `profile_certificate_deleted` | — | `ExtendedProfileScreen` (ExtendedProfileViewModel) |  |
 | `practice_time_zone_changed` | `from_zone`: String?<br>`to_zone`: String | `TimeZonePicker` (TimezoneViewModel) | The practice time zone set (IANA ids, not personal). [fromZone] is null for a first zone. |
 | `practice_time_zone_change_cancelled` | — | `TimeZonePicker` (TimezoneViewModel) | "Change practice timezone?" answered with Cancel. |
-| `profile_service_saved` | `is_new`: Boolean<br>`is_free`: Boolean<br>`has_location_rate`: Boolean<br>`price_bucket`: String? | `ServicesScreen` (ServicesViewModel) | A service of the doctor's own saved. [priceBucket]: `amountBucket` of its first price (null when free). [hasLocationRate]: a price is limited to one location. |
+| `profile_service_saved` | `is_new`: Boolean<br>`is_free`: Boolean<br>`is_pay_later`: Boolean<br>`has_location_rate`: Boolean<br>`price_bucket`: String? | `ServicesScreen` (ServicesViewModel) | A service of the doctor's own saved. [isPayLater]: paid in clinic (PAY_LATER), not online. [priceBucket]: `amountBucket` of its first price (null when free). [hasLocationRate]: a price is limited to one location. |
 | `profile_service_save_failed` | `is_new`: Boolean<br>`reason`: String | `ServicesScreen` (ServicesViewModel) | [reason]: a `toFailureReason()` word. |
 | `profile_service_deleted` | — | `ServicesScreen` (ServicesViewModel) |  |
 | `profile_service_delete_failed` | `reason`: String | `ServicesScreen` (ServicesViewModel) |  |

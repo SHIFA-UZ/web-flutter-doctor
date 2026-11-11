@@ -96,6 +96,13 @@ import shifa.doctor.generated.resources.serviceGroupsHelper
 import shifa.doctor.generated.resources.serviceGroupsSaved
 import shifa.doctor.generated.resources.serviceManagedByClinic
 import shifa.doctor.generated.resources.serviceManagedByClinicShort
+import shifa.doctor.generated.resources.servicePaymentFree
+import shifa.doctor.generated.resources.servicePaymentFreeHint
+import shifa.doctor.generated.resources.servicePaymentInClinic
+import shifa.doctor.generated.resources.servicePaymentInClinicHint
+import shifa.doctor.generated.resources.servicePaymentLabel
+import shifa.doctor.generated.resources.servicePaymentOnline
+import shifa.doctor.generated.resources.servicePaymentOnlineHint
 import shifa.doctor.generated.resources.servicePriceDuplicate
 import shifa.doctor.generated.resources.servicePriceInvalid
 import shifa.doctor.generated.resources.servicePricesInvalid
@@ -111,6 +118,7 @@ import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.EmptyState
+import shifa.doctor.ui.widgets.SegmentedTabs
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaDropdown
 import shifa.doctor.ui.widgets.ShifaIconButton
@@ -124,6 +132,7 @@ import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitchRow
+import shifa.doctor.ui.widgets.TabItem
 import shifa.doctor.utils.Money
 import shifa.doctor.utils.tr
 
@@ -142,6 +151,8 @@ data class ServiceDraft(
     val description: String = "",
     val groupId: Long? = null,
     val free: Boolean = false,
+    // Paid in clinic (PAY_LATER) instead of online; ignored when [free].
+    val payLater: Boolean = false,
     val active: Boolean = true,
     val prices: List<PriceRow> = listOf(PriceRow()),
 )
@@ -256,6 +267,7 @@ class ServicesViewModel(
                     s.description.orEmpty(),
                     s.groupId,
                     s.isFreeConsultation,
+                    s.isPayLater,
                     s.isActive,
                     s.prices.map {
                         PriceRow(amountText(it), it.currency, it.locationId, it.amountMinor)
@@ -328,7 +340,18 @@ class ServicesViewModel(
         if (titleError != null || pricesError != null || rowErrors.isNotEmpty()) {
             return _state.update { it.copy(titleError = titleError, pricesError = pricesError, rowErrors = rowErrors) }
         }
-        val body = UpsertService(title, d.description.trim().ifEmpty { null }, d.active, d.free, d.groupId, prices)
+        val payLater = !d.free && d.payLater
+        val paymentType = if (payLater) DoctorService.PAY_LATER else DoctorService.PAY_NOW
+        val body =
+            UpsertService(
+                title,
+                d.description.trim().ifEmpty { null },
+                d.active,
+                d.free,
+                d.groupId,
+                prices,
+                paymentType,
+            )
         _state.update { it.copy(saving = true, banner = null) }
         viewModelScope.launch {
             repo.save(d.id, body).fold(
@@ -338,6 +361,7 @@ class ServicesViewModel(
                         ProfileEvents.ServiceSaved(
                             isNew = d.id == null,
                             isFree = d.free,
+                            isPayLater = payLater,
                             hasLocationRate = prices.any { it.locationId != null },
                             priceBucket = first?.let { amountBucket(it.amountMinor, it.currency) },
                         ),
@@ -645,6 +669,7 @@ private fun ServiceRow(
     lines.forEach { Text(it, style = ShifaTextStyles.dialogBody(), color = dim) }
     val tags =
         listOfNotNull(
+            tr(Res.string.servicePaymentInClinic).takeIf { service.isPayLater },
             tr(Res.string.serviceManagedByClinicShort).takeIf { service.clinicManaged },
             tr(Res.string.clinicServiceInactiveBadge).takeIf { !service.isActive },
         )
@@ -719,7 +744,7 @@ private fun ServiceEditor(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 SwitchRow(tr(Res.string.active), d.active) { v -> actions.edit { it.copy(active = v) } }
-                SwitchRow(tr(Res.string.serviceFreeConsultation), d.free) { v -> actions.edit { it.copy(free = v) } }
+                PaymentChoice(d, actions)
                 // Turning "free" on drops the prices on Save (flow 08/08 §9).
                 if (d.free && state.original?.free == false && state.original.prices.any { it.amount.isNotBlank() }) {
                     Text(
@@ -832,6 +857,35 @@ private fun PricesSection(
             Modifier.fillMaxWidth(),
         )
     }
+}
+
+/** Free, pay online (at booking) or pay in clinic; each with what it means for the patient's booking. */
+@Composable
+private fun PaymentChoice(
+    d: ServiceDraft,
+    actions: ServicesActions,
+) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+    Text(tr(Res.string.servicePaymentLabel), style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+    val selected =
+        when {
+            d.free -> 0
+            d.payLater -> 2
+            else -> 1
+        }
+    SegmentedTabs(
+        listOf(Res.string.servicePaymentFree, Res.string.servicePaymentOnline, Res.string.servicePaymentInClinic)
+            .map { TabItem(tr(it)) },
+        selected,
+        { i -> actions.edit { it.copy(free = i == 0, payLater = i == 2) } },
+        block = true,
+    )
+    val hint =
+        when (selected) {
+            0 -> Res.string.servicePaymentFreeHint
+            2 -> Res.string.servicePaymentInClinicHint
+            else -> Res.string.servicePaymentOnlineHint
+        }
+    Text(tr(hint), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
 }
 
 @Composable

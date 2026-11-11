@@ -108,6 +108,7 @@ import shifa.doctor.generated.resources.paymentPending
 import shifa.doctor.generated.resources.refresh
 import shifa.doctor.generated.resources.reset
 import shifa.doctor.generated.resources.retry
+import shifa.doctor.generated.resources.servicePaymentInClinic
 import shifa.doctor.generated.resources.showDetails
 import shifa.doctor.generated.resources.statusCancelled
 import shifa.doctor.generated.resources.statusCompleted
@@ -697,12 +698,12 @@ internal fun AgendaRow(
                 overflow = TextOverflow.Ellipsis,
             )
             val place = place(entry)
-            // Compact: one line with the place, the status and (video) the payment, like the board's summary.
+            // Compact: one line with the place, the status and (video, pay in clinic) the payment, like the board's summary.
             val summary =
                 listOfNotNull(
                     place,
                     (entry as? CalendarEntry.Appointment)?.let { status(it.status)?.first },
-                    (entry as? CalendarEntry.Appointment)?.takeIf { it.isVideo }?.let {
+                    (entry as? CalendarEntry.Appointment)?.takeIf { it.showsPayment }?.let {
                         payment(
                             it.paymentStatus,
                         )?.first
@@ -810,7 +811,7 @@ private fun Chips(
     }
     if (entry is CalendarEntry.Appointment) {
         status(entry.status)?.let { (label, bg, ink) -> ProfileChip(label, bg, ink) }
-        if (entry.isVideo) payment(entry.paymentStatus)?.let { (label, bg, ink) -> ProfileChip(label, bg, ink) }
+        if (entry.showsPayment) payment(entry.paymentStatus)?.let { (label, bg, ink) -> ProfileChip(label, bg, ink) }
     }
 }
 
@@ -887,6 +888,8 @@ internal fun payment(
         "PENDING" -> Triple(tr(Res.string.paymentPending), ShifaColors.Bg.WarningSubtle, ShifaColors.Text.Warning)
         "FAILED" -> Triple(tr(Res.string.paymentFailed), ShifaColors.Bg.ErrorSubtle, ShifaColors.Text.Error)
         "NOT_REQUIRED" -> Triple(tr(Res.string.paymentNotRequired), ShifaColors.Bg.Canvas, ShifaColors.Text.Secondary)
+        "PAY_IN_CLINIC" ->
+            Triple(tr(Res.string.servicePaymentInClinic), ShifaColors.Bg.WarningSubtle, ShifaColors.Text.Warning)
         else -> Triple(code, ShifaColors.Bg.Canvas, ShifaColors.Text.Secondary)
     }
 }

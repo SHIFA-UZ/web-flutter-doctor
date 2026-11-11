@@ -2950,5 +2950,12 @@
   "deleteDocumentBody": "“{title}” is removed from this patient's record for everyone who could see it.",
   "documentUpdated": "Document updated",
   "documentDeletedNamed": "Document “{title}” deleted",
-  "documentDeleteFailed": "Couldn't delete the document. Try again."
+  "documentDeleteFailed": "Couldn't delete the document. Try again.",
+  "servicePaymentLabel": "Payment",
+  "servicePaymentFree": "Free",
+  "servicePaymentOnline": "Pay online",
+  "servicePaymentInClinic": "Pay in clinic",
+  "servicePaymentFreeHint": "Patients book without paying, in person or by video.",
+  "servicePaymentOnlineHint": "Patients pay online when they book, in person or by video.",
+  "servicePaymentInClinicHint": "Patients pay at the visit. They can book this service only in person, not by video."
 }

@@ -2410,6 +2410,13 @@
     <string name="serviceGroupsTitle">Service groups</string>
     <string name="serviceManagedByClinic">This service is managed under Clinic → Services. Edit it there.</string>
     <string name="serviceManagedByClinicShort">Clinic-managed</string>
+    <string name="servicePaymentFree">Free</string>
+    <string name="servicePaymentFreeHint">Patients book without paying, in person or by video.</string>
+    <string name="servicePaymentInClinic">Pay in clinic</string>
+    <string name="servicePaymentInClinicHint">Patients pay at the visit. They can book this service only in person, not by video.</string>
+    <string name="servicePaymentLabel">Payment</string>
+    <string name="servicePaymentOnline">Pay online</string>
+    <string name="servicePaymentOnlineHint">Patients pay online when they book, in person or by video.</string>
     <string name="servicePriceDuplicate">Duplicate currency and location combination</string>
     <string name="servicePriceInvalid">Enter an amount like 150000 or 25.50</string>
     <string name="servicePriceLabel">Price amount (e.g. 25.00)</string>

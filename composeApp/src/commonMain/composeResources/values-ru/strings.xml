@@ -2410,6 +2410,13 @@
     <string name="serviceGroupsTitle">Группы услуг</string>
     <string name="serviceManagedByClinic">Эта услуга управляется в разделе Клиника → Услуги. Редактируйте её там.</string>
     <string name="serviceManagedByClinicShort">Из каталога клиники</string>
+    <string name="servicePaymentFree">Бесплатно</string>
+    <string name="servicePaymentFreeHint">Пациенты записываются без оплаты — очно или по видео.</string>
+    <string name="servicePaymentInClinic">Оплата в клинике</string>
+    <string name="servicePaymentInClinicHint">Пациенты оплачивают на приёме. Эту услугу можно забронировать только очно, не по видео.</string>
+    <string name="servicePaymentLabel">Оплата</string>
+    <string name="servicePaymentOnline">Онлайн-оплата</string>
+    <string name="servicePaymentOnlineHint">Пациенты оплачивают онлайн при записи — очно или по видео.</string>
     <string name="servicePriceDuplicate">Повтор валюты и места</string>
     <string name="servicePriceInvalid">Введите сумму вида 150000 или 25.50</string>
     <string name="servicePriceLabel">Стоимость (например, 25.00)</string>

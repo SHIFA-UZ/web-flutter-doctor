@@ -96,7 +96,7 @@ Built 2026-11-04. Flows `04/01-calendar-tab.md`, `04/02-day-agenda-item.md`, `04
   fallback per the project rule, the board draws initials; patient name or "Patient"; "Video Call" or the location;
   cancelled ones dimmed and struck through), block (error tint and border, reason or "Blocked", "All day" for a whole
   day). Compact by default; "Show details" adds the location chip (info tint for video), the status chip (Confirmed,
-  Complete, Cancelled, In progress, Requested, No-show, else the raw code), the payment chip for video, the duration
+  Complete, Cancelled, In progress, Requested, No-show, else the raw code), the payment chip for video and for pay in clinic (SVC-03), the duration
   badge (over 5 minutes) and the reason; the compact line reads place · status · payment. The right column is capped so
   a long reason never hides the name. Rows are tappable; their panels come
   with CAL-6 / CAL-7 / CAL-8.
@@ -134,7 +134,7 @@ for its buttons), not a sheet.
   practice day), `changeable`, `durationOptions` (shorter by the grain: the GCD of the free-slot lengths at its location,
   5–240, never under 5 minutes; longer by chaining the free slots right after it at the same location), and `fits` (a
   slot can take the move only when free slots chained without a gap cover the visit's whole length).
-- **Panel** (`ui/calendar/AppointmentPanel.kt`): patient and time with status and (video) payment chips; Date and Time →
+- **Panel** (`ui/calendar/AppointmentPanel.kt`): patient and time with status and payment chips (video, or pay in clinic: SVC-03); Date and Time →
   Reschedule sheet (the month picker, shaded from the cache, past days closed; the day's future free slots where the
   visit fits as chips, the location named when it differs, the current slot greyed as "current"; "Move to 10:30", the
   length kept; a failed read shows the error with Retry);

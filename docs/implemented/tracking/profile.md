@@ -19,7 +19,7 @@ that as a trailing lambda).
 | `profile_certificate_deleted` | — | `ExtendedProfileViewModel.deleteCertificate` |
 | `practice_time_zone_changed` | `from_zone` (null for a first zone), `to_zone` (IANA ids) | `TimezoneViewModel.save` |
 | `practice_time_zone_change_cancelled` | — | `TimezoneViewModel.cancelConfirm` |
-| `profile_service_saved` | `is_new`, `is_free`, `has_location_rate`, **`price_bucket`** | `ServicesViewModel.save` |
+| `profile_service_saved` | `is_new`, `is_free`, `is_pay_later`, `has_location_rate`, **`price_bucket`** | `ServicesViewModel.save` |
 | `profile_service_save_failed` | `is_new`, `reason` | `ServicesViewModel.save` |
 | `profile_service_deleted` / `profile_service_delete_failed` | — / `reason` | `ServicesViewModel.delete` (already gone counts as deleted) |
 | `profile_service_groups_saved` / `profile_service_groups_save_failed` | `group_count` (`countBucket`) / `reason` | `ServicesViewModel.saveGroups` |

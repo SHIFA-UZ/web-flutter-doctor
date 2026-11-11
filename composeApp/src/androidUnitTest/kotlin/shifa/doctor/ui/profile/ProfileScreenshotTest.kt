@@ -55,6 +55,11 @@ class ProfileScreenshotTest {
     fun serviceEditor() = captureRoboImage("screenshots/Services_editor.png") { ServiceEditorPreview() }
 
     @Test
+    @Config(qualifiers = "w402dp-h1200dp-xhdpi")
+    fun serviceEditorPayInClinic() =
+        captureRoboImage("screenshots/Services_editorPayInClinic.png") { ServiceEditorPayInClinicPreview() }
+
+    @Test
     fun serviceGroups() = captureRoboImage("screenshots/Services_groups.png") { ServiceGroupsPreview() }
 
     @Test

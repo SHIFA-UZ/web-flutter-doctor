@@ -1707,14 +1707,17 @@ internal const val DEMO_PASSWORD = "Dev12345!"
 
 private const val DEMO_SERVICES =
     """[{"id":1,"title":"Free first consultation","description":null,"isActive":true,"isFreeConsultation":true,""" +
-        """"clinicManaged":false,"groupId":null,"groupName":null,"prices":[]},""" +
+        """"paymentType":"PAY_NOW","clinicManaged":false,"groupId":null,"groupName":null,"prices":[]},""" +
         """{"id":2,"title":"Consultation","description":"First visit with an examination","isActive":true,""" +
-        """"isFreeConsultation":false,"clinicManaged":false,"groupId":null,"groupName":null,"prices":[""" +
-        """{"amountMinor":15000000,"currency":"UZS","locationId":null},""" +
+        """"isFreeConsultation":false,"paymentType":"PAY_NOW","clinicManaged":false,"groupId":null,""" +
+        """"groupName":null,"prices":[{"amountMinor":15000000,"currency":"UZS","locationId":null},""" +
         """{"amountMinor":2000,"currency":"USD","locationId":1}]},""" +
         """{"id":3,"title":"Cleaning","description":null,"isActive":true,"isFreeConsultation":false,""" +
-        """"clinicManaged":true,"groupId":null,"groupName":null,"prices":[""" +
-        """{"amountMinor":30000000,"currency":"UZS","locationId":null}]}]"""
+        """"paymentType":"PAY_NOW","clinicManaged":true,"groupId":null,"groupName":null,"prices":[""" +
+        """{"amountMinor":30000000,"currency":"UZS","locationId":null}]},""" +
+        """{"id":4,"title":"Follow-up visit","description":null,"isActive":true,"isFreeConsultation":false,""" +
+        """"paymentType":"PAY_LATER","clinicManaged":false,"groupId":null,"groupName":null,"prices":[""" +
+        """{"amountMinor":10000000,"currency":"UZS","locationId":null}]}]"""
 
 private const val DEMO_LOCATIONS =
     """[{"id":1,"label":"Shifa Demo Clinic","clinic":"Shifa Demo Clinic","locationCity":"Tashkent","isPrimary":true}]"""
@@ -2110,7 +2113,8 @@ internal fun demoColleagueCalendar(day: String?): JsonArray {
                             "location" to "Shifa Demo Clinic",
                             "reason" to "Braces check",
                             "status" to "CONFIRMED",
-                            "paymentStatus" to "PAID",
+                            // Booked with a pay-later service: paid at the visit.
+                            "paymentStatus" to "PAY_IN_CLINIC",
                         )
                     12 * 60 -> mapOf("type" to "BLOCKED", "blockId" to 2, "blockReason" to "Team meeting")
                     else -> mapOf("type" to "FREE_SLOT")
