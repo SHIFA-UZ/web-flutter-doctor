@@ -75,6 +75,7 @@ object ApiConfig {
         ) = "patients/$id/forms/$formId"
 
         const val ICD10_SEARCH = "icd10/search"
+        const val GEOCODE_REVERSE = "geocode/reverse"
         const val CLINICAL_ENGINE = "clinical-engine"
 
         fun patientDocumentDownload(

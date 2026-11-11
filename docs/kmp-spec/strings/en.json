@@ -2957,5 +2957,6 @@
   "servicePaymentInClinic": "Pay in clinic",
   "servicePaymentFreeHint": "Patients book without paying, in person or by video.",
   "servicePaymentOnlineHint": "Patients pay online when they book, in person or by video.",
-  "servicePaymentInClinicHint": "Patients pay at the visit. They can book this service only in person, not by video."
+  "servicePaymentInClinicHint": "Patients pay at the visit. They can book this service only in person, not by video.",
+  "locationUnavailable": "Couldn't get your location. Allow location access for Shifa in Settings, or tap the map."
 }

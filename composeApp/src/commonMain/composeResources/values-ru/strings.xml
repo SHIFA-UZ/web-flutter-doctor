@@ -1713,6 +1713,7 @@
     <string name="locationSaveFailed">Не удалось сохранить адрес. Попробуйте снова.</string>
     <string name="locationSaved">Местоположение сохранено</string>
     <string name="locationServicesDisabled">Службы определения местоположения отключены. Пожалуйста, включите их.</string>
+    <string name="locationUnavailable">Не удалось определить ваше местоположение. Разрешите Shifa доступ к геолокации в настройках или нажмите на карту.</string>
     <string name="locations">Адреса приёма</string>
     <string name="locationsLoadFailed">Не удалось загрузить адреса.</string>
     <string name="locationsSubtitle">Где вы принимаете пациентов</string>

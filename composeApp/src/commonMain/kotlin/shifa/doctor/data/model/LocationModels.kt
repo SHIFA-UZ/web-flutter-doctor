@@ -36,3 +36,22 @@ data class LocationRequest(
     val longitude: Double? = null,
     val isPrimary: Boolean = false,
 )
+
+/** `GET /geocode/reverse` and `/search` (BE-15): the backend's OpenStreetMap lookup; every part may be missing. */
+@Serializable
+data class GeocodedAddress(
+    val formattedAddress: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val locationCountry: String? = null,
+    val locationRegion: String? = null,
+    val locationCity: String? = null,
+    val locationDistrict: String? = null,
+    val locationPostalCode: String? = null,
+    val locationStreetAddress: String? = null,
+)
+
+@Serializable
+data class GeocodeResults(
+    val results: List<GeocodedAddress> = emptyList(),
+)

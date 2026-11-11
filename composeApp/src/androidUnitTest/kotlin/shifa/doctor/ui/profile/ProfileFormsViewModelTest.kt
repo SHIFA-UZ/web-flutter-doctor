@@ -52,10 +52,18 @@ class ProfileFormsViewModelTest {
 
     // Path ending → (status, body) for writes; reads answer the fixture.
     private val fail = mutableMapOf<String, Pair<HttpStatusCode, String>>()
+
+    // The address at a confirmed pin (BE-15); none unless a test sets one.
+    private var geocode = """{"results":[]}"""
+    private var geocodeDelayMs = 0L
     private val engine =
         MockEngine { req ->
             val path = req.url.encodedPath
             val json = headersOf(HttpHeaders.ContentType, "application/json")
+            if (path.endsWith("geocode/reverse")) {
+                kotlinx.coroutines.delay(geocodeDelayMs)
+                return@MockEngine respond(geocode, HttpStatusCode.OK, json)
+            }
             if (req.method == HttpMethod.Get) return@MockEngine respond(me, HttpStatusCode.OK, json)
             val body = req.body.toByteArray().decodeToString()
             sent += "${path.substringAfter("/api/")} $body"
@@ -66,6 +74,11 @@ class ProfileFormsViewModelTest {
             respond(if (path.endsWith("reset-password")) """{"message":"ok"}""" else body, HttpStatusCode.OK, json)
         }
     private val repo = ProfileRepository { createHttpClient({ null }, engine) }
+    private val geocoder =
+        shifa.doctor.data.locations.GeocodeRepository(
+            { createHttpClient({ null }, engine) },
+            { "en" },
+        )
 
     @Before fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -87,7 +100,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `contact starts grouped from the saved profile, with the address and coordinates`() {
-        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
         val s = classToTest.state.value
         assertThat(s.form.phone).isEqualTo("+998 90 000 00 00")
         assertThat(s.form.email).isEqualTo("demo.doctor@shifa.dev")
@@ -98,7 +111,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `phone and e-mail are checked before anything is sent`() {
-        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
         classToTest.edit { it.copy(phone = " ", email = "name@domain") }
         classToTest.save()
         assertThat(classToTest.state.value.phoneError).isEqualTo(Res.string.phoneNumberRequired)
@@ -112,7 +125,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `contact saves whole and E164, the address only its changed keys, then closes`() {
-        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
         classToTest.edit {
             it.copy(
                 phone = "(90) 123-45-67",
@@ -132,7 +145,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `only the address changed - one profile PATCH, a cleared field is sent empty`() {
-        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
         classToTest.edit { it.copy(city = "") }
         classToTest.save()
         settle { classToTest.state.value.done }
@@ -143,7 +156,7 @@ class ProfileFormsViewModelTest {
     @Test
     fun `a failed address after a saved contact says so and keeps only the address dirty`() {
         fail["doctors/me/profile"] = HttpStatusCode.InternalServerError to """{"status":500,"code":"INTERNAL","requestId":"req-41"}"""
-        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
         classToTest.edit { it.copy(email = "x@shifa.dev", region = "Tashkent") }
         classToTest.save()
         settle { !classToTest.state.value.saving }
@@ -163,7 +176,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `the map opens on the saved pin, a tap moves it, Confirm fills the form and Save sends both coordinates`() {
-        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
         classToTest.openMap()
         assertThat(classToTest.state.value.mapPin).isEqualTo(41.3111 to 69.2797)
         assertThat(classToTest.back()).isFalse() // an unmoved pin: Back closes the map, not the form
@@ -179,6 +192,7 @@ class ProfileFormsViewModelTest {
         classToTest.movePin(41.2856, 69.2034)
         classToTest.confirmMap()
         assertThat(classToTest.state.value.form.latitude).isEqualTo(41.2856)
+        settle { !classToTest.state.value.findingAddress }
         classToTest.save()
         settle { classToTest.state.value.done }
         assertThat(sent).containsExactly("""doctors/me/profile {"latitude":41.2856,"longitude":69.2034}""")
@@ -186,7 +200,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `with no saved pin the map opens on Tashkent`() {
-        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
         classToTest.edit { it.copy(latitude = null, longitude = null) }
         classToTest.openMap()
         assertThat(classToTest.state.value.mapPin).isEqualTo(41.2995 to 69.2401)
@@ -357,5 +371,39 @@ class ProfileFormsViewModelTest {
                 ProfileEvents.PasswordChangeFailed("wrong_current_password"),
                 ProfileEvents.PasswordChanged,
             ).inOrder()
+    }
+
+    @Test
+    fun `a confirmed pin fills the address fields from the address there`() {
+        geocode =
+            """{"results":[{"locationCountry":"Uzbekistan","locationCity":"Tashkent","locationDistrict":"Chilanzar district",""" +
+            """"locationPostalCode":"100000","locationStreetAddress":"Seoul Street"}]}"""
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
+        classToTest.openMap()
+        classToTest.movePin(41.2988, 69.2396)
+        classToTest.confirmMap()
+        settle { classToTest.state.value.form.street == "Seoul Street" }
+        val f = classToTest.state.value.form
+        assertThat(listOf(f.country, f.region, f.district, f.city, f.postal))
+            .containsExactly("Uzbekistan", "", "Chilanzar district", "Tashkent", "100000").inOrder()
+        assertThat(f.latitude to f.longitude).isEqualTo(41.2988 to 69.2396)
+    }
+
+    @Test
+    fun `a street typed while the address is looked up wins, and Save waits for the lookup`() {
+        geocode = """{"results":[{"locationCity":"Samarkand","locationStreetAddress":"Seoul Street"}]}"""
+        geocodeDelayMs = 300
+        val classToTest = ContactViewModel(repo, geocode = geocoder).also { created += it }.apply { open() }
+        val before = classToTest.state.value.form
+        classToTest.openMap()
+        classToTest.movePin(41.2988, 69.2396)
+        classToTest.confirmMap()
+        assertThat(classToTest.state.value.findingAddress).isTrue()
+        classToTest.save() // ignored until the address is in
+        classToTest.edit { it.copy(street = "Amir Temur 1") }
+        settle { !classToTest.state.value.findingAddress }
+        assertThat(sent).isEmpty()
+        assertThat(classToTest.state.value.form.street).isEqualTo("Amir Temur 1")
+        assertThat(classToTest.state.value.form.city).isEqualTo(before.city) // nothing from the late answer
     }
 }

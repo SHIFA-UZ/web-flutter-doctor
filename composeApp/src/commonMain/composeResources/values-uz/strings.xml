@@ -1713,6 +1713,7 @@
     <string name="locationSaveFailed">Manzilni saqlab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="locationSaved">Joylashuv saqlandi</string>
     <string name="locationServicesDisabled">Joylashuv xizmatlari o'chirilgan. Iltimos, ularni yoqing.</string>
+    <string name="locationUnavailable">Joylashuvingizni aniqlab bo'lmadi. Sozlamalarda Shifa uchun joylashuvga ruxsat bering yoki xaritaga bosing.</string>
     <string name="locations">Manzillar</string>
     <string name="locationsLoadFailed">Manzillaringizni yuklab bo'lmadi.</string>
     <string name="locationsSubtitle">Bemorlarni qabul qiladigan joylaringiz</string>

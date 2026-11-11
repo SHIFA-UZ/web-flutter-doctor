@@ -1713,6 +1713,7 @@
     <string name="locationSaveFailed">Couldn't save the location. Try again.</string>
     <string name="locationSaved">Location saved</string>
     <string name="locationServicesDisabled">Location services are disabled. Please enable them.</string>
+    <string name="locationUnavailable">Couldn't get your location. Allow location access for Shifa in Settings, or tap the map.</string>
     <string name="locations">Locations</string>
     <string name="locationsLoadFailed">Couldn't load your locations.</string>
     <string name="locationsSubtitle">Where you see patients</string>

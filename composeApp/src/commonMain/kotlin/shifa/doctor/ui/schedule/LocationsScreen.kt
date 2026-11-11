@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
+import shifa.doctor.data.locations.GeocodeRepository
 import shifa.doctor.data.locations.LocationsRepository
 import shifa.doctor.data.locations.locationsRepository
 import shifa.doctor.data.model.ApiException
@@ -46,6 +47,7 @@ import shifa.doctor.data.tracking.Tracking
 import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addLocation
+import shifa.doctor.generated.resources.addressNotFound
 import shifa.doctor.generated.resources.cancel
 import shifa.doctor.generated.resources.city
 import shifa.doctor.generated.resources.clinic
@@ -153,6 +155,8 @@ data class LocationsUiState(
     val original: LocationDraft? = null,
     val labelMissing: Boolean = false,
     val saving: Boolean = false,
+    // The address at a confirmed pin is being looked up: Save waits for it.
+    val findingAddress: Boolean = false,
     val askDiscard: Boolean = false,
     val askDelete: Boolean = false,
     // The map picker over the editor (LOC-2, the contact address's picker).
@@ -169,6 +173,7 @@ data class LocationsUiState(
 class LocationsViewModel(
     private val repo: LocationsRepository = locationsRepository,
     private val tracker: Tracker = Tracking,
+    private val geocode: GeocodeRepository = GeocodeRepository(),
 ) : ViewModel() {
     private val _state = MutableStateFlow(LocationsUiState())
     val state: StateFlow<LocationsUiState> = _state.asStateFlow()
@@ -214,7 +219,7 @@ class LocationsViewModel(
     fun save() {
         val s = _state.value
         val draft = s.draft ?: return
-        if (s.saving) return
+        if (s.saving || s.findingAddress) return
         if (draft.label.isBlank()) return _state.update { it.copy(labelMissing = true) }
         _state.update { it.copy(saving = true, banner = null) }
         viewModelScope.launch {
@@ -304,12 +309,28 @@ class LocationsViewModel(
         longitude: Double,
     ) = _state.update { it.copy(map = it.map?.moved(latitude, longitude)) }
 
-    /** The pin goes into the form; nothing is saved until Save. */
-    fun confirmMap() =
-        _state.update { s ->
-            val pin = s.map?.pin ?: return@update s
-            s.copy(map = null, draft = s.draft?.copy(latitude = pin.first, longitude = pin.second))
+    /** The pin goes into the form, then street and city from the address at the pin (BE-15); saved on Save. */
+    fun confirmMap() {
+        val pin = _state.value.map?.pin ?: return
+        _state.update {
+            it.copy(
+                map = null,
+                draft = it.draft?.copy(latitude = pin.first, longitude = pin.second),
+                findingAddress = true,
+            )
         }
+        val asked = _state.value.draft
+        viewModelScope.launch {
+            val found = geocode.reverse(pin.first, pin.second)
+            _state.update { done ->
+                // Another editor, or a typed correction meanwhile: the late answer is dropped.
+                val s = done.copy(findingAddress = false)
+                val d = s.draft?.takeIf { it == asked } ?: return@update s
+                val a = found.getOrNull() ?: return@update s.copy(banner = CodeBanner(Res.string.addressNotFound))
+                s.copy(draft = d.copy(street = a.locationStreetAddress.orEmpty(), city = a.locationCity.orEmpty()))
+            }
+        }
+    }
 
     fun closeMap() = _state.update { it.copy(map = it.map?.closing()) }
 
@@ -476,7 +497,7 @@ private fun LocationEditor(
     ProfileForm(
         tr(if (d.id == null) Res.string.addLocation else Res.string.editLocation),
         actions.back,
-        onSave = if (state.dirty && enabled) actions.save else null,
+        onSave = if (state.dirty && enabled && !state.findingAddress) actions.save else null,
         askDiscard = state.askDiscard,
         onDiscard = { actions.ui { it.copy(draft = null, original = null, askDiscard = false) } },
         onKeep = { actions.ui { it.copy(askDiscard = false) } },

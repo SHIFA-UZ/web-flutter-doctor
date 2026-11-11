@@ -25,6 +25,7 @@ import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
+import shifa.doctor.data.locations.GeocodeRepository
 import shifa.doctor.data.model.DoctorContact
 import shifa.doctor.data.model.ProfileUpdateRequest
 import shifa.doctor.data.profile.ProfileRepository
@@ -33,6 +34,7 @@ import shifa.doctor.data.tracking.Tracker
 import shifa.doctor.data.tracking.Tracking
 import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.addressNotFound
 import shifa.doctor.generated.resources.city
 import shifa.doctor.generated.resources.clinicAddress
 import shifa.doctor.generated.resources.contactAndClinicAddress
@@ -102,6 +104,8 @@ data class ContactUiState(
     val phoneError: StringResource? = null,
     val emailError: StringResource? = null,
     val saving: Boolean = false,
+    // The address at a confirmed pin is being looked up: Save waits for it.
+    val findingAddress: Boolean = false,
     val banner: CodeBanner? = null,
     val askDiscard: Boolean = false,
     val done: Boolean = false,
@@ -121,6 +125,7 @@ data class ContactUiState(
 class ContactViewModel(
     private val profile: ProfileRepository = profileRepository,
     private val tracker: Tracker = Tracking,
+    private val geocode: GeocodeRepository = GeocodeRepository(),
 ) : ViewModel() {
     private val _state = MutableStateFlow(ContactUiState())
     val state: StateFlow<ContactUiState> = _state.asStateFlow()
@@ -176,12 +181,41 @@ class ContactViewModel(
         longitude: Double,
     ) = _state.update { it.copy(map = it.map?.moved(latitude, longitude)) }
 
-    /** The pin goes into the form; nothing is saved until Save (flow 08/03 §10). */
-    fun confirmMap() =
-        _state.update { s ->
-            val pin = s.map?.pin ?: return@update s
-            s.copy(map = null, form = s.form.copy(latitude = pin.first, longitude = pin.second))
+    /**
+     * The pin goes into the form, then the address fields are filled from the address at the pin (BE-15) unless the
+     * form changed meanwhile (a typed correction wins); Save waits for the lookup. Nothing is saved until Save (flow
+     * 08/03 §10).
+     */
+    fun confirmMap() {
+        val pin = _state.value.map?.pin ?: return
+        _state.update {
+            it.copy(
+                map = null,
+                form = it.form.copy(latitude = pin.first, longitude = pin.second),
+                findingAddress = true,
+            )
         }
+        val asked = _state.value.form
+        viewModelScope.launch {
+            val found = geocode.reverse(pin.first, pin.second)
+            _state.update { done ->
+                val s = done.copy(findingAddress = false)
+                if (s.form != asked) return@update s
+                val a = found.getOrNull() ?: return@update s.copy(banner = CodeBanner(Res.string.addressNotFound))
+                s.copy(
+                    form =
+                        s.form.copy(
+                            country = a.locationCountry.orEmpty(),
+                            region = a.locationRegion.orEmpty(),
+                            district = a.locationDistrict.orEmpty(),
+                            city = a.locationCity.orEmpty(),
+                            postal = a.locationPostalCode.orEmpty(),
+                            street = a.locationStreetAddress.orEmpty(),
+                        ),
+                )
+            }
+        }
+    }
 
     fun closeMap() = _state.update { it.copy(map = it.map?.closing()) }
 
@@ -209,7 +243,7 @@ class ContactViewModel(
 
     fun save() {
         val s = _state.value
-        if (s.saving || !s.dirty) return
+        if (s.saving || s.findingAddress || !s.dirty) return
         val phone = PhoneE164.normalize(s.form.phone)
         val email = normalizedEmail(s.form.email)
         val phoneError =
@@ -377,7 +411,7 @@ fun ContactContent(
     ProfileForm(
         tr(Res.string.contactAndClinicAddress),
         actions.back,
-        onSave = if (state.dirty && enabled) actions.save else null,
+        onSave = if (state.dirty && enabled && !state.findingAddress) actions.save else null,
         askDiscard = state.askDiscard,
         onDiscard = actions.discard,
         onKeep = { actions.ui { it.copy(askDiscard = false) } },

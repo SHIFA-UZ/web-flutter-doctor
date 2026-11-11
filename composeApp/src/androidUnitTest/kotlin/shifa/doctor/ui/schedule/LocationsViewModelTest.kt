@@ -23,6 +23,7 @@ import shifa.doctor.data.locations.LocationsRepository
 import shifa.doctor.data.tracking.RecordingTracker
 import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.addressNotFound
 import shifa.doctor.generated.resources.locationDeleteBlocked
 import shifa.doctor.generated.resources.locationSaved
 import shifa.doctor.stopAll
@@ -35,11 +36,20 @@ class LocationsViewModelTest {
     private var reads = 0
     private var saveFails = false
     private val tracker = RecordingTracker()
+
+    // The address at a confirmed pin (BE-15); none unless a test sets one.
+    private var geocode = """{"results":[]}"""
     private val engine =
         MockEngine { req ->
             val json = headersOf(HttpHeaders.ContentType, "application/json")
             when (req.method) {
                 HttpMethod.Get -> {
+                    if (req.url.encodedPath.endsWith(
+                            "geocode/reverse",
+                        )
+                    ) {
+                        return@MockEngine respond(geocode, HttpStatusCode.OK, json)
+                    }
                     reads++
                     respond(list, HttpStatusCode.OK, json)
                 }
@@ -59,6 +69,11 @@ class LocationsViewModelTest {
             }
         }
     private val repo = LocationsRepository { createHttpClient({ null }, engine) }
+    private val geocoder =
+        shifa.doctor.data.locations.GeocodeRepository(
+            { createHttpClient({ null }, engine) },
+            { "en" },
+        )
     private val created = mutableListOf<LocationsViewModel>()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -76,7 +91,7 @@ class LocationsViewModelTest {
     }
 
     private fun opened() =
-        LocationsViewModel(repo).also { vm ->
+        LocationsViewModel(repo, geocode = geocoder).also { vm ->
             vm.load()
             created += vm
             settle { vm.state.value.locations != null }
@@ -150,9 +165,25 @@ class LocationsViewModelTest {
         classToTest.back() // closes the question, the map stays
         classToTest.confirmMap()
         assertThat(classToTest.state.value.map).isNull()
+        settle { !classToTest.state.value.findingAddress }
+        // Nothing at the pin: the fields stay as they were and the banner says so.
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.addressNotFound)
         classToTest.save()
         settle { writes.isNotEmpty() }
         assertThat(writes.single()).contains(""""latitude":41.31,"longitude":69.28""")
+    }
+
+    @Test
+    fun `a confirmed pin fills street and city from the address there`() {
+        geocode = """{"results":[{"locationCity":"Tashkent","locationStreetAddress":"Seoul Street 12","latitude":41.29}]}"""
+        val classToTest = opened()
+        classToTest.open(classToTest.state.value.locations!![1])
+        classToTest.openMap()
+        classToTest.movePin(41.31, 69.28)
+        classToTest.confirmMap()
+        settle { classToTest.state.value.draft?.city == "Tashkent" }
+        assertThat(classToTest.state.value.draft?.street).isEqualTo("Seoul Street 12")
+        assertThat(classToTest.state.value.draft?.latitude).isEqualTo(41.31) // the pin, not the place's point
     }
 
     @Test
