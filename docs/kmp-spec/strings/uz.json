@@ -2957,5 +2957,6 @@
   "servicePaymentInClinic": "Klinikada to'lov",
   "servicePaymentFreeHint": "Bemorlar to'lovsiz yoziladi — yuzma-yuz yoki video orqali.",
   "servicePaymentOnlineHint": "Bemorlar yozilayotganda onlayn to'laydi — yuzma-yuz yoki video orqali.",
-  "servicePaymentInClinicHint": "Bemorlar qabulda to'laydi. Bu xizmatga faqat yuzma-yuz yozilish mumkin, video orqali emas."
+  "servicePaymentInClinicHint": "Bemorlar qabulda to'laydi. Bu xizmatga faqat yuzma-yuz yozilish mumkin, video orqali emas.",
+  "locationUnavailable": "Joylashuvingizni aniqlab bo'lmadi. Sozlamalarda Shifa uchun joylashuvga ruxsat bering yoki xaritaga bosing."
 }

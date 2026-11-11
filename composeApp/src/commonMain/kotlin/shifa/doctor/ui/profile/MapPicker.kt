@@ -11,20 +11,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.confirm
+import shifa.doctor.generated.resources.currentLocation
+import shifa.doctor.generated.resources.ic_locate_22
+import shifa.doctor.generated.resources.locationUnavailable
 import shifa.doctor.generated.resources.selectLocationOnMap
 import shifa.doctor.generated.resources.selectedLocation
 import shifa.doctor.generated.resources.tapMapToMovePin
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.ShifaIconButton
+import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.utils.MapPin
+import shifa.doctor.utils.rememberLocator
 import shifa.doctor.utils.tr
 
 /**
@@ -58,7 +70,7 @@ data class PinEdit(
     }
 }
 
-/** The map and, after the pin moved, the Discard question over it. */
+/** The map and, after the pin moved, the Discard question over it. "Use my location" moves the pin to the device. */
 @Composable
 internal fun MapPickerHost(
     edit: PinEdit,
@@ -68,7 +80,32 @@ internal fun MapPickerHost(
     onDiscard: () -> Unit,
     onKeep: () -> Unit,
 ) {
-    MapPickerContent(edit.pin, onMove, onConfirm, onClose)
+    val locate = rememberLocator()
+    val scope = rememberCoroutineScope()
+    var locating by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    MapPickerContent(
+        edit.pin,
+        onMove = { latitude, longitude ->
+            failed = false
+            onMove(latitude, longitude)
+        },
+        onConfirm = onConfirm,
+        onClose = onClose,
+        onLocate = {
+            if (!locating) {
+                scope.launch {
+                    locating = true
+                    val here = locate()
+                    locating = false
+                    failed = here == null
+                    here?.let { onMove(it.first, it.second) }
+                }
+            }
+        },
+        locating = locating,
+        locateFailed = failed,
+    )
     if (edit.asking) DiscardChangesSheet(onDiscard, onKeep)
 }
 
@@ -87,13 +124,19 @@ internal fun coordinates(
     longitude: Double?,
 ) = if (latitude != null && longitude != null) "${coordinate(latitude)}, ${coordinate(longitude)}" else null
 
-/** Flow 08/04: the map with one pin (a tap moves it), and a card with the coordinates and Confirm. */
+/**
+ * Flow 08/04: the map with one pin (a tap moves it), "Use my location" over its corner (not in the design), and a card
+ * with the coordinates and Confirm.
+ */
 @Composable
 internal fun MapPickerContent(
     pin: Pair<Double, Double>,
     onMove: (Double, Double) -> Unit,
     onConfirm: () -> Unit,
     onClose: () -> Unit,
+    onLocate: () -> Unit = {},
+    locating: Boolean = false,
+    locateFailed: Boolean = false,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     ShifaSubHeader(
         tr(Res.string.selectLocationOnMap),
@@ -104,6 +147,14 @@ internal fun MapPickerContent(
     )
     Box(Modifier.weight(1f)) {
         MapPin(pin.first, pin.second, Modifier.fillMaxSize(), onPick = onMove)
+        ShifaIconButton(
+            Res.drawable.ic_locate_22,
+            tr(Res.string.currentLocation),
+            onLocate,
+            Modifier.align(Alignment.TopEnd).padding(ShifaSpacing.Inset.Md),
+            variant = ShifaIconButtonVariant.Surface,
+            enabled = !locating,
+        )
         ShifaSection(
             tr(Res.string.selectedLocation),
             Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(ShifaSpacing.Inset.Md),
@@ -115,9 +166,9 @@ internal fun MapPickerContent(
                     color = ShifaColors.Text.Primary,
                 )
                 Text(
-                    tr(Res.string.tapMapToMovePin),
+                    tr(if (locateFailed) Res.string.locationUnavailable else Res.string.tapMapToMovePin),
                     style = ShifaTextStyles.metaSmall(),
-                    color = ShifaColors.Text.Secondary,
+                    color = if (locateFailed) ShifaColors.Text.Error else ShifaColors.Text.Secondary,
                 )
                 ShifaPrimaryButton(tr(Res.string.confirm), onConfirm, Modifier.fillMaxWidth())
             }

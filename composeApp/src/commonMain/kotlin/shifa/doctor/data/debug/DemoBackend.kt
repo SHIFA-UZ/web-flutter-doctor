@@ -381,6 +381,8 @@ class DemoBackend(
             // Fixed counts so the badges show; the lists behind them come with their features.
             // Services kept in memory (SVC-01); the location list until LOC-1.
             get && path == Endpoints.DOCTOR_SERVICES -> ok(JsonArray(services))
+            // BE-15: any pin is in Tashkent, so the map picker fills the address fields without the real lookup.
+            get && path == Endpoints.GEOCODE_REVERSE -> ok(apiJson.parseToJsonElement(DEMO_REVERSE_GEOCODE))
             request.method == HttpMethod.Post && path == Endpoints.DOCTOR_SERVICES -> saveService(null, body)
             request.method == HttpMethod.Patch && path.startsWith(Endpoints.DOCTOR_SERVICES + "/") ->
                 saveService(path.substringAfterLast('/').toLongOrNull(), body)
@@ -1718,6 +1720,13 @@ private const val DEMO_SERVICES =
         """{"id":4,"title":"Follow-up visit","description":null,"isActive":true,"isFreeConsultation":false,""" +
         """"paymentType":"PAY_LATER","clinicManaged":false,"groupId":null,"groupName":null,"prices":[""" +
         """{"amountMinor":10000000,"currency":"UZS","locationId":null}]}]"""
+
+private const val DEMO_REVERSE_GEOCODE =
+    """{"results":[{"formattedAddress":"Seoul Street, Chilanzar district, Tashkent, 100000, """ +
+        """Uzbekistan",""" +
+        """"locationCountry":"Uzbekistan","locationRegion":"Tashkent","locationCity":"Tashkent",""" +
+        """"locationDistrict":"Chilanzar district","locationPostalCode":"100000",""" +
+        """"locationStreetAddress":"Seoul Street"}]}"""
 
 private const val DEMO_LOCATIONS =
     """[{"id":1,"label":"Shifa Demo Clinic","clinic":"Shifa Demo Clinic","locationCity":"Tashkent","isPrimary":true}]"""

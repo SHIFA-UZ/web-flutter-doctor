@@ -214,9 +214,18 @@ Built 2026-11-04. Flows `08/03` §3.3 and §7, `08/04-map-pin-picker.md`; board 
   `longitude` together in the profile PATCH, even when no address field is filled (flow §12: the pin is never lost).
   Back closes the map, not the form; after the pin moved, Back or × asks "Discard changes?" first. iOS moves the pin
   with a tap gesture on MapKit (compiled, not yet run on a simulator).
-- **Not built (backend first, BE-15):** address search, reverse geocoding (fields from the pin), the static map
-  preview, the short address in the map card. The address fields are typed; no Google call from the app. Also not
-  built: "my location" (needs the location permission flow) and dragging the pin (tap to move).
+- **Address from the pin (2026-11-11, the user's report):** Confirm fills the address fields from
+  `GET /geocode/reverse` (BE-15, the backend's OpenStreetMap lookup; `data/locations/GeocodeRepository`): all six on
+  Contact, street and city on a practice location (LOC-2). Nothing there, or the lookup fails: the fields stay and the
+  banner says "Address not found". The pin moved again meanwhile: the late answer is dropped. Demo data answers a
+  Tashkent address.
+- **Use my location (2026-11-11, the user's report; not in the design):** a crosshair button over the map's corner
+  (`ic_locate_22`, hand-drawn like the library's icons) moves the pin to the device (`utils/Locator`: Android asks
+  for location while in use and takes the first fix of every enabled provider, no Google Play services; iOS Core
+  Location "when in use", whose reason was already in Info.plist; web the browser's geolocation). Refused or no fix in
+  15 s: the card says "Couldn't get your location…" in red. Android manifest gained ACCESS_FINE/COARSE_LOCATION.
+- **Not built:** address search (`/geocode/search` exists), the static map preview, the short address in the map
+  card, dragging the pin (tap to move).
 - **Verified on the emulator against dev (2026-11-04):** map opens with OSM tiles, a tap moves the pin and updates
   the coordinates, Back closes the map without changes.
 - **Tests:** `ProfileFormsViewModelTest` (+2: pin → form → PATCH with both coordinates, Back closing only the map and
