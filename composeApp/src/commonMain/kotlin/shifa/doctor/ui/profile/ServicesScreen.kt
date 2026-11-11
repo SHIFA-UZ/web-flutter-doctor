@@ -743,7 +743,10 @@ private fun ServiceEditor(
                     onExpandedChange = { open -> actions.ui { it.copy(groupOpen = open) } },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                SwitchRow(tr(Res.string.active), d.active) { v -> actions.edit { it.copy(active = v) } }
+                ShifaSwitchRow(tr(Res.string.active), d.active, onCheckedChange = {
+                        v ->
+                    actions.edit { it.copy(active = v) }
+                })
                 PaymentChoice(d, actions)
                 // Turning "free" on drops the prices on Save (flow 08/08 §9).
                 if (d.free && state.original?.free == false && state.original.prices.any { it.amount.isNotBlank() }) {
@@ -872,28 +875,21 @@ private fun PaymentChoice(
             d.payLater -> 2
             else -> 1
         }
+    // Label and hint per cell, in the order of `selected`.
+    val options =
+        listOf(
+            Res.string.servicePaymentFree to Res.string.servicePaymentFreeHint,
+            Res.string.servicePaymentOnline to Res.string.servicePaymentOnlineHint,
+            Res.string.servicePaymentInClinic to Res.string.servicePaymentInClinicHint,
+        )
     SegmentedTabs(
-        listOf(Res.string.servicePaymentFree, Res.string.servicePaymentOnline, Res.string.servicePaymentInClinic)
-            .map { TabItem(tr(it)) },
+        options.map { TabItem(tr(it.first)) },
         selected,
         { i -> actions.edit { it.copy(free = i == 0, payLater = i == 2) } },
         block = true,
     )
-    val hint =
-        when (selected) {
-            0 -> Res.string.servicePaymentFreeHint
-            2 -> Res.string.servicePaymentInClinicHint
-            else -> Res.string.servicePaymentOnlineHint
-        }
-    Text(tr(hint), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    Text(tr(options[selected].second), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
 }
-
-@Composable
-private fun SwitchRow(
-    label: String,
-    checked: Boolean,
-    onChange: (Boolean) -> Unit,
-) = ShifaSwitchRow(label, checked, onChange)
 
 private const val TITLE_MAX = 80
 private const val DESCRIPTION_MAX = 500
