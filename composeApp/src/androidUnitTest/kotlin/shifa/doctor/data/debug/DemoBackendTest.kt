@@ -321,8 +321,10 @@ class DemoBackendTest {
                     false,
                     null,
                     listOf(shifa.doctor.data.model.ServicePrice(100, "USD")),
+                    "PAY_LATER",
                 )
             val created = repo.save(null, body).getOrThrow()
+            assertThat(created.isPayLater).isTrue()
             assertThat(repo.save(created.id, body.copy(title = "Braces 2")).getOrThrow().title).isEqualTo("Braces 2")
             assertThat(repo.services().getOrThrow().map { it.title }).contains("Braces 2")
             repo.delete(created.id).getOrThrow()

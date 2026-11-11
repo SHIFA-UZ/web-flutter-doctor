@@ -138,4 +138,17 @@ class AppointmentRulesTest {
         // A backend without the flag: the word.
         assertThat(appt("2026-11-04T05:00:00Z", "2026-11-04T05:30:00Z", video = true).isVideo).isTrue()
     }
+
+    @Test
+    fun `the payment chip shows for video and for any in-person visit with a payment`() {
+        val clinic = appt("2026-11-04T05:00:00Z", "2026-11-04T05:30:00Z")
+        val video = appt("2026-11-04T05:00:00Z", "2026-11-04T05:30:00Z", video = true)
+        // Booked by the doctor: no payment, no chip.
+        assertThat(clinic.copy(paymentStatus = "NOT_REQUIRED").showsPayment).isFalse()
+        assertThat(clinic.showsPayment).isFalse()
+        // Prepaid online, waiting for payment, or paid in clinic.
+        assertThat(listOf("PAID", "PENDING", "PAY_IN_CLINIC").map { clinic.copy(paymentStatus = it).showsPayment })
+            .containsExactly(true, true, true)
+        assertThat(video.copy(paymentStatus = "NOT_REQUIRED").showsPayment).isTrue()
+    }
 }

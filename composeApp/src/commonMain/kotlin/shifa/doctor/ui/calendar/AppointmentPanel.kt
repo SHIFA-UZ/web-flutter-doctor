@@ -682,7 +682,7 @@ fun AppointmentPanel(
 private fun StatusChips(a: CalendarEntry.Appointment) =
     Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
         status(a.status)?.let { (label, bg, ink) -> ProfileChip(label, bg, ink) }
-        if (a.isVideo) payment(a.paymentStatus)?.let { (label, bg, ink) -> ProfileChip(label, bg, ink) }
+        if (a.showsPayment) payment(a.paymentStatus)?.let { (label, bg, ink) -> ProfileChip(label, bg, ink) }
     }
 
 @Composable

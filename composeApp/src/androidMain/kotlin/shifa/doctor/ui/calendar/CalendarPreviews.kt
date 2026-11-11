@@ -209,13 +209,19 @@ internal fun AppointmentPanelPreview() =
         )
     }
 
-// BE-10 (board DaVisit "det.late"): a clinic visit that started at 10:00 (now 10:15), the patient not here yet.
+// BE-10 (board DaVisit "det.late"): a clinic visit that started at 10:00 (now 10:15), the patient not here yet. Booked
+// with a pay-later service, so it is paid in clinic.
 @Composable
 internal fun AppointmentPanelLatePreview() =
     PreviewTheme {
         AppointmentPanel(
             PanelUiState(
-                video.copy(start = at(10, 0), end = at(10, 30), location = "Shifa Clinic", paymentStatus = null),
+                video.copy(
+                    start = at(10, 0),
+                    end = at(10, 30),
+                    location = "Shifa Clinic",
+                    paymentStatus = "PAY_IN_CLINIC",
+                ),
                 clock,
             ),
             PanelActions(durations = { listOf(30) }),

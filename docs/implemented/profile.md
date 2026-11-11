@@ -259,15 +259,16 @@ Built 2026-11-04. Flow `08/08-services-and-pricing.md`; spec `08 §2`; board `Da
 
 - **Data** (`data/services/ServicesRepository.kt`, `data/model/ServiceModels.kt`): `GET /doctors/me/services`,
   `/service-groups` (sorted by sort order, then name), `/locations`; `POST` / `PATCH /doctors/me/services[/{id}]`
-  with `{title, description, isActive, isFreeConsultation, groupId, prices[]}` and `DELETE`, every status checked
-  (Flutter ignored them). `paymentType` is never sent: the backend keeps it on PATCH and defaults new services to
-  PAY_NOW. Group writes are in the repository for SVC-02.
+  with `{title, description, isActive, isFreeConsultation, groupId, prices[], paymentType}` and `DELETE`, every
+  status checked (Flutter ignored them). `paymentType` is `PAY_NOW` or `PAY_LATER` (SVC-03); a free service always
+  sends `PAY_NOW` (the backend refuses a free `PAY_LATER`). Group writes are in the repository for SVC-02.
 - **List** (`ServicesScreen.kt`, Profile → Services & pricing): services grouped by group ("No group" first), each with
   title, two-line description, price lines through `Money` ("150 000 UZS · All locations (default)", "20.00 USD ·
-  Clinic — City", "Location #id" for a removed one) or "Free consultation (video)", and "Clinic-managed" / "Inactive"
-  tags (inactive rows dimmed). Skeleton, error with the request id and Retry, empty state, sticky "Add Service".
+  Clinic — City", "Location #id" for a removed one) or "Free consultation (video)", and "Pay in clinic" /
+  "Clinic-managed" / "Inactive" tags (inactive rows dimmed). Skeleton, error with the request id and Retry, empty state, sticky "Add Service".
 - **Editor** (in the same screen, on the shared form scaffold): Title (required, ≤ 80), Description (≤ 500), Group,
-  Active, Free consultation (video) (hides the prices; "Existing prices will be removed" when it had some), price rows
+  Active, Payment (SVC-03: Free / Pay online / Pay in clinic; Free hides the prices, "Existing prices will be
+  removed" when it had some), price rows
   of amount + currency (UZS, USD, EUR, RUB, plus any unknown saved code) + scope (all locations or one location), Add
   price, remove a row. Amounts go through `Money.parse` (UZS whole units, others ≤ 2 decimals); blank rows are skipped;
   invalid ones are marked; at least one valid price; no duplicate currency + scope. Save → "Service saved"; Delete asks
@@ -283,6 +284,29 @@ Built 2026-11-04. Flow `08/08-services-and-pricing.md`; spec `08 §2`; board `Da
 - **Tests:** `ServicesViewModelTest` (8: load with groups in order, failed load, clinic-managed, validation, create
   payload, edit / free / delete, unchanged fractional UZS price, 404 delete), `DemoBackendTest` (+1: services in memory), `ProfileScreenshotTest` (+2:
   `Services_list`, `Services_editor`).
+
+## SVC-03 · Payment type (free, pay online, pay in clinic)
+
+Built 2026-11-11 (`feature/service-payment-type`). Backend already complete (V114, `BookingPaymentPolicy`); the patient
+app already reads it. Not in the design: the segmented control and its hints follow the schedule-mode control
+(`SegmentedTabs`, `block`).
+
+- **Editor:** "Payment" with three cells. The hint under it says what the patient gets: Free ("book without paying, in
+  person or by video"), Pay online ("pay online when they book, in person or by video"), Pay in clinic ("pay at the
+  visit … only in person, not by video": the backend allows video only for free and pay-now services).
+- **List:** a "Pay in clinic" tag. **Calendar:** an in-person appointment booked that way has payment status
+  `PAY_IN_CLINIC`; its "Pay in clinic" chip shows in the details chips, the compact line and the panel. Every
+  in-person visit with a payment now shows its chip (paid online, pending), so reception doesn't charge a prepaid
+  patient again; one the doctor booked (`NOT_REQUIRED`) shows none. Before, the payment chip showed only for video.
+- **Not built (the user's defaults, 2026-11-11):** clinic catalogue services can't be pay-later (the catalogue item has
+  no payment type: a backend change plus Clinic → Services), and nothing marks a pay-in-clinic visit as paid (no
+  endpoint).
+- **Tracking:** `profile_service_saved` gains `is_pay_later`.
+- **Tests:** `ServicesViewModelTest` (+1: pay in clinic opens as saved and sends `PAY_LATER`, pay online `PAY_NOW`;
+  free sends `PAY_NOW`; create payload), `DemoBackendTest` (pay-later kept in memory), `ProfileScreenshotTest` (+1:
+  `Services_editorPayInClinic`; `Services_list` and `Services_editor` re-recorded), `Calendar_appointmentPanelLate`
+  (now pay in clinic). `Calendar_day` and `Calendar_appointmentPanelCompleted` were stale on `main` (block-time icon,
+  "Completed") and are re-recorded.
 
 ## SVC-02 · Service groups
 

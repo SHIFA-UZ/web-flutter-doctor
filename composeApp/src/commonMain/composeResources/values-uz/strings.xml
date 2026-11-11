@@ -2410,6 +2410,13 @@
     <string name="serviceGroupsTitle">Xizmat guruhlari</string>
     <string name="serviceManagedByClinic">Bu xizmat Klinika → Xizmatlar bo'limida boshqariladi. Tahrirlashni u yerda qiling.</string>
     <string name="serviceManagedByClinicShort">Klinika boshqaruvi</string>
+    <string name="servicePaymentFree">Bepul</string>
+    <string name="servicePaymentFreeHint">Bemorlar to'lovsiz yoziladi — yuzma-yuz yoki video orqali.</string>
+    <string name="servicePaymentInClinic">Klinikada to'lov</string>
+    <string name="servicePaymentInClinicHint">Bemorlar qabulda to'laydi. Bu xizmatga faqat yuzma-yuz yozilish mumkin, video orqali emas.</string>
+    <string name="servicePaymentLabel">To'lov</string>
+    <string name="servicePaymentOnline">Onlayn to'lov</string>
+    <string name="servicePaymentOnlineHint">Bemorlar yozilayotganda onlayn to'laydi — yuzma-yuz yoki video orqali.</string>
     <string name="servicePriceDuplicate">Valyuta va manzil takrorlangan</string>
     <string name="servicePriceInvalid">150000 yoki 25.50 kabi summa kiriting</string>
     <string name="servicePriceLabel">Narx miqdori (masalan, 25.00)</string>

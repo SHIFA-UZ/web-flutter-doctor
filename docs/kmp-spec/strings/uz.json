@@ -2950,5 +2950,12 @@
   "deleteDocumentBody": "“{title}” uni ko'ra oladigan barcha uchun bemor kartasidan olib tashlanadi.",
   "documentUpdated": "Hujjat yangilandi",
   "documentDeletedNamed": "“{title}” hujjati o'chirildi",
-  "documentDeleteFailed": "Hujjatni o'chirib bo'lmadi. Qaytadan urinib ko'ring."
+  "documentDeleteFailed": "Hujjatni o'chirib bo'lmadi. Qaytadan urinib ko'ring.",
+  "servicePaymentLabel": "To'lov",
+  "servicePaymentFree": "Bepul",
+  "servicePaymentOnline": "Onlayn to'lov",
+  "servicePaymentInClinic": "Klinikada to'lov",
+  "servicePaymentFreeHint": "Bemorlar to'lovsiz yoziladi — yuzma-yuz yoki video orqali.",
+  "servicePaymentOnlineHint": "Bemorlar yozilayotganda onlayn to'laydi — yuzma-yuz yoki video orqali.",
+  "servicePaymentInClinicHint": "Bemorlar qabulda to'laydi. Bu xizmatga faqat yuzma-yuz yozilish mumkin, video orqali emas."
 }

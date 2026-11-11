@@ -233,6 +233,12 @@ private val previewServices =
             groupName = "Orthodontics",
             prices = listOf(shifa.doctor.data.model.ServicePrice(900000000, "UZS")),
         ),
+        shifa.doctor.data.model.DoctorService(
+            5,
+            "Follow-up visit",
+            paymentType = shifa.doctor.data.model.DoctorService.PAY_LATER,
+            prices = listOf(shifa.doctor.data.model.ServicePrice(10000000, "UZS")),
+        ),
         shifa.doctor.data.model.DoctorService(4, "Cleaning", isActive = false, clinicManaged = true),
     )
 
@@ -266,6 +272,23 @@ internal fun ServiceEditorPreview() =
                 original = draft,
                 draft = draft.copy(prices = draft.prices + PriceRow("12.5", "UZS")),
                 rowErrors = mapOf(2 to Res.string.servicePriceInvalid),
+            ),
+            ServicesActions(),
+        )
+    }
+
+// A pay-later service: paid at the visit, in-person bookings only.
+@Composable
+internal fun ServiceEditorPayInClinicPreview() =
+    PreviewTheme {
+        val draft = ServiceDraft(5, "Follow-up visit", payLater = true, prices = listOf(PriceRow("100000", "UZS")))
+        ServicesContent(
+            ServicesUiState(
+                loading = false,
+                services = previewServices,
+                locations = previewLocations,
+                original = draft,
+                draft = draft,
             ),
             ServicesActions(),
         )

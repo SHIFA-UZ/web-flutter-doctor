@@ -176,7 +176,7 @@ class ServicesViewModelTest {
         classToTest.save()
         settle { !classToTest.state.value.editing }
         assertThat(sent.single()).isEqualTo(
-            """POST doctors/me/services {"title":"Braces","isActive":true,"isFreeConsultation":false,"groupId":5,"prices":[{"amountMinor":150000000,"currency":"UZS"},{"amountMinor":2550,"currency":"USD","locationId":2}]}""",
+            """POST doctors/me/services {"title":"Braces","isActive":true,"isFreeConsultation":false,"groupId":5,"prices":[{"amountMinor":150000000,"currency":"UZS"},{"amountMinor":2550,"currency":"USD","locationId":2}],"paymentType":"PAY_NOW"}""",
         )
         assertThat(classToTest.state.value.services.map { it.title }).contains("Braces")
     }
@@ -197,10 +197,30 @@ class ServicesViewModelTest {
         ).startsWith(
             """PATCH doctors/me/services/2 {"title":"Follow-up visit","isActive":true,"isFreeConsultation":true,"prices":[]""",
         )
+        // A free service is never pay-later (the backend refuses it), even when it was before.
+        assertThat(sent.single()).endsWith(""","paymentType":"PAY_NOW"}""")
         classToTest.ui { s -> s.copy(askDelete = s.services.first()) }
         classToTest.delete()
         settle { sent.size == 2 }
         assertThat(sent.last()).isEqualTo("DELETE doctors/me/services/2")
+    }
+
+    @Test
+    fun `pay in clinic opens as it was saved and is sent as PAY_LATER, pay online as PAY_NOW`() {
+        val classToTest = loaded()
+        assertThat(classToTest.state.value.services.map { it.isPayLater }).containsExactly(true, false).inOrder()
+        classToTest.open(classToTest.state.value.services[0])
+        assertThat(classToTest.state.value.draft?.payLater).isTrue()
+        classToTest.edit { it.copy(title = "Check-up") }
+        classToTest.save()
+        settle { !classToTest.state.value.editing }
+        assertThat(sent.single()).endsWith(""","paymentType":"PAY_LATER"}""")
+        assertThat((tracker.events.single() as ProfileEvents.ServiceSaved).isPayLater).isTrue()
+        classToTest.open(classToTest.state.value.services[0])
+        classToTest.edit { it.copy(payLater = false) }
+        classToTest.save()
+        settle { sent.size == 2 }
+        assertThat(sent.last()).endsWith(""","paymentType":"PAY_NOW"}""")
     }
 
     @Test
@@ -294,6 +314,7 @@ class ServicesViewModelTest {
                 ProfileEvents.ServiceSaved(
                     isNew = true,
                     isFree = false,
+                    isPayLater = false,
                     hasLocationRate = false,
                     priceBucket = "100k-500k",
                 ),

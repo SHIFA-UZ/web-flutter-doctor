@@ -2950,5 +2950,12 @@
   "deleteDocumentBody": "«{title}» исчезнет из карты пациента у всех, кто мог его видеть.",
   "documentUpdated": "Документ обновлён",
   "documentDeletedNamed": "Документ «{title}» удалён",
-  "documentDeleteFailed": "Не удалось удалить документ. Попробуйте ещё раз."
+  "documentDeleteFailed": "Не удалось удалить документ. Попробуйте ещё раз.",
+  "servicePaymentLabel": "Оплата",
+  "servicePaymentFree": "Бесплатно",
+  "servicePaymentOnline": "Онлайн-оплата",
+  "servicePaymentInClinic": "Оплата в клинике",
+  "servicePaymentFreeHint": "Пациенты записываются без оплаты — очно или по видео.",
+  "servicePaymentOnlineHint": "Пациенты оплачивают онлайн при записи — очно или по видео.",
+  "servicePaymentInClinicHint": "Пациенты оплачивают на приёме. Эту услугу можно забронировать только очно, не по видео."
 }

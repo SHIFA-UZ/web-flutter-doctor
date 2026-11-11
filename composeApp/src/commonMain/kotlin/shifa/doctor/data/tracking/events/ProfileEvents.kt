@@ -77,12 +77,14 @@ object ProfileEvents {
     data class ServiceSaved(
         val isNew: Boolean,
         val isFree: Boolean,
+        val isPayLater: Boolean,
         val hasLocationRate: Boolean,
         val priceBucket: String?,
     ) : TrackEvent(
             "profile_service_saved",
             "is_new" to isNew,
             "is_free" to isFree,
+            "is_pay_later" to isPayLater,
             "has_location_rate" to hasLocationRate,
             "price_bucket" to priceBucket,
         )
