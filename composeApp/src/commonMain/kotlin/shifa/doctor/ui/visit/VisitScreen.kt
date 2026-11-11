@@ -230,6 +230,7 @@ import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.speech.DictationState
 import shifa.doctor.ui.speech.LocalDictation
 import shifa.doctor.ui.speech.RecordingPill
+import shifa.doctor.ui.speech.SCRIBE_FIELD
 import shifa.doctor.ui.speech.SpeechOrPlainField
 import shifa.doctor.ui.speech.appendTranscript
 import shifa.doctor.ui.speech.rememberAllowed
@@ -459,7 +460,11 @@ fun VisitScreen(
         } else {
             null
         }
-    val askScribe = rememberMicPermission { granted -> if (granted) scribe.start(SCRIBE) else scribe.denied() }
+    val askScribe =
+        rememberMicPermission {
+                granted ->
+            if (granted) scribe.start(SCRIBE_FIELD) else scribe.denied(SCRIBE_FIELD)
+        }
     // APPT-05: the answer goes to the kind the picker was opened for (VisitViewModel.pickingPhoto).
     val gallery = rememberImagePickerLauncher(viewModel::addPhoto)
     val camera =
@@ -1626,7 +1631,7 @@ private fun ScribeRecorder(
         !allowed ->
             ShifaSecondaryButton(tr(Res.string.aiNotesNeedPro), {
             }, Modifier.fillMaxWidth(), icon = Res.drawable.ic_lock_16, enabled = false)
-        rec.field == SCRIBE ->
+        rec.field == SCRIBE_FIELD ->
             Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
                 Text(
                     tr(Res.string.recordingForAiNotes),
@@ -1657,8 +1662,6 @@ private fun ScribeRecorder(
             )
     }
 }
-
-private const val SCRIBE = "scribe"
 
 /** The summary's words in the app's language (PDF-01), for End appointment. */
 @Composable

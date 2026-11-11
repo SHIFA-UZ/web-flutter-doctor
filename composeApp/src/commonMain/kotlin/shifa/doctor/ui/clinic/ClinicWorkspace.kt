@@ -54,6 +54,10 @@ import shifa.doctor.data.model.ClinicOverviewStats
 import shifa.doctor.data.model.MembershipRole
 import shifa.doctor.data.model.MyClinic
 import shifa.doctor.data.model.role
+import shifa.doctor.data.tracking.TrackScreen
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.address
 import shifa.doctor.generated.resources.adminClinicNameLabel
@@ -128,6 +132,7 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TabItem
+import shifa.doctor.ui.widgets.TrackScreenView
 import shifa.doctor.ui.widgets.UnderlineTabs
 import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.tr
@@ -166,6 +171,7 @@ data class ClinicUiState(
  */
 class ClinicWorkspaceViewModel(
     private val repo: ClinicsRepository = clinicsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(ClinicUiState(clinics = if (repo.isCurrent) repo.state.value else ClinicsState()))
@@ -213,6 +219,7 @@ class ClinicWorkspaceViewModel(
 
     /** The clinic switcher: every section reloads for the chosen clinic (it's remembered for this user). */
     fun select(clinicId: Long) {
+        if (clinicId != _state.value.clinic?.clinicId) tracker.track(ClinicEvents.ClinicSwitched)
         repo.select(clinicId)
         _state.update { it.copy(switcher = false) }
     }
@@ -261,6 +268,8 @@ fun ClinicWorkspaceScreen(
         viewModel.load()
         onPauseOrDispose {}
     }
+    // The section shown (the shell sends `clinic` for the tab itself); nothing while there is no clinic.
+    if (state.clinic != null) TrackScreenView(state.section.trackScreen)
     ClinicWorkspaceContent(
         state,
         staff,
@@ -589,6 +598,21 @@ internal fun roleLabel(role: MembershipRole): String =
         MembershipRole.Nurse -> tr(Res.string.clinicMembershipRoleNurse)
         MembershipRole.Unknown -> "—"
     }
+
+/** The section's screen id (B8 owns them; the shell sends `clinic` for the tab). */
+internal val ClinicSection.trackScreen: TrackScreen
+    get() =
+        when (this) {
+            ClinicSection.Overview -> TrackScreen.ClinicOverview
+            ClinicSection.Calendar -> TrackScreen.ClinicCalendar
+            ClinicSection.Doctors -> TrackScreen.ClinicDoctors
+            ClinicSection.Invitations -> TrackScreen.ClinicInvitations
+            ClinicSection.Patients -> TrackScreen.ClinicPatients
+            ClinicSection.Plans -> TrackScreen.ClinicPlans
+            ClinicSection.Finance -> TrackScreen.ClinicFinance
+            ClinicSection.Services -> TrackScreen.ClinicServices
+            ClinicSection.Settings -> TrackScreen.ClinicSettings
+        }
 
 internal fun sectionLabel(section: ClinicSection): StringResource =
     when (section) {

@@ -19,6 +19,8 @@ import org.junit.After
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.consultation.ConsultationRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.notesSaveFailed
 
@@ -170,5 +172,34 @@ class VisitNotesTest {
         scheduler.advanceTimeBy(2_100)
         settle { puts().isNotEmpty() }
         assertThat(puts().single()).contains("Ibuprofen 400 mg")
+    }
+
+    @Test
+    fun `a failing autosave is tracked once until a save goes through, a confirmed draft by its outcome`() {
+        notes = "[]"
+        val tracker = RecordingTracker()
+        val classToTest =
+            VisitNotes(
+                7,
+                { 14 },
+                scope,
+                ConsultationRepository({ createHttpClient({ null }, engine) }),
+                tracker = tracker,
+            )
+        classToTest.load()
+        settle { classToTest.state.value.notes != null }
+        saveStatus = HttpStatusCode.InternalServerError
+        classToTest.append("One")
+        runBlocking { classToTest.flush() }
+        classToTest.append("Two")
+        runBlocking { classToTest.flush() }
+        saveStatus = HttpStatusCode.OK
+        classToTest.append("Three")
+        runBlocking { classToTest.flush() }
+        classToTest.confirm(classToTest.state.value.drafts!!.single())
+        settle { classToTest.state.value.busy.isEmpty() && tracker.events.size == 2 }
+        assertThat(tracker.events)
+            .containsExactly(VisitEvents.VisitNotesSaveFailed("server"), VisitEvents.VisitAiDraftConfirmed)
+            .inOrder()
     }
 }

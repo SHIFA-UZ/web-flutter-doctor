@@ -22,9 +22,12 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.model.PatientOption
+import shifa.doctor.data.model.TaskCategory
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.tasks.ScheduleMode
 import shifa.doctor.data.tasks.TasksRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.customTimesAddAtLeastOne
 import shifa.doctor.generated.resources.failedToCreateTask
@@ -73,7 +76,10 @@ class CreateTaskViewModelTest {
             null,
             TasksRepository({ client }),
             PatientsRepository({ client }),
+            tracker = tracker,
         ).also { created += it }
+
+    private val tracker = RecordingTracker()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -152,5 +158,29 @@ class CreateTaskViewModelTest {
         settle { classToTest.state.value.patients != null }
         assertThat(classToTest.state.value.patients!!.map { it.id }).containsExactly(14L)
         assertThat(classToTest.state.value.picking).isTrue()
+    }
+
+    @Test
+    fun `create is tracked by its outcome, never the title`() {
+        val classToTest = vm()
+        classToTest.create()
+        classToTest.pickPatient(PatientOption(14, "Bekzod Aliyev", null))
+        classToTest.edit { it.copy(name = "BP", endDate = LocalDate(2026, 11, 30)) }
+        classToTest.mode(ScheduleMode.Custom)
+        classToTest.addSlot()
+        status = HttpStatusCode.BadRequest
+        classToTest.create()
+        settle { tracker.events.size == 2 }
+        status = HttpStatusCode.OK
+        classToTest.create()
+        settle { classToTest.state.value.done }
+        val invalid = tracker.events.first() as HomeEvents.TaskCreateFailed
+        assertThat(invalid.reason).isEqualTo("invalid")
+        assertThat(invalid.problems).containsAtLeast("no_patient", "no_name")
+        assertThat(tracker.events.drop(1))
+            .containsExactly(
+                HomeEvents.TaskCreateFailed("validation"),
+                HomeEvents.TaskCreated(TaskCategory.Vital, ScheduleMode.Custom, 2, fromTemplate = false),
+            ).inOrder()
     }
 }

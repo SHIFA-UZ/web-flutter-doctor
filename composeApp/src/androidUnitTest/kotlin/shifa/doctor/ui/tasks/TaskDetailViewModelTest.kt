@@ -20,6 +20,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.model.TaskStatus
 import shifa.doctor.data.tasks.TasksRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.couldNotLoadTask
 import shifa.doctor.generated.resources.failedToCancel
@@ -205,5 +207,24 @@ class TaskDetailViewModelTest {
         settle { classToTest.state.value.notFound }
         assertThat(classToTest.state.value.task).isNull()
         assertThat(classToTest.state.value.canCancel).isFalse()
+    }
+
+    @Test
+    fun `cancel is tracked by its outcome`() {
+        val tracker = RecordingTracker()
+
+        fun cancelled() =
+            TaskDetailViewModel(7, repo, tracker = tracker).also { created += it }.also { vm ->
+                vm.load()
+                settle { vm.state.value.task != null }
+                vm.cancel()
+                settle { !vm.state.value.cancelling }
+            }
+        cancelled()
+        cancelStatus = HttpStatusCode.Conflict
+        cancelled()
+        assertThat(tracker.events)
+            .containsExactly(HomeEvents.TaskCancelled, HomeEvents.TaskCancelFailed("conflict"))
+            .inOrder()
     }
 }

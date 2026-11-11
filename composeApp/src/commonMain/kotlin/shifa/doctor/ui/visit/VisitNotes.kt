@@ -11,12 +11,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.consultation.ConsultationRepository
 import shifa.doctor.data.consultation.consultationRepository
 import shifa.doctor.data.model.ConsultationNote
 import shifa.doctor.data.model.DraftNote
 import shifa.doctor.data.model.joinedManualNotes
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.TrackEvent
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.couldNotLoadEarlierNotes
 import shifa.doctor.generated.resources.notesSaveFailed
@@ -84,6 +89,7 @@ class VisitNotes(
     private val scope: CoroutineScope,
     private val repo: ConsultationRepository = consultationRepository,
     private val debounce: Duration = AUTOSAVE,
+    private val tracker: Tracker = Tracking,
 ) {
     private val _state = MutableStateFlow(VisitNotesState())
     val state: StateFlow<VisitNotesState> = _state.asStateFlow()
@@ -92,6 +98,9 @@ class VisitNotes(
     var labels = SoapLabels()
 
     private var hydrated = false
+
+    // A failed autosave is tracked once until a save goes through again (offline, every pause would send one).
+    private var saveFailing = false
     private val autosave = Autosave(scope, debounce) { save() }
 
     // Each read moves it on; only the newest may write the lists (an older one could bring back a draft just saved).
@@ -187,6 +196,10 @@ class VisitNotes(
             } finally {
                 _state.update { it.copy(saving = false) }
             }
+        result.exceptionOrNull()?.let {
+            if (!saveFailing) tracker.track(VisitEvents.VisitNotesSaveFailed(it.toFailureReason()))
+        }
+        saveFailing = result.isFailure
         _state.update {
             it.copy(
                 // An edit made while saving stays unsaved (its own timer saves it).
@@ -200,18 +213,33 @@ class VisitNotes(
     }
 
     /** A Shifa AI draft saved as the visit's note; the notes and drafts are read again. */
-    fun confirm(draft: DraftNote) = act(draft) { repo.confirmDraft(draft.id, patientId(), appointmentId) }
+    fun confirm(draft: DraftNote) =
+        act(
+            draft,
+            "confirm",
+            VisitEvents.VisitAiDraftConfirmed,
+        ) { repo.confirmDraft(draft.id, patientId(), appointmentId) }
 
-    fun discard(draft: DraftNote) = act(draft) { repo.discardDraft(draft.id) }
+    fun discard(draft: DraftNote) =
+        act(
+            draft,
+            "discard",
+            VisitEvents.VisitAiDraftDiscarded,
+        ) { repo.discardDraft(draft.id) }
 
     private fun act(
         draft: DraftNote,
+        action: String,
+        done: TrackEvent,
         call: suspend () -> Result<Unit>,
     ) {
         if (draft.id in _state.value.busy) return
         _state.update { it.copy(busy = it.busy + draft.id, banner = null) }
         scope.launch {
             val result = call()
+            tracker.track(
+                result.exceptionOrNull()?.let { VisitEvents.VisitAiDraftFailed(action, it.toFailureReason()) } ?: done,
+            )
             _state.update {
                 it.copy(
                     busy = it.busy - draft.id,

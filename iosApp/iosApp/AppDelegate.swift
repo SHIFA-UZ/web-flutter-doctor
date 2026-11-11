@@ -1,6 +1,7 @@
 import ComposeApp
 import FirebaseCore
 import FirebaseMessaging
+import PostHog
 import UIKit
 import UserNotifications
 
@@ -12,6 +13,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         FirebaseApp.configure()
+        setUpTracking()
         // VIDEO-01: the shared video visit makes its Daily calls through this.
         VideoCalls.shared.factory = { DailyVideoCall() }
         // Set before launch ends, so a tap that started the app is delivered too.
@@ -20,6 +22,57 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // The APNs token (no prompt): Firebase needs it for the FCM token.
         application.registerForRemoteNotifications()
         return true
+    }
+
+    /// Product analytics (docs/posthog). Only release builds carry the key (Config.xcconfig, from the gitignored
+    /// Secrets.xcconfig), so Debug builds and a fresh clone never start the SDK.
+    private func setUpTracking() {
+        guard let key = Bundle.main.object(forInfoDictionaryKey: "PostHogApiKey") as? String, !key.isEmpty else { return }
+        let config = PostHogConfig(projectToken: key, host: TrackingSinkKt.POSTHOG_HOST)
+        config.captureApplicationLifecycleEvents = true
+        config.captureScreenViews = false // UIKit only sees the one Compose controller; screens come from Kotlin
+        config.captureElementInteractions = false
+        config.capturePushNotificationSubscriptions = false
+        config.capturePushNotificationOpened = false // the push payload names patients
+        config.sessionReplay = false
+        config.surveys = false
+        config.personProfiles = .identifiedOnly
+        config.errorTrackingConfig.autoCapture = true
+        config.preloadFeatureFlags = false // the app reads no flags
+        // ponytail: posthog-ios can't drop its queue on reset, so send each event at once; only events held while
+        // offline outlive a reset. Batch again if the SDK gains a public queue clear.
+        config.flushAt = 1
+        // Setup itself sends `Application Installed` / `Updated` before anything can be registered (00-plan §4 rule 1).
+        // An exception's messages go: a Ktor or serialization message can hold a URL with ids, JSON input or the
+        // backend's text. Type, module, mechanism and stack frames stay.
+        let app = TrackingSinkKt.TRACKING_APP
+        config.setBeforeSend([{ event in
+            event.properties["app"] = app
+            event.properties["$exception_message"] = nil
+            event.properties["$exception_steps"] = nil // only from addExceptionStep, which the app never calls
+            if let list = event.properties["$exception_list"] as? [[String: Any]] {
+                event.properties["$exception_list"] = list.map(AppDelegate.withoutMessage)
+            }
+            return event
+        }])
+        config.optOut = TrackingBridgeKt.trackingStartsOff()
+        PostHogSDK.shared.setup(config)
+        Tracking.shared.start(sink: PostHogAnalytics(), webHost: nil)
+    }
+
+    /// posthog-ios 3.93.3 puts an error's message in `value`, and a crash's `__crash_info` text in its signal meta.
+    private static func withoutMessage(_ exception: [String: Any]) -> [String: Any] {
+        var exception = exception
+        exception["value"] = nil
+        if var mechanism = exception["mechanism"] as? [String: Any],
+           var meta = mechanism["meta"] as? [String: Any],
+           var signal = meta["signal"] as? [String: Any] {
+            signal["crash_info_message"] = nil
+            meta["signal"] = signal
+            mechanism["meta"] = meta
+            exception["mechanism"] = mechanism
+        }
+        return exception
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

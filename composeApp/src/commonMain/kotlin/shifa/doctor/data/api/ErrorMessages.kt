@@ -45,5 +45,38 @@ private val CODE_MESSAGES: Map<String, StringResource> =
         "NO_SHOW_NOT_ALLOWED" to Res.string.noShowNotAllowed,
     )
 
+/**
+ * The failure as one of a few fixed words, for tracking (docs/posthog): never the message, the backend's text or
+ * the request id. A feature puts its own words first (`slot_taken`, `wrong_code`) and falls back to this.
+ */
+fun Throwable.toFailureReason(): String =
+    when (this) {
+        is ApiException.NetworkError -> if (timeout) "timeout" else "network"
+        is ApiException -> CODE_REASONS[code] ?: statusReason()
+        else -> "client"
+    }
+
+private fun ApiException.statusReason(): String =
+    when (this) {
+        is ApiException.ValidationError -> "validation"
+        is ApiException.Unauthorized -> "unauthorized"
+        is ApiException.Forbidden -> "forbidden"
+        is ApiException.NotFound -> "not_found"
+        is ApiException.Conflict -> "conflict"
+        is ApiException.RateLimit -> "rate_limited"
+        else -> "server"
+    }
+
+// The codes that mean the same on every route; a feature's own codes are that feature's to name.
+private val CODE_REASONS: Map<String?, String> =
+    mapOf(
+        "RATE_LIMITED" to "rate_limited",
+        "ACCOUNT_DISABLED" to "account_disabled",
+        "SESSION_EXPIRED" to "session_expired",
+        "SESSION_INVALID" to "session_expired",
+        "TOKEN_INVALID" to "session_expired",
+        "UNAVAILABLE" to "maintenance",
+    )
+
 /** The backend's trace id of a failed call, for the error banner's detail (17 §1); null for network failures. */
 val Throwable.requestId: String? get() = (this as? ApiException)?.requestId

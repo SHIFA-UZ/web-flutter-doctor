@@ -16,6 +16,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.config.PublicConfigRepository
 import shifa.doctor.data.speech.TranscriptionRepository
 import shifa.doctor.data.storage.AppLanguage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
 import shifa.doctor.generated.resources.errorRecordingVoice
@@ -175,5 +177,56 @@ class DictationTest {
         assertThat(got).isEqualTo(3 to "rec-1")
         assertThat(classToTest.state.value.field).isNull()
         assertThat(transcribed).isEqualTo(0)
+    }
+
+    @Test
+    fun `dictation is tracked by field kind and outcome, the scribe's recording as the scribe's`() {
+        val tracker = RecordingTracker()
+        val client = { createHttpClient({ null }, engine) }
+
+        fun tracked(recorder: VoiceRecorder = FakeRecorder()) =
+            Dictation(scope, recorder, TranscriptionRepository(client), PublicConfigRepository(client), {
+                AppLanguage.English
+            }, tracker = tracker)
+        val classToTest = tracked()
+        classToTest.start("soap-soapPlan")
+        classToTest.finish { _, _ -> }
+        settle { classToTest.state.value.banner != null }
+        answer = HttpStatusCode.Forbidden to """{"status":403}"""
+        classToTest.start("Complaints")
+        classToTest.finish { _, _ -> }
+        settle { tracker.events.size == 4 }
+        classToTest.denied("free")
+        val scribe = tracked(FakeRecorder(audio = null))
+        scribe.start("scribe")
+        scribe.finishWith { _, _ -> null }
+        settle { tracker.events.size == 7 }
+        assertThat(tracker.events)
+            .containsExactly(
+                VisitEvents.DictationStarted("soap"),
+                VisitEvents.DictationTranscribed("soap", hasSpeech = true),
+                VisitEvents.DictationStarted("form"),
+                VisitEvents.DictationFailed("form", "forbidden"),
+                VisitEvents.DictationMicDenied("free_notes"),
+                VisitEvents.ScribeRecordingStarted,
+                VisitEvents.ScribeFailed("recording_failed", "record"),
+            ).inOrder()
+    }
+
+    @Test
+    fun `a finished scribe recording is tracked with its length as a range`() {
+        val tracker = RecordingTracker()
+        val client = { createHttpClient({ null }, engine) }
+        val recorder = FakeRecorder().apply { lastDurationSeconds = 90 }
+        val classToTest =
+            Dictation(scope, recorder, TranscriptionRepository(client), PublicConfigRepository(client), {
+                AppLanguage.English
+            }, tracker = tracker)
+        classToTest.start("scribe")
+        classToTest.finishWith { _, _ -> null }
+        settle { tracker.events.size == 2 }
+        assertThat(tracker.events)
+            .containsExactly(VisitEvents.ScribeRecordingStarted, VisitEvents.ScribeRecordingFinished("1-5m"))
+            .inOrder()
     }
 }

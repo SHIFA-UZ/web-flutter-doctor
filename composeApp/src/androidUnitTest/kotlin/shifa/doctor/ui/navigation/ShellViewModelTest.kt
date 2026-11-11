@@ -27,6 +27,8 @@ import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.DoctorTier
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ShellEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
 import shifa.doctor.stopAll
@@ -47,6 +49,7 @@ class ShellViewModelTest {
 
     private var clinics = """[{"clinicId":1,"name":"Shifa Demo Clinic"}]"""
     private var hold = CompletableDeferred(Unit)
+    private var profileDown = false
     private val paths = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var chat = 1
     private var notifications = 140
@@ -68,6 +71,7 @@ class ShellViewModelTest {
                         """{"id":5,"role":"CLINIC_STAFF","firstName":"Dilfuza","lastName":"Y","photoUrl":"https://x/p.jpg"}"""
                     } else {
                         hold.await()
+                        if (profileDown) return@MockEngine respond("{}", HttpStatusCode.InternalServerError)
                         """{"profile":{},"settings":{"defaultStartTab":"$startTab"},"subscription":{"tier":"$tier","features":[${features()}]}}"""
                     }
                 respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -87,6 +91,7 @@ class ShellViewModelTest {
     private val profile by lazy { ProfileRepository { client } }
 
     private var scheduleReads = 0
+    private val tracker = RecordingTracker()
 
     private fun vm(
         staff: Boolean = false,
@@ -99,6 +104,7 @@ class ShellViewModelTest {
         }, com.russhwolf.settings.MapSettings(), { "u1" }),
         BadgesRepository { client },
         startPath = startPath,
+        tracker = tracker,
     ) { scheduleReads++ }.also { created += it }
 
     private fun pushVm(
@@ -111,6 +117,7 @@ class ShellViewModelTest {
         notifications = shifa.doctor.data.notifications.NotificationsRepository { client },
         pushes = pushes,
         profileWaitMs = 1_000,
+        tracker = tracker,
     ) { scheduleReads++ }.also { created += it }
 
     private fun ShellViewModel.settle() {
@@ -195,6 +202,28 @@ class ShellViewModelTest {
         repeat(200) { if (staff.state.value.avatarUrl == null) Thread.sleep(10) }
         assertThat(staff.state.value.tab).isEqualTo(ShellTab.Clinic)
         assertThat(staff.state.value.stack).containsExactly(ShellRoute.Root(ShellTab.Clinic))
+    }
+
+    @Test
+    fun `no screen view until the start tab is applied, even when the profile fails`() {
+        hold = CompletableDeferred()
+        profileDown = true
+        val offline = vm()
+        assertThat(offline.state.value.startApplied).isFalse()
+        hold.complete(Unit)
+        waitFor { offline.state.value.startApplied }
+        assertThat(offline.state.value.startApplied).isTrue()
+        assertThat(offline.state.value.profileFailed).isTrue()
+        assertThat(offline.state.value.tab).isEqualTo(ShellTab.Home)
+
+        profileDown = false
+        val doctor = vm()
+        waitFor { doctor.state.value.startApplied }
+        assertThat(doctor.state.value.tab).isEqualTo(ShellTab.Calendar)
+
+        val staff = vm(staff = true)
+        waitFor { staff.state.value.startApplied }
+        assertThat(staff.state.value.startApplied).isTrue()
     }
 
     @Test
@@ -526,5 +555,49 @@ class ShellViewModelTest {
         waitFor { chat() > chat0 }
         assertThat(chat()).isGreaterThan(chat0)
         assertThat(scheduleReads).isEqualTo(1)
+    }
+
+    @Test
+    fun `tab taps, More and a refused tab are tracked`() {
+        tier = "PRO" // no Tasks
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.tapTab(ShellTab.Chat, "bar")
+        classToTest.openMore()
+        classToTest.tapTab(ShellTab.Tasks, "sidebar")
+        classToTest.select(ShellTab.Patients) // not the doctor's own tab choice (a card, a link): no tab_selected
+        assertThat(tracker.events)
+            .containsExactly(
+                ShellEvents.TabSelected("chat", "bar"),
+                ShellEvents.MoreOpened,
+                ShellEvents.TabSelected("tasks", "sidebar"),
+                ShellEvents.TabRefused("tasks"),
+            ).inOrder()
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Patients)
+    }
+
+    @Test
+    fun `a tapped push is tracked by its type and target only`() {
+        val classToTest = pushVm()
+        classToTest.settle()
+        classToTest.openPush(mapOf("type" to "CHAT_MESSAGE", "notificationId" to "7", "conversationId" to "42"))
+        waitFor { tracker.events.size == 1 }
+        classToTest.pushOpened()
+        classToTest.openPush(mapOf("type" to "GENERAL"))
+        waitFor { tracker.events.size == 2 }
+        classToTest.openPush(mapOf("type" to "Aziza wrote to you"))
+        waitFor { tracker.events.size == 3 }
+        classToTest.openPush(emptyMap())
+        waitFor { tracker.events.size == 4 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ShellEvents.PushOpened("CHAT_MESSAGE", "chat"),
+                ShellEvents.PushOpened("GENERAL", "inbox"),
+                ShellEvents.PushOpened("other", "inbox"),
+                ShellEvents.PushOpened(null, "inbox"),
+            ).inOrder()
+        assertThat(
+            ShellEvents.PushOpened("GENERAL", "inbox").properties,
+        ).containsExactly("type", "GENERAL", "routed_to", "inbox")
     }
 }

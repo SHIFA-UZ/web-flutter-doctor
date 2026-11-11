@@ -30,6 +30,7 @@ import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.AppNotification
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.VisitKind
+import shifa.doctor.data.notifications.NotificationKind
 import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.profile.ProfileRepository
@@ -37,10 +38,15 @@ import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.push.Push
 import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.FeatureGate
+import shifa.doctor.data.tracking.TrackScreen
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ShellEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
 import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.notifications.NotificationOpener
+import shifa.doctor.ui.notifications.trackTarget
 import shifa.doctor.ui.profile.ProfileSection
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.browserPath
@@ -277,6 +283,9 @@ data class ShellUiState(
     val profileFailed: Boolean = false,
     // PUSH-03: where a tapped push leads, once found; the shell opens it over Home and clears it.
     val pushGo: NotificationGo? = null,
+    // A6: the start tab (or web address) has been applied, read or not; until then no screen view, or every launch
+    // would first send Home's (Clinic's for staff).
+    val startApplied: Boolean = false,
 ) {
     val home: ShellTab get() = if (staff) ShellTab.Clinic else ShellTab.Home
 
@@ -316,6 +325,68 @@ fun shellPath(s: ShellUiState): String {
 }
 
 /**
+ * A6: the screen view for what the shell shows: a tab, a pushed screen, Shifa Intelligence or a screen opened over it.
+ * A fixed id, never the route or [shellPath] (both hold names and ids). Null for the debug menu, never tracked.
+ */
+fun shellScreen(s: ShellUiState): TrackScreen? {
+    val route = if (s.intelligence) s.overIntelligence.lastOrNull() ?: return TrackScreen.Intelligence else s.route
+    return when (route) {
+        is ShellRoute.Root -> route.tab.screen
+        ShellRoute.Language -> TrackScreen.Language
+        is ShellRoute.Conversation -> TrackScreen.Conversation
+        is ShellRoute.PatientChat -> TrackScreen.PatientChat
+        is ShellRoute.Search -> TrackScreen.PatientSearch
+        is ShellRoute.Task -> TrackScreen.Task
+        is ShellRoute.TaskCreate -> TrackScreen.TaskCreate
+        is ShellRoute.TaskTemplates -> TrackScreen.TaskTemplates
+        ShellRoute.Debug -> null
+        ShellRoute.Schedule -> TrackScreen.Schedule
+        is ShellRoute.Patient -> TrackScreen.Patient
+        ShellRoute.Locations -> TrackScreen.Locations
+        ShellRoute.Reports -> TrackScreen.Reports
+        is ShellRoute.Appointment -> TrackScreen.Appointment
+        is ShellRoute.Visit -> TrackScreen.Visit
+        is ShellRoute.Block -> TrackScreen.Block
+        is ShellRoute.PlanDetail -> TrackScreen.PlanDetail
+        is ShellRoute.PlanWizard -> TrackScreen.PlanWizard
+        is ShellRoute.FindPartner -> TrackScreen.FindPartner
+        is ShellRoute.Partnerships -> TrackScreen.Partnerships
+        is ShellRoute.Partnership -> TrackScreen.Partnership
+        is ShellRoute.DoctorSchedule -> TrackScreen.DoctorSchedule
+        is ShellRoute.Booking -> TrackScreen.Booking
+        is ShellRoute.Form -> TrackScreen.Form
+        is ShellRoute.Document -> TrackScreen.Document
+        is ShellRoute.Profile ->
+            when (route.section) {
+                ProfileSection.PersonalInfo -> TrackScreen.ProfilePersonalInfo
+                ProfileSection.Contact -> TrackScreen.ProfileContact
+                ProfileSection.Timezone -> TrackScreen.ProfileTimezone
+                ProfileSection.Extended -> TrackScreen.ProfileExtended
+                ProfileSection.Services -> TrackScreen.ProfileServices
+                ProfileSection.Subscription -> TrackScreen.ProfileSubscription
+                ProfileSection.Settings -> TrackScreen.ProfileSettings
+                ProfileSection.Security -> TrackScreen.ProfileSecurity
+                ProfileSection.About -> TrackScreen.ProfileAbout
+                ProfileSection.Privacy -> TrackScreen.ProfilePrivacy
+            }
+    }
+}
+
+private val ShellTab.screen: TrackScreen
+    get() =
+        when (this) {
+            ShellTab.Home -> TrackScreen.Home
+            ShellTab.Calendar -> TrackScreen.Calendar
+            ShellTab.Patients -> TrackScreen.Patients
+            ShellTab.Chat -> TrackScreen.Chat
+            ShellTab.Clinic -> TrackScreen.Clinic
+            ShellTab.Tasks -> TrackScreen.Tasks
+            ShellTab.Reports -> TrackScreen.Reports
+            ShellTab.Notifications -> TrackScreen.Notifications
+            ShellTab.Profile -> TrackScreen.Profile
+        }
+
+/**
  * SHELL-01 (flow 01/16, 01 §6): the tab the doctor is on, each tab's own back stack (kept when switching), the More
  * sheet, and the start tab from the profile, applied once per session after it loads unless the doctor already
  * switched; a start tab the doctor can't use (Tasks below PREMIUM, Clinic without a clinic) falls back to Home.
@@ -332,6 +403,8 @@ class ShellViewModel(
     private val profileWaitMs: Long = PROFILE_WAIT_MS,
     // WEB-10: the web address the app was opened at, applied instead of the saved start tab.
     private val startPath: String? = browserPath(),
+    // Before [scheduleRefresh], not last: the tests pass that as a trailing lambda (03-developer-guide.md §3).
+    private val tracker: Tracker = Tracking,
     // Leaving Shifa Intelligence: bookings, moves and cancellations made in the chat change the schedule, so today's
     // calendar reads again and every screen showing visits hears of it (flow 03 README §4).
     private val scheduleRefresh: suspend () -> Unit = {
@@ -389,6 +462,7 @@ class ShellViewModel(
                 // Their times (chat, notifications) are shown in their own zone, else their clinic's: never UTC.
                 profile.staffZone(me?.timeZone ?: clinics.mine().getOrNull()?.firstOrNull()?.timeZone)
                 if (!switched) startPath?.let(::openPath)
+                _state.update { it.copy(startApplied = true) }
                 return@launch
             }
             // Together: Home's schedule and every plan gate wait for the profile, not for the clinics before it.
@@ -404,13 +478,17 @@ class ShellViewModel(
             val waiting = pending
             pending = null
             when {
-                waiting != null -> _state.update { it.copy(tab = clamp(waiting, it)) }
+                waiting != null -> {
+                    refused(waiting, _state.value)
+                    _state.update { it.copy(tab = clamp(waiting, it)) }
+                }
                 !switched && startPath?.let(::openPath) == true -> Unit
                 !switched -> {
                     val start = ShellTab.fromKey(me?.settings?.defaultStartTab) ?: ShellTab.Home
                     _state.update { it.copy(tab = clamp(start, it)) }
                 }
             }
+            _state.update { it.copy(startApplied = true) }
             // The Tasks badge and Home's follow-up count, for doctors whose plan has Tasks (01 §6.3); Home's first
             // focus may come before the plan is known.
             refreshFollowUps()
@@ -445,6 +523,15 @@ class ShellViewModel(
         if (gainedTasks) refreshFollowUps()
     }
 
+    /** A tab chosen by the doctor in the bar, More or the sidebar ([source]: `bar` / `more` / `sidebar`). */
+    fun tapTab(
+        tab: ShellTab,
+        source: String,
+    ) {
+        tracker.track(ShellEvents.TabSelected(tab.key, source))
+        select(tab)
+    }
+
     /**
      * A bar or More tap. Another tab: switch, its stack kept. The current tab again: back to its root (flow 01/16 §7
      * target; scrolling to the top is the screen's).
@@ -460,6 +547,7 @@ class ShellViewModel(
             return closeMore()
         }
         pending = null
+        refused(tab, s0)
         // Any tab tap leaves Shifa Intelligence (01 §5.4); a tap on the tab under it just closes it.
         if (s0.intelligence) {
             return _state.update {
@@ -691,8 +779,11 @@ class ShellViewModel(
         val staff = _state.value.staff
         val mine = ++pushTaps // a later tap wins over a slower earlier one
         viewModelScope.launch {
+            // The push's type only (a known backend type, else `other`): the rest of its data names patients.
+            val type = NotificationKind.trackType(data["type"])
             val n = AppNotification.fromPush(data, currentInstant())
             if (n == null) {
+                if (mine == pushTaps) tracker.track(ShellEvents.PushOpened(type, NotificationGo.Inbox.trackTarget))
                 return@launch _state.update {
                     if (mine == pushTaps) {
                         it.copy(
@@ -715,6 +806,7 @@ class ShellViewModel(
                 }
             val go = opener.go(n, staff, PracticeClock(zone)) ?: NotificationGo.Inbox.takeIf { !opener.slow(n, staff) }
             if (mine != pushTaps) return@launch
+            tracker.track(ShellEvents.PushOpened(type, go?.trackTarget ?: "home")) // home: its appointment is gone
             // A gone appointment: Home, under the notice the opener left.
             if (go == null) pushOpened() else _state.update { it.copy(pushGo = go) }
         }
@@ -737,7 +829,10 @@ class ShellViewModel(
         }
     }
 
-    fun openMore() = _state.update { it.copy(moreOpen = true) }
+    fun openMore() {
+        tracker.track(ShellEvents.MoreOpened)
+        _state.update { it.copy(moreOpen = true) }
+    }
 
     fun closeMore() = _state.update { it.copy(moreOpen = false) }
 
@@ -791,6 +886,14 @@ class ShellViewModel(
             else -> return false
         }
         return true
+    }
+
+    // A doctor's tab the plan (Tasks) or the clinic membership (Clinic) does not allow; staff are only clamped to theirs.
+    private fun refused(
+        tab: ShellTab,
+        s: ShellUiState,
+    ) {
+        if (!s.staff && clamp(tab, s) != tab) tracker.track(ShellEvents.TabRefused(tab.key))
     }
 
     private fun clamp(

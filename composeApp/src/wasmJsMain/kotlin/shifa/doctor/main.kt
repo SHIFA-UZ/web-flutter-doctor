@@ -2,7 +2,11 @@ package shifa.doctor
 
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.window
 import org.jetbrains.compose.resources.configureWebResources
+import shifa.doctor.data.tracking.PostHogWebSink
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.utils.WEB_POSTHOG_KEY
 import shifa.doctor.utils.fadeBootFrame
 
 // kotlinx-datetime knows only UTC on the web until this module registers the IANA zones (the practice time zone).
@@ -19,6 +23,13 @@ fun main() {
     val version = resourceVersion()
     configureWebResources { resourcePathMapping { path -> if (version.isEmpty()) "./$path" else "./$path?v=$version" } }
     bridgeBrowserBack()
+    // Product analytics (docs/posthog): only a build with the project key; Tracking decides whether anything is sent.
+    if (WEB_POSTHOG_KEY.isNotEmpty()) {
+        Tracking.start(
+            PostHogWebSink(WEB_POSTHOG_KEY),
+            webHost = window.location.hostname,
+        )
+    }
     ComposeViewport("composeApp") {
         App()
     }

@@ -9,14 +9,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.AppNotification
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.notifications.NotificationFilter
+import shifa.doctor.data.notifications.NotificationKind
 import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.notifications.shows
 import shifa.doctor.data.push.Push
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accessApprovedBanner
 import shifa.doctor.generated.resources.accessDecisionFailed
@@ -95,6 +101,7 @@ class NotificationsViewModel(
     private val repo: NotificationsRepository = NotificationsRepository(),
     private val opener: NotificationOpener = NotificationOpener(),
     pushes: Flow<Map<String, String>> = Push.received,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(NotificationsUiState())
     val state: StateFlow<NotificationsUiState> = _state.asStateFlow()
@@ -172,7 +179,11 @@ class NotificationsViewModel(
         }
     }
 
-    fun select(filter: NotificationFilter) = _state.update { it.copy(filter = filter) }
+    fun select(filter: NotificationFilter) {
+        if (filter == _state.value.filter) return
+        tracker.track(HomeEvents.NotificationsFilterSelected(filter))
+        _state.update { it.copy(filter = filter) }
+    }
 
     /** A row (or its action): read, then its target; [staff] have only chat to go to (flow 01/18). */
     fun open(
@@ -186,6 +197,13 @@ class NotificationsViewModel(
         if (opener.slow(n, staff)) _state.update { it.copy(opening = n.id) }
         viewModelScope.launch {
             val to = opener.go(n, staff, clock)
+            tracker.track(
+                HomeEvents.NotificationOpened(
+                    NotificationKind.trackType(n.type) ?: "other",
+                    to?.trackTarget ?: "none",
+                    "inbox",
+                ),
+            )
             _state.update { it.copy(opening = null, go = to ?: it.go) }
         }
     }
@@ -220,6 +238,7 @@ class NotificationsViewModel(
                         )
                     }
                     if (!n.read) markRead(n)
+                    tracker.track(HomeEvents.AccessRequestDecided(approve))
                     ShellNotice.pending.value =
                         Notice(
                             if (approve) Res.string.accessApprovedBanner else Res.string.accessDeclinedBanner,
@@ -227,6 +246,7 @@ class NotificationsViewModel(
                         )
                 },
                 { e ->
+                    tracker.track(HomeEvents.AccessRequestDecideFailed(approve, e.toFailureReason()))
                     _state.update { it.copy(deciding = null) }
                     ShellNotice.pending.value =
                         Notice(e.toUserMessage(Res.string.accessDecisionFailed), requestId = e.requestId)
@@ -238,10 +258,12 @@ class NotificationsViewModel(
     /** "Mark all as read": every row read once the server agrees. */
     fun markAll() {
         if (_state.value.markingAll) return
+        val unread = _state.value.items.orEmpty().count { !it.read }
         _state.update { it.copy(markingAll = true) }
         viewModelScope.launch {
             repo.markAllRead().fold(
                 {
+                    tracker.track(HomeEvents.NotificationsMarkedAllRead(countBucket(unread)))
                     // Pages asked for before it would bring rows back unread: dropped (a new generation).
                     generation++
                     _state.update { s ->
@@ -254,6 +276,7 @@ class NotificationsViewModel(
                     }
                 },
                 { e ->
+                    tracker.track(HomeEvents.NotificationsMarkAllFailed(e.toFailureReason()))
                     _state.update { it.copy(markingAll = false) }
                     ShellNotice.pending.value =
                         Notice(

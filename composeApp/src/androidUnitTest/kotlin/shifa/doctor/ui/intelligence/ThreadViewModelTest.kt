@@ -31,6 +31,9 @@ import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.intelligence.CardSlot
 import shifa.doctor.data.intelligence.ChatSessionStore
 import shifa.doctor.data.model.VisitKind
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.CalendarEvents
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiRateLimit
 import shifa.doctor.generated.resources.aiUnavailable
@@ -43,6 +46,7 @@ import shifa.doctor.stopAll
 @OptIn(ExperimentalCoroutinesApi::class)
 class ThreadViewModelTest {
     private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+    private val tracker = RecordingTracker()
 
     private val answers = ArrayDeque<Pair<HttpStatusCode, String>>()
     private val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
@@ -100,6 +104,7 @@ class ThreadViewModelTest {
                 changed++
             },
             AppointmentsRepository { client },
+            tracker = tracker,
         ).also { created += it }
 
     // One answered turn whose card is [payload] (the second saved message).
@@ -192,6 +197,50 @@ class ThreadViewModelTest {
             store.state.value.active!!.messages.map { it.content },
         ).containsExactly("Find Ada", "Here.").inOrder()
         assertThat(classToTest.state.value.error).isNull()
+    }
+
+    @Test
+    fun `turns are tracked by outcome and input, never the question or the reply`() {
+        answers += HttpStatusCode.OK to "data:\n\n"
+        answers += HttpStatusCode.TooManyRequests to """{"status":429,"code":"RATE_LIMITED"}"""
+        answers += HttpStatusCode.OK to "data:Here.\n\n"
+        answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"get_today_schedule\",\"payload\":{\"cardType\":\"schedule\",\"count\":2}}\n\ndata:Two.\n\n"
+        answers += HttpStatusCode.OK to "event:error\ndata:{\"code\":\"AI_UNAVAILABLE\"}\n\n"
+        val classToTest = vm()
+        classToTest.send("Find Ada")
+        settle { classToTest.state.value.error != null }
+        classToTest.retry()
+        settle { classToTest.state.value.error?.text == Res.string.aiRateLimit }
+        classToTest.retry()
+        settle { store.state.value.active!!.messages.size == 2 && !classToTest.state.value.busy }
+        classToTest.draft("My day?")
+        classToTest.send()
+        settle { store.state.value.active!!.messages.size == 4 && !classToTest.state.value.busy }
+        classToTest.draft("And tomorrow?")
+        classToTest.send()
+        settle { classToTest.state.value.error != null }
+        assertThat(tracker.events)
+            .containsExactly(
+                ChatEvents.IntelligenceReplyFailed("empty", "starter", isRetry = false),
+                ChatEvents.IntelligenceReplyFailed("rate_limited", "starter", isRetry = true),
+                ChatEvents.IntelligenceReplyReceived(
+                    "starter",
+                    null,
+                    false,
+                    0,
+                    isRetry = true,
+                    hasPatientContext = false,
+                ),
+                ChatEvents.IntelligenceReplyReceived(
+                    "typed",
+                    "schedule",
+                    false,
+                    0,
+                    isRetry = false,
+                    hasPatientContext = false,
+                ),
+                ChatEvents.IntelligenceReplyFailed("ai_unavailable", "typed", isRetry = false),
+            ).inOrder()
     }
 
     @Test
@@ -313,6 +362,45 @@ class ThreadViewModelTest {
     }
 
     @Test
+    fun `a card's booking reuses the calendar's events with the intelligence entry`() {
+        callAnswers += HttpStatusCode.Conflict
+        val classToTest = vm()
+        withCard(classToTest, """{"cardType":"propose_appointment","patientId":12,$slots}""")
+        classToTest.book(1, slot)
+        settle { classToTest.state.value.cards[1]?.error != null }
+        classToTest.book(1, slot)
+        settle { changed == 1 }
+        assertThat(tracker.events.filterNot { it is ChatEvents.IntelligenceReplyReceived })
+            .containsExactly(
+                CalendarEvents.BookingFailed("slot_taken", "intelligence", isVideo = false, isOnBehalf = false),
+                CalendarEvents.AppointmentBooked("intelligence", isVideo = false, isOnBehalf = false, minutes = 45),
+            ).inOrder()
+    }
+
+    @Test
+    fun `card answers are tracked, and the answer's turn as a card answer`() {
+        val classToTest = vm()
+        withCard(classToTest, """{"cardType":"propose_appointment","patientId":12,$slots}""")
+        classToTest.dismiss(1)
+        answers += HttpStatusCode.OK to "data:Ok\n\n"
+        classToTest.answerCancel(true)
+        settle { store.state.value.active!!.messages.size == 4 && !classToTest.state.value.busy }
+        assertThat(tracker.events.drop(1))
+            .containsExactly(
+                ChatEvents.IntelligenceProposalDismissed,
+                ChatEvents.IntelligenceCancelAnswered(isConfirmed = true),
+                ChatEvents.IntelligenceReplyReceived(
+                    "card_answer",
+                    null,
+                    false,
+                    0,
+                    isRetry = false,
+                    hasPatientContext = true,
+                ),
+            ).inOrder()
+    }
+
+    @Test
     fun `the backend's workflow card books nothing from the app, Cancel hides the card for good`() {
         val classToTest = vm()
         withCard(classToTest, """{"cardType":"propose_appointment","workflowId":"w1","patientId":12,$slots}""")
@@ -409,6 +497,11 @@ class ThreadViewModelTest {
         // Documented: nothing is sent again.
         classToTest.documentFacts(1)
         assertThat(calls).hasSize(2)
+        assertThat(tracker.events.drop(1))
+            .containsExactly(
+                ChatEvents.IntelligenceFactsDocumentFailed("server"),
+                ChatEvents.IntelligenceFactsDocumented("2-5"),
+            ).inOrder()
     }
 
     @Test
@@ -461,6 +554,21 @@ class ThreadViewModelTest {
         classToTest.send("Open my 10:30 again")
         settle { store.state.value.active!!.messages.size == 6 && !classToTest.state.value.busy }
         assertThat(classToTest.state.value.autoOpen).isNull()
+    }
+
+    @Test
+    fun `an unknown card type is other, a cancel answer that can't go now isn't tracked`() {
+        val classToTest = vm()
+        withCard(classToTest, """{"cardType":"some_new_card","spokenHint":"Done"}""")
+        assertThat(tracker.events.filterIsInstance<ChatEvents.IntelligenceReplyReceived>().single().cardType)
+            .isEqualTo("other")
+        withCard(classToTest, """{"cardType":"propose_appointment","patientId":12,$slots}""")
+        gate = CompletableDeferred()
+        classToTest.book(3, slot)
+        settle { calls.isNotEmpty() }
+        classToTest.answerCancel(true)
+        gate!!.complete(Unit)
+        assertThat(tracker.events.filterIsInstance<ChatEvents.IntelligenceCancelAnswered>()).isEmpty()
     }
 }
 

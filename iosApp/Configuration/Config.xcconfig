@@ -7,3 +7,10 @@ CURRENT_PROJECT_VERSION=1
 // The version for iOS and Android (composeApp/build.gradle.kts reads it). Bump it here only.
 // 1.0.1: the Flutter doctor app shipped 1.0.0, and the KMP app is an update of the same store listings.
 MARKETING_VERSION=1.0.1
+
+// The PostHog project key (docs/posthog): release builds only; Debug builds never get it and never start the SDK.
+// Empty means tracking off. The gitignored Secrets.xcconfig provides it (ios_testflight.yml writes it there).
+POSTHOG_API_KEY_PROD=
+#include? "Secrets.xcconfig"
+POSTHOG_API_KEY[config=Debug]=
+POSTHOG_API_KEY[config=Release]=$(POSTHOG_API_KEY_PROD)

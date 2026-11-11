@@ -48,33 +48,90 @@ enum class NotificationKind(
         get() = this == PartnershipInvite || this == PartnershipAccepted || this == PartnershipProgress
 
     companion object {
+        // The backend's exact types (`Notification.Type`); any other `APPOINTMENT_*` / `TASK_*` is a generic update.
+        private val TYPES: Map<String, NotificationKind> by lazy {
+            mapOf(
+                "APPOINTMENT_BOOKED_BY_PATIENT" to Booked,
+                "APPOINTMENT_REMINDER" to Reminder,
+                "APPOINTMENT_RESCHEDULED_BY_PATIENT" to Rescheduled,
+                "APPOINTMENT_CHANGED" to Rescheduled,
+                "APPOINTMENT_PAID_BY_PATIENT" to Paid,
+                "APPOINTMENT_CANCELLED_BY_PATIENT" to Cancelled,
+                "APPOINTMENT_CANCELLED" to Cancelled,
+                "AI_SCRIBE_READY" to AiScribe,
+                "AI_VISIT_SUMMARY_READY" to AiSummary,
+                "APPOINTMENT_BRIEFING_READY" to AiBriefing,
+                "TASK_COMPLETED" to TaskCompleted,
+                "TASK_ASSIGNED" to TaskAssigned,
+                "DOCUMENT_ACCESS_REQUEST" to AccessRequest,
+                "DOCUMENT_ACCESS_APPROVED" to AccessApproved,
+                "DOCUMENT_ACCESS_REJECTED" to AccessRejected,
+                "CARE_PARTNERSHIP_INVITE" to PartnershipInvite,
+                "CARE_PARTNERSHIP_ACCEPTED" to PartnershipAccepted,
+                "CARE_PARTNERSHIP_PROGRESS" to PartnershipProgress,
+                "CHAT_MESSAGE" to Chat,
+                "NEW_MESSAGE" to Chat,
+            )
+        }
+
         /** [type] as the backend sends it (`Notification.Type`, upper case). */
         fun of(type: String): NotificationKind =
-            when (type) {
-                "APPOINTMENT_BOOKED_BY_PATIENT" -> Booked
-                "APPOINTMENT_REMINDER" -> Reminder
-                "APPOINTMENT_RESCHEDULED_BY_PATIENT", "APPOINTMENT_CHANGED" -> Rescheduled
-                "APPOINTMENT_PAID_BY_PATIENT" -> Paid
-                "APPOINTMENT_CANCELLED_BY_PATIENT", "APPOINTMENT_CANCELLED" -> Cancelled
-                "AI_SCRIBE_READY" -> AiScribe
-                "AI_VISIT_SUMMARY_READY" -> AiSummary
-                "APPOINTMENT_BRIEFING_READY" -> AiBriefing
-                "TASK_COMPLETED" -> TaskCompleted
-                "TASK_ASSIGNED" -> TaskAssigned
-                "DOCUMENT_ACCESS_REQUEST" -> AccessRequest
-                "DOCUMENT_ACCESS_APPROVED" -> AccessApproved
-                "DOCUMENT_ACCESS_REJECTED" -> AccessRejected
-                "CARE_PARTNERSHIP_INVITE" -> PartnershipInvite
-                "CARE_PARTNERSHIP_ACCEPTED" -> PartnershipAccepted
-                "CARE_PARTNERSHIP_PROGRESS" -> PartnershipProgress
-                "CHAT_MESSAGE", "NEW_MESSAGE" -> Chat
-                else ->
-                    when {
-                        type.startsWith("APPOINTMENT_") -> AppointmentUpdate
-                        type.startsWith("TASK_") -> TaskUpdate
-                        else -> Other
-                    }
+            TYPES[type] ?: when {
+                type.startsWith("APPOINTMENT_") -> AppointmentUpdate
+                type.startsWith("TASK_") -> TaskUpdate
+                else -> Other
             }
+
+        // Every backend `Notification.Type` (backend-kotlin-shifa notifications/domain/Notification.kt, 2026-11-11) plus
+        // the older `NEW_MESSAGE`: the only words tracking passes through.
+        private val BACKEND_TYPES: Set<String> by lazy {
+            setOf(
+                "CHAT_MESSAGE",
+                "APPOINTMENT_CANCELLED",
+                "APPOINTMENT_CHANGED",
+                "APPOINTMENT_REMINDER",
+                "APPOINTMENT_BOOKED_BY_PATIENT",
+                "APPOINTMENT_CANCELLED_BY_PATIENT",
+                "APPOINTMENT_RESCHEDULED_BY_PATIENT",
+                "APPOINTMENT_ASSIGNED",
+                "APPOINTMENT_PAID_BY_PATIENT",
+                "SIGNATURE_REQUESTED",
+                "TASK_REMINDER",
+                "TASK_COMPLETED",
+                "DOCUMENT_ACCESS_REQUEST",
+                "DOCUMENT_ACCESS_APPROVED",
+                "DOCUMENT_ACCESS_REJECTED",
+                "TASK_ASSIGNED",
+                "TASK_CANCELLED",
+                "GENERAL",
+                "AI_SCRIBE_READY",
+                "AI_VISIT_SUMMARY_READY",
+                "CONSULTATION_PAYMENT_REMINDER",
+                "CONSULTATION_PAYMENT_DUE_24H",
+                "CONSULTATION_PAYMENT_DUE_6H",
+                "CONSULTATION_PAYMENT_DUE_1H",
+                "TREATMENT_PLAN_PAYMENT_REMINDER",
+                "TREATMENT_PLAN_UPDATED",
+                "PROPHYLAXIS_REMINDER",
+                "INSTALLMENT_DUE_SOON",
+                "INSTALLMENT_DUE_TODAY",
+                "INSTALLMENT_OVERDUE",
+                "INSTALLMENT_SCHEDULE_CREATED",
+                "APPOINTMENT_BRIEFING_READY",
+                "CARE_PARTNERSHIP_INVITE",
+                "APPOINTMENT_NO_SHOW",
+                "CARE_PARTNERSHIP_ACCEPTED",
+                "CARE_PARTNERSHIP_PROGRESS",
+                "NEW_MESSAGE",
+            )
+        }
+
+        /**
+         * A notification or push type for tracking: one of the backend's types as it spells them, `other` for anything
+         * else (push data is not ours to trust), null when there is none.
+         */
+        fun trackType(type: String?): String? =
+            type?.trim()?.uppercase()?.ifEmpty { null }?.let { if (it in BACKEND_TYPES) it else "other" }
     }
 }
 

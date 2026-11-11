@@ -23,11 +23,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.DoctorContact
 import shifa.doctor.data.model.ProfileUpdateRequest
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.city
 import shifa.doctor.generated.resources.clinicAddress
@@ -116,6 +120,7 @@ data class ContactUiState(
  */
 class ContactViewModel(
     private val profile: ProfileRepository = profileRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ContactUiState())
     val state: StateFlow<ContactUiState> = _state.asStateFlow()
@@ -195,7 +200,10 @@ class ContactViewModel(
         }
     }
 
-    fun discard() = _state.update { it.copy(form = it.saved, askDiscard = false, done = true) }
+    fun discard() {
+        tracker.track(ProfileEvents.EditDiscarded(SECTION))
+        _state.update { it.copy(form = it.saved, askDiscard = false, done = true) }
+    }
 
     fun closed() = _state.update { it.copy(done = false) }
 
@@ -253,6 +261,16 @@ class ContactViewModel(
                     )
                 }
             }
+            val o = s.saved
+            val pinMoved = f.latitude != o.latitude || f.longitude != o.longitude
+            val changed =
+                listOfNotNull(
+                    "phone".takeIf { f.phone != o.phone },
+                    "email".takeIf { f.email != o.email },
+                    "address".takeIf { f.address.take(ADDRESS_TEXT_FIELDS) != o.address.take(ADDRESS_TEXT_FIELDS) },
+                    "map_pin".takeIf { pinMoved },
+                )
+            tracker.track(ProfileEvents.SectionSaved(SECTION, changed))
             val notice = if (contactDirty) Res.string.contactDetailsSaved else Res.string.locationSaved
             ShellNotice.pending.value = Notice(notice, success = true)
             _state.update { it.copy(saving = false, saved = f, form = f, done = true) }
@@ -262,10 +280,20 @@ class ContactViewModel(
     private fun failed(
         e: Throwable,
         fallback: StringResource,
-    ) = _state.update {
-        // After a saved contact the address message is fixed: the mapped error alone wouldn't say what was kept.
-        val text = if (fallback == Res.string.contactSavedAddressFailed) fallback else e.toUserMessage(fallback)
-        it.copy(saving = false, banner = CodeBanner(text, requestId = e.requestId))
+    ) {
+        tracker.track(ProfileEvents.SectionSaveFailed(SECTION, e.toFailureReason()))
+        _state.update {
+            // After a saved contact the address message is fixed: the mapped error alone wouldn't say what was kept.
+            val text = if (fallback == Res.string.contactSavedAddressFailed) fallback else e.toUserMessage(fallback)
+            it.copy(saving = false, banner = CodeBanner(text, requestId = e.requestId))
+        }
+    }
+
+    private companion object {
+        const val SECTION = "contact"
+
+        // [ContactForm.address] is the six text fields, then the pin.
+        const val ADDRESS_TEXT_FIELDS = 6
     }
 }
 

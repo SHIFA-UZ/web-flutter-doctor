@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.appointments.BookRequest
@@ -51,6 +52,9 @@ import shifa.doctor.data.model.PatientOption
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.assignPatient
 import shifa.doctor.generated.resources.book
@@ -213,7 +217,19 @@ class BookingViewModel(
     video: Boolean = false,
     // Booking on a colleague's behalf (CAL-10): their day, `resourceDoctorId`, the clinic as the venue.
     private val scope: CalendarScope? = null,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
+    // ponytail: the shell knows the exact entry (Home's agenda vs the calendar, record vs visit); this is what the form
+    // can tell from its own arguments.
+    private val entry =
+        if (patient != null) {
+            "patient"
+        } else if (video) {
+            "home_video"
+        } else {
+            "calendar"
+        }
+
     private val _state =
         MutableStateFlow(
             BookingUiState(
@@ -320,7 +336,9 @@ class BookingViewModel(
         // The day may have turned since the last tick: "past" is decided on the clock now.
         _state.update { it.copy(now = it.clock.nowInstant()) }
         val s = _state.value
-        if (s.saving || s.pastDay) return
+        if (s.saving) return
+        // The day ended while the form was open: the warning replaces the form, nothing is sent.
+        if (s.pastDay) return tracker.track(CalendarEvents.BookingFailed("past_day", entry, s.video, scope != null))
         val patient = s.patient
         val id = patient?.id
         if (id == null) return _state.update { it.copy(patientMissing = true) }
@@ -343,11 +361,20 @@ class BookingViewModel(
             calendar.changed(s.clock, s.date, doctorId = scope?.doctorId)
             result.fold(
                 onSuccess = {
+                    tracker.track(CalendarEvents.AppointmentBooked(entry, s.video, scope != null, s.minutes))
                     ShellNotice.pending.value = Notice(Res.string.patientAssignedName, true, listOf(name(patient)))
                     _state.update { it.copy(saving = false, closed = true) }
                 },
                 onFailure = { e ->
                     val taken = e is ApiException && e.status in setOf(400, 409)
+                    tracker.track(
+                        CalendarEvents.BookingFailed(
+                            if (taken) "slot_taken" else e.toFailureReason(),
+                            entry,
+                            s.video,
+                            scope != null,
+                        ),
+                    )
                     val text =
                         if (taken) {
                             Res.string.bookingRangeUnavailable

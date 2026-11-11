@@ -54,6 +54,8 @@ kotlin {
             implementation(npm("@js-joda/timezone", "2.23.0"))
             // WEB-08: Daily's call object for video visits (the phones use Daily's native SDKs).
             implementation(npm("@daily-co/daily-js", "0.94.0"))
+            // Product analytics on the web (data/tracking/PostHogWebSink), bundled rather than loaded from a CDN.
+            implementation(npm("posthog-js", "1.438.24"))
         }
 
         androidMain.dependencies {
@@ -68,6 +70,7 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             implementation(libs.osmdroid.android) // MapPin: OpenStreetMap tiles, no Google key (D-06, CORE-07)
             implementation(libs.daily.client) // video visits: Daily's Android SDK (VIDEO-01)
+            implementation(libs.posthog.android) // product analytics (docs/posthog)
         }
 
         androidUnitTest.dependencies {
@@ -145,6 +148,19 @@ val appVersionCode = versionBuild
 
 println("Building Shifa Doctor v$appVersionName (Build $appVersionCode)")
 
+// The PostHog project key (docs/posthog), from CI's Gradle property or, to test tracking locally, `posthog.apiKey.prod`
+// in the root local.properties. Missing means tracking off. Android debug builds never get one; the web bundle checks
+// its host at run time (00-plan.md §3: development is never tracked).
+val localProperties =
+    Properties().apply {
+        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+    }
+val postHogProdKey =
+    (
+        project.findProperty("posthog.apiKey.prod")?.toString()
+            ?: localProperties.getProperty("posthog.apiKey.prod").orEmpty()
+    ).trim()
+
 // WEB-04: the web build's version and build number as Kotlin constants (Android has BuildConfig, iOS its bundle).
 val generateWebBuildInfo =
     tasks.register("generateWebBuildInfo") {
@@ -153,9 +169,14 @@ val generateWebBuildInfo =
         val build = appVersionCode.toString()
         // The debug menu and the console logger only in the development build (wasmJsBrowserDevelopmentRun/-Webpack).
         val debug = gradle.startParameter.taskNames.any { it.contains("Development") }
+        // The PostHog key (postHogProdKey above), never in a development bundle. Without one the web never starts
+        // tracking (main.kt).
+        val postHogKey = if (debug) "" else postHogProdKey
+        require(postHogKey.matches(Regex("[A-Za-z0-9_-]*"))) { "posthog.apiKey.prod is not a PostHog project key" }
         inputs.property("version", version)
         inputs.property("build", build)
         inputs.property("debug", debug)
+        inputs.property("postHogKey", postHogKey)
         outputs.file(out)
         doLast {
             out.get().asFile.apply {
@@ -164,7 +185,8 @@ val generateWebBuildInfo =
                     "package shifa.doctor.utils\n\n" +
                         "internal const val WEB_VERSION = \"$version\"\n" +
                         "internal const val WEB_BUILD = \"$build\"\n" +
-                        "internal const val WEB_DEBUG = $debug\n",
+                        "internal const val WEB_DEBUG = $debug\n" +
+                        "internal const val WEB_POSTHOG_KEY = \"$postHogKey\"\n",
                 )
             }
         }
@@ -207,6 +229,7 @@ android {
         getByName("debug") {
             versionNameSuffix = "-debug"
             isDebuggable = true
+            buildConfigField("String", "POSTHOG_API_KEY", "\"\"") // never tracked
         }
 
         getByName("release") {
@@ -214,6 +237,7 @@ android {
             // CI signs with the upload key; a local release build is debug-signed so it installs on a device.
             // Never upload one.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            buildConfigField("String", "POSTHOG_API_KEY", "\"$postHogProdKey\"")
         }
     }
     // BuildConfig.DEBUG gates the HTTP logs and the debug menu (CLAUDE.md "Logging").

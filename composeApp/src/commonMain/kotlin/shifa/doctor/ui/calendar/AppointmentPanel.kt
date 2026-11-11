@@ -42,6 +42,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.plus
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.appointments.CancelReason
@@ -59,10 +60,15 @@ import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.DayKey
 import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.calendar.changed
+import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.DayOccupancy
 import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.CalendarEvents
+import shifa.doctor.data.tracking.events.TrackEvent
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.adjustDuration
 import shifa.doctor.generated.resources.applyDurationChange
@@ -207,8 +213,10 @@ class AppointmentPanelViewModel(
     private val appointments: AppointmentsRepository = appointmentsRepository,
     // A colleague's appointment from the clinic doctor schedule (CAL-10).
     private val doctorId: Long? = null,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PanelUiState(appointment, clock, doctorId = doctorId))
+    private val onBehalf = doctorId != null
     val state: StateFlow<PanelUiState> = _state.asStateFlow()
 
     // The appointment's practice date now (a move changes it).
@@ -273,13 +281,35 @@ class AppointmentPanelViewModel(
         val s = _state.value
         if (s.busy || s.minutes == s.current) return
         val end = s.appointment.start + s.minutes.minutes
-        run(Res.string.durationChanged, after = { it.copy(appointment = it.appointment.copy(end = end)) }) {
+        run(
+            Res.string.durationChanged,
+            after = { it.copy(appointment = it.appointment.copy(end = end)) },
+            event = { e ->
+                if (e == null) {
+                    CalendarEvents.AppointmentDurationChanged(s.minutes, onBehalf)
+                } else {
+                    CalendarEvents.AppointmentDurationChangeFailed(e.toFailureReason(), onBehalf)
+                }
+            },
+        ) {
             appointments.change(s.appointment.appointmentId, s.appointment.start, s.minutes)
         }
     }
 
     fun remindPayment() =
-        run(Res.string.paymentReminderSent, refresh = false) {
+        run(
+            Res.string.paymentReminderSent,
+            refresh = false,
+            event = { e ->
+                if (e == null) {
+                    CalendarEvents.PaymentReminderSent
+                } else {
+                    CalendarEvents.PaymentReminderFailed(
+                        e.toFailureReason(),
+                    )
+                }
+            },
+        ) {
             appointments.remindPayment(_state.value.appointment.appointmentId)
         }
 
@@ -337,6 +367,13 @@ class AppointmentPanelViewModel(
             days = listOf(from, to),
             close = true,
             after = { it.copy(appointment = moved) },
+            event = { e ->
+                if (e == null) {
+                    CalendarEvents.AppointmentRescheduled(s.appointment.isVideo, onBehalf)
+                } else {
+                    CalendarEvents.AppointmentRescheduleFailed(e.toFailureReason(), onBehalf)
+                }
+            },
         ) {
             appointments.change(s.appointment.appointmentId, target.start, s.current)
         }
@@ -354,11 +391,13 @@ class AppointmentPanelViewModel(
             val note = s.cancelOther.takeIf { s.cancelReason == CancelReason.OTHER }
             appointments.cancel(s.appointment.appointmentId, s.cancelReason, note).fold(
                 onSuccess = {
+                    tracker.track(CalendarEvents.AppointmentCancelled(s.cancelReason, s.appointment.isVideo, onBehalf))
                     calendar.changed(s.clock, date, doctorId = doctorId)
                     ShellNotice.pending.value = Notice(Res.string.appointmentCancelled, success = true)
                     _state.update { it.copy(busy = false, askCancel = false, closed = true) }
                 },
                 onFailure = { e ->
+                    tracker.track(CalendarEvents.AppointmentCancelFailed(e.toFailureReason(), onBehalf))
                     // It may have gone through with the answer lost: the day read again shows it (04/08 §3).
                     calendar.changed(s.clock, date, doctorId = doctorId)
                     _state.update {
@@ -379,12 +418,21 @@ class AppointmentPanelViewModel(
         run(
             Res.string.noShowMarked,
             after = { it.copy(appointment = it.appointment.copy(status = NO_SHOW)) },
+            event = { e ->
+                when {
+                    e == null -> CalendarEvents.AppointmentNoShowMarked(s.notifyNoShow, s.appointment.isVideo)
+                    e is ApiException && e.code == NO_SHOW_NOT_ALLOWED ->
+                        CalendarEvents.AppointmentNoShowFailed("not_allowed")
+                    else -> CalendarEvents.AppointmentNoShowFailed(e.toFailureReason())
+                }
+            },
         ) { appointments.noShow(s.appointment.appointmentId, s.notifyNoShow) }
     }
 
     private companion object {
         val TICK = 30.seconds
         const val NO_SHOW = "NO_SHOW"
+        const val NO_SHOW_NOT_ALLOWED = "NO_SHOW_NOT_ALLOWED"
     }
 
     private fun run(
@@ -393,12 +441,15 @@ class AppointmentPanelViewModel(
         days: List<LocalDate> = listOf(date),
         close: Boolean = false,
         after: (PanelUiState) -> PanelUiState = { it },
+        // The outcome's event: null on success, else the failure.
+        event: (Throwable?) -> TrackEvent,
         call: suspend () -> Result<Unit>,
     ) {
         if (_state.value.busy) return
         _state.update { it.copy(busy = true, banner = null) }
         viewModelScope.launch {
             val result = call()
+            tracker.track(event(result.exceptionOrNull()))
             // The new times first, so the refreshed day below finds the appointment where it is now.
             if (result.isSuccess) _state.update(after)
             // A conflict (409 / 400) means the calendar moved under us: reading the days shows why.

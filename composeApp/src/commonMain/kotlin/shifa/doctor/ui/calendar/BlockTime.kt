@@ -48,6 +48,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.calendar.BlocksRepository
 import shifa.doctor.data.calendar.CalendarRepository
@@ -57,6 +58,11 @@ import shifa.doctor.data.calendar.changed
 import shifa.doctor.data.calendar.knownDays
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.CalendarEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.allDay
 import shifa.doctor.generated.resources.blockCancelOverlapping
@@ -215,6 +221,7 @@ class BlockViewModel(
     clock: PracticeClock,
     private val calendar: CalendarRepository = calendarRepository,
     private val blocks: BlocksRepository = blocksRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BlockUiState(clock, date))
     val state: StateFlow<BlockUiState> = _state.asStateFlow()
@@ -269,6 +276,9 @@ class BlockViewModel(
             calendar.changed(s.clock, s.dates.first(), *calendar.knownDays(s.dates).toTypedArray())
             result.fold(
                 onSuccess = { cancelled ->
+                    tracker.track(
+                        CalendarEvents.TimeBlocked(s.mode.trackName(), s.cancelOverlapping, countBucket(cancelled)),
+                    )
                     ShellNotice.pending.value =
                         if (cancelled > 0) {
                             Notice(Res.string.blockTimeSuccessWithCancel, true, listOf(cancelled.toString()))
@@ -278,6 +288,7 @@ class BlockViewModel(
                     _state.update { it.copy(saving = false, done = true) }
                 },
                 onFailure = { e ->
+                    tracker.track(CalendarEvents.TimeBlockFailed(e.toFailureReason(), s.mode.trackName()))
                     _state.update {
                         it.copy(
                             saving = false,
@@ -549,6 +560,7 @@ class BlockPanelViewModel(
     private val blocks: BlocksRepository = blocksRepository,
     // A colleague's block (CAL-10): removed and refreshed in their calendar.
     private val doctorId: Long? = null,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BlockPanelUiState(entry, clock))
     val state: StateFlow<BlockPanelUiState> = _state.asStateFlow()
@@ -574,10 +586,12 @@ class BlockPanelViewModel(
             calendar.changed(s.clock, *days.distinct().toTypedArray(), doctorId = doctorId)
             result.fold(
                 onSuccess = {
+                    tracker.track(CalendarEvents.TimeBlockRemoved(doctorId != null))
                     ShellNotice.pending.value = Notice(Res.string.unblockSuccess, true)
                     _state.update { it.copy(busy = false, asking = false, done = true) }
                 },
                 onFailure = { e ->
+                    tracker.track(CalendarEvents.TimeBlockRemoveFailed(e.toFailureReason(), doctorId != null))
                     _state.update {
                         it.copy(
                             busy = false,

@@ -176,6 +176,7 @@ import shifa.doctor.ui.visit.VisitScreen
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaSubHeader
+import shifa.doctor.ui.widgets.TrackScreenView
 import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.AskPushPermission
 import shifa.doctor.utils.PracticeClock
@@ -242,6 +243,11 @@ fun MainScreen(
     val path = shellPath(state)
     LaunchedEffect(path) { showBrowserPath(path) }
     DisposableEffect(Unit) { onDispose { showBrowserPath("/") } }
+    // A6: one screen view each time a screen comes to the front, keyed on the stack under it: More or a sheet over it
+    // sends nothing, coming back to it (Back, another tab and back) sends it again. None before the start tab is set.
+    shellScreen(state)
+        ?.takeIf { state.startApplied }
+        ?.let { TrackScreenView(it, step = if (state.intelligence) state.overIntelligence else state.stack) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
@@ -250,6 +256,7 @@ fun MainScreen(
     val actions =
         ShellActions(
             select = viewModel::select,
+            tapTab = viewModel::tapTab,
             openPatientFromSearch = viewModel::openPatientFromSearch,
             openChatWithPatient = viewModel::openChatWithPatient,
             openCalendar = viewModel::openCalendar,
@@ -317,6 +324,8 @@ internal fun ShellActions.openOverHome(
 
 class ShellActions(
     val select: (ShellTab) -> Unit = {},
+    // The doctor's own tab choice in the bar, More or the sidebar (tracked with where it was made); [select] otherwise.
+    val tapTab: (ShellTab, String) -> Unit = { tab, _ -> select(tab) },
     // HOME-02: Home's notification and follow-up counts read again.
     val refreshHomeCounts: () -> Unit = {},
     // HOME-05: a search result opens in the Patients tab.
@@ -450,7 +459,10 @@ fun MainScreenContent(
                                 )
                         },
                         selected,
-                        onSelect = { i -> if (i < barTabs.size) actions.select(barTabs[i]) else actions.openMore() },
+                        onSelect = {
+                                i ->
+                            if (i < barTabs.size) actions.tapTab(barTabs[i], "bar") else actions.openMore()
+                        },
                         modifier =
                             Modifier
                                 .align(Alignment.BottomCenter)
@@ -1037,7 +1049,7 @@ internal fun MoreSheetContent(
                         tab.icon,
                         selected = state.tab == tab,
                         count = state.count(tab),
-                    ) { actions.select(tab) }
+                    ) { actions.tapTab(tab, "more") }
             }
         }
         MoreRow(Res.string.language, Res.drawable.ic_globe_22, sub = LocalLanguageSwitch.current.current.short) {

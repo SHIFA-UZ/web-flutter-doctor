@@ -137,7 +137,7 @@ fun SpeechTextField(
 ) = Column(modifier, verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
     val state by dictation.state.collectAsStateWithLifecycle()
     val add by rememberUpdatedState(append)
-    val ask = rememberMicPermission { granted -> if (granted) dictation.start(field) else dictation.denied() }
+    val ask = rememberMicPermission { granted -> if (granted) dictation.start(field) else dictation.denied(field) }
     val mine = state.field == field
     ShifaInputField(
         value,

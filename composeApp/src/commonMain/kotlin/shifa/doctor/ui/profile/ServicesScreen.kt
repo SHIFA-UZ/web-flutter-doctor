@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.locations.LocationsRepository
 import shifa.doctor.data.locations.locationsRepository
@@ -48,6 +49,11 @@ import shifa.doctor.data.model.ServiceGroup
 import shifa.doctor.data.model.ServicePrice
 import shifa.doctor.data.model.UpsertService
 import shifa.doctor.data.services.ServicesRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.amountBucket
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.active
 import shifa.doctor.generated.resources.addGroup
@@ -175,6 +181,7 @@ class ServicesViewModel(
     private val repo: ServicesRepository = ServicesRepository(),
     // The price scopes come from the shared location list (LOC-1).
     private val places: LocationsRepository = locationsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ServicesUiState())
     val state: StateFlow<ServicesUiState> = _state.asStateFlow()
@@ -326,6 +333,15 @@ class ServicesViewModel(
         viewModelScope.launch {
             repo.save(d.id, body).fold(
                 onSuccess = { saved ->
+                    val first = prices.firstOrNull()
+                    tracker.track(
+                        ProfileEvents.ServiceSaved(
+                            isNew = d.id == null,
+                            isFree = d.free,
+                            hasLocationRate = prices.any { it.locationId != null },
+                            priceBucket = first?.let { amountBucket(it.amountMinor, it.currency) },
+                        ),
+                    )
                     _state.update { st ->
                         val list =
                             if (d.id == null) {
@@ -342,6 +358,7 @@ class ServicesViewModel(
                     closeEditor()
                 },
                 onFailure = { e ->
+                    tracker.track(ProfileEvents.ServiceSaveFailed(d.id == null, e.toFailureReason()))
                     _state.update {
                         it.copy(
                             saving = false,
@@ -360,6 +377,13 @@ class ServicesViewModel(
             val result = repo.delete(service.id)
             // Already gone (deleted elsewhere) counts as deleted (flow 08/08 §8).
             val gone = result.isSuccess || result.exceptionOrNull() is ApiException.NotFound
+            tracker.track(
+                if (gone) {
+                    ProfileEvents.ServiceDeleted
+                } else {
+                    ProfileEvents.ServiceDeleteFailed(result.exceptionOrNull()!!.toFailureReason())
+                },
+            )
             _state.update { st ->
                 if (gone) {
                     val closed =
@@ -449,6 +473,13 @@ class ServicesViewModel(
             // Reload before closing, so a reopened editor starts from the server's groups.
             fetch()
             val e = failure
+            tracker.track(
+                if (e == null) {
+                    ProfileEvents.ServiceGroupsSaved(countBucket(ordered.size))
+                } else {
+                    ProfileEvents.ServiceGroupsSaveFailed(e.toFailureReason())
+                },
+            )
             _state.update {
                 if (e == null) {
                     it.copy(

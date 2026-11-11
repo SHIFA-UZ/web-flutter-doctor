@@ -143,6 +143,13 @@ jobs:
           echo "$FIREBASE_IOS_CONFIG_BASE64" | base64 --decode > iosApp/iosApp/GoogleService-Info.plist
           plutil -lint iosApp/iosApp/GoogleService-Info.plist
 
+      # docs/posthog: release builds read the PostHog key from this gitignored xcconfig (Config.xcconfig includes it).
+      # No secret means an empty key: the app builds and tracks nothing.
+      - name: Write PostHog key
+        env:
+          POSTHOG_API_KEY_PROD: ${{ secrets.POSTHOG_API_KEY_PROD }}
+        run: echo "POSTHOG_API_KEY_PROD = $POSTHOG_API_KEY_PROD" > iosApp/Configuration/Secrets.xcconfig
+
       #########################
       # PHASE 3: FASTLANE
       #########################

@@ -14,6 +14,7 @@ import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.endpointMissing
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinical.ClinicalEngineRepository
 import shifa.doctor.data.clinical.clinicalEngineRepository
@@ -37,6 +38,10 @@ import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.DocumentsEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.engineApplied
 import shifa.doctor.generated.resources.formDocumentFailed
@@ -123,6 +128,7 @@ class FormEditorViewModel(
     private val presetIcd: Icd10Hit? = null,
     // CLINIC-06: a patient opened in a clinic's scope is read, and the form's PDF stored, in that scope.
     private val clinicId: Long? = null,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(FormEditorUiState())
     val state: StateFlow<FormEditorUiState> = _state.asStateFlow()
@@ -385,7 +391,10 @@ class FormEditorViewModel(
     fun save() {
         val s = _state.value
         if (s.saving || s.signing || s.form == null) return
-        if (!s.valid) return _state.update { it.copy(tried = true) }
+        if (!s.valid) {
+            tracker.track(DocumentsEvents.FormSaveFailed(s.form.templateId, formId == null, null, "incomplete"))
+            return _state.update { it.copy(tried = true) }
+        }
         _state.update { it.copy(saving = true, tried = true, banner = null) }
         // Changed since the failed step: the form is saved again and its PDF remade (the edits aren't lost).
         viewModelScope.launch { pipeline(from = if (s.dirty) SaveStep.Form else s.failedAt ?: SaveStep.Form) }
@@ -398,12 +407,22 @@ class FormEditorViewModel(
             step: SaveStep,
             text: StringResource,
             e: Throwable?,
-        ) = _state.update {
-            it.copy(
-                saving = false,
-                failedAt = step,
-                banner = CodeBanner(e?.toUserMessage(text) ?: text, requestId = e?.requestId),
+        ) {
+            tracker.track(
+                DocumentsEvents.FormSaveFailed(
+                    form.templateId,
+                    formId == null,
+                    step.trackName(),
+                    e?.toFailureReason() ?: "pdf_not_made",
+                ),
             )
+            _state.update {
+                it.copy(
+                    saving = false,
+                    failedAt = step,
+                    banner = CodeBanner(e?.toUserMessage(text) ?: text, requestId = e?.requestId),
+                )
+            }
         }
         if (from == SaveStep.Form || form.id == null) {
             form =
@@ -422,6 +441,7 @@ class FormEditorViewModel(
             madePdf = null
             uploadedDocument = null
             uploadedPdf = null
+            tracker.track(DocumentsEvents.FormSaved(done.templateId, formId == null))
             _state.update { it.copy(saving = false, failedAt = null, form = done, original = done, done = true) }
         }
         // BE-01: the server renders, files and links the PDF in one call; an older backend (no such route) leaves it
@@ -478,12 +498,16 @@ class FormEditorViewModel(
         val form = s.form ?: return
         if (s.signing || s.saving) return
         val mustSave = form.id == null || s.dirty
-        if (mustSave && !s.valid) return _state.update { it.copy(tried = true) }
+        if (mustSave && !s.valid) {
+            tracker.track(DocumentsEvents.FormSignatureRequestFailed(form.templateId, "incomplete"))
+            return _state.update { it.copy(tried = true) }
+        }
         _state.update { it.copy(signing = true, banner = null) }
         viewModelScope.launch {
             val saved =
                 if (mustSave) {
                     forms.save(form).getOrElse { e ->
+                        tracker.track(DocumentsEvents.FormSignatureRequestFailed(form.templateId, e.toFailureReason()))
                         return@launch _state.update {
                             it.copy(
                                 signing = false,
@@ -505,6 +529,7 @@ class FormEditorViewModel(
             }
             forms.requestSignature(patientId, saved.id!!).fold(
                 onSuccess = { f ->
+                    tracker.track(DocumentsEvents.FormSignatureRequested(saved.templateId))
                     _state.update {
                         it.copy(
                             signing = false,
@@ -515,6 +540,7 @@ class FormEditorViewModel(
                     }
                 },
                 onFailure = { e ->
+                    tracker.track(DocumentsEvents.FormSignatureRequestFailed(saved.templateId, e.toFailureReason()))
                     _state.update {
                         it.copy(
                             signing = false,

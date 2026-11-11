@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.ExistingPatient
@@ -31,6 +32,10 @@ import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.session.Session
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.doctorAccountExists
 import shifa.doctor.generated.resources.doctorPhoneExists
@@ -63,6 +68,9 @@ import shifa.doctor.utils.normalizedEmail
  * receptionist's one-step form (flow 01/10, AUTH-08), which a receptionist invitation opens instead of the form.
  */
 enum class RegisterStep { Form, ExistingPatient, Details, Staff }
+
+/** The invitation's kind as tracking sends it: `doctor` / `receptionist`. */
+internal val Invite.trackKind get() = if (receptionist) "receptionist" else "doctor"
 
 /** The searchable sheets (DaAuth picker). */
 enum class RegisterPicker { TimeZone, Clinic, Profession }
@@ -163,6 +171,7 @@ class RegisterViewModel(
     private val catalogs: CatalogRepository = CatalogRepository(),
     private val profile: ProfileRepository = ProfileRepository(),
     private val cooldown: OtpCooldown = otpCooldown,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private var lookup: Job? = null
 
@@ -302,9 +311,18 @@ class RegisterViewModel(
                 _state.update { it.copy(askDiscard = true) }
                 false
             }
-            else -> true
+            else -> {
+                abandoned()
+                true
+            }
         }
     }
+
+    /** "Discard" in the question: the screen closes. */
+    fun discard() = abandoned()
+
+    private fun abandoned() =
+        _state.value.let { tracker.track(AuthEvents.RegistrationAbandoned(it.invite.trackKind, it.step.trackName())) }
 
     fun next() {
         val s = _state.value
@@ -331,6 +349,7 @@ class RegisterViewModel(
                 confirmError,
             ).any { it != null }
         ) {
+            tracker.track(AuthEvents.RegistrationFormFailed("invalid_input"))
             return _state.update { errors }
         }
         _state.update { it.copy(loading = true, banner = null) }
@@ -358,6 +377,15 @@ class RegisterViewModel(
                     null
                 }
             val offline = patient?.exceptionOrNull()?.takeIf { it is ApiException.NetworkError }
+            tracker.track(
+                when {
+                    byEmail.getOrNull() == true || byPhone?.getOrNull() == true ->
+                        AuthEvents.RegistrationFormFailed("doctor_exists")
+                    doctorFailure != null -> AuthEvents.RegistrationFormFailed(doctorFailure.toFailureReason())
+                    offline != null -> AuthEvents.RegistrationFormFailed(offline.toFailureReason())
+                    else -> AuthEvents.RegistrationFormSubmitted(isExistingPatient = patient?.getOrNull() != null)
+                },
+            )
             _state.update {
                 when {
                     byEmail.getOrNull() == true -> it.copy(loading = false, emailError = Res.string.doctorAccountExists)
@@ -404,7 +432,10 @@ class RegisterViewModel(
             with(checked) {
                 listOf(passwordError, confirmError, timeZoneError, firstNameError, lastNameError, emailError)
             }
-        if (errors.any { it != null }) return _state.update { checked }
+        if (errors.any { it != null }) {
+            tracker.track(AuthEvents.RegistrationFailed(s.invite.trackKind, "invalid_input"))
+            return _state.update { checked }
+        }
         if (staff) submit(null) else sendCode()
     }
 
@@ -440,6 +471,7 @@ class RegisterViewModel(
         viewModelScope.launch {
             val sent = auth.sendRegistrationOtp(c.email)
             if (sent.isSuccess) cooldown.start(c.email, PURPOSE)
+            trackCode(isResend = true, sent.exceptionOrNull())
             _state.update { s ->
                 s.copy(
                     code =
@@ -464,13 +496,26 @@ class RegisterViewModel(
         viewModelScope.launch {
             if (cooldown.secondsLeft(email, PURPOSE) == 0) {
                 auth.sendRegistrationOtp(email).onFailure { e ->
+                    trackCode(isResend = false, e)
                     return@launch _state.update { it.copy(loading = false, banner = banner(e)) }
                 }
                 cooldown.start(email, PURPOSE)
+                trackCode(isResend = false, null)
             }
             _state.update { it.copy(loading = false, code = RegistrationCode(email)) }
             tick()
         }
+    }
+
+    private fun trackCode(
+        isResend: Boolean,
+        failure: Throwable?,
+    ) {
+        val kind = _state.value.invite.trackKind
+        tracker.track(
+            failure?.let { AuthEvents.RegistrationCodeFailed(kind, isResend, it.toFailureReason()) }
+                ?: AuthEvents.RegistrationCodeSent(kind, isResend),
+        )
     }
 
     // "Resend code (59 s)", once a second while the sheet is open.
@@ -514,7 +559,9 @@ class RegisterViewModel(
             // From here the account exists and the key is used: a retry can't help, so a token that can't be used
             // says so and leaves only the way back to Sign In.
             val result = sessions.signIn(token)
+            val kind = s.invite.trackKind
             if (result.isFailure) {
+                tracker.track(AuthEvents.RegistrationFailed(kind, "unusable_token"))
                 return@launch _state.update {
                     it.copy(
                         loading = false,
@@ -541,6 +588,17 @@ class RegisterViewModel(
                         Result.failure(patchFailure ?: ApiException.Unauthorized(null, null))
                     else -> result
                 }
+            val hasDetails = s.step == RegisterStep.Details && extras != ProfileUpdateRequest()
+            // The account exists and signed in once: completed, even when the session ended during step 2's PATCH
+            // (then its details are not saved).
+            tracker.track(
+                AuthEvents.RegistrationCompleted(
+                    kind,
+                    isExistingPatient = s.existing != null,
+                    hasDetails = hasDetails,
+                    isDetailsSaved = if (hasDetails) patchFailure == null else null,
+                ),
+            )
             if (final.isSuccess && patchFailure != null) {
                 ShellNotice.pending.value =
                     Notice(
@@ -572,6 +630,15 @@ class RegisterViewModel(
         emailOtp: String?,
     ) {
         val code = (e as? ApiException)?.code
+        val reason =
+            when {
+                code == "EMAIL_OTP_INVALID" || code == "EMAIL_OTP_EXPIRED" -> "wrong_code"
+                code == "DOCTOR_EXISTS" -> "doctor_exists"
+                code == "OWNERSHIP_REQUIRED" && staff && emailOtp == null -> null // the code is asked next: no failure
+                code == "OWNERSHIP_REQUIRED" -> "ownership_required"
+                else -> e.toFailureReason()
+            }
+        reason?.let { tracker.track(AuthEvents.RegistrationFailed(_state.value.invite.trackKind, it)) }
         when {
             code == "EMAIL_OTP_INVALID" || code == "EMAIL_OTP_EXPIRED" ->
                 _state.update { s ->

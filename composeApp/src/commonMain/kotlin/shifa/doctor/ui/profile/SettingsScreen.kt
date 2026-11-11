@@ -32,6 +32,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.applock.AppLockRepository
 import shifa.doctor.data.applock.appLockRepository
@@ -42,6 +43,10 @@ import shifa.doctor.data.storage.LanguageStorage
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.FeatureGate
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.ProfileEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
 import shifa.doctor.generated.resources.appLockOff
@@ -67,6 +72,8 @@ import shifa.doctor.generated.resources.settingsGeneral
 import shifa.doctor.generated.resources.startTabHelper
 import shifa.doctor.generated.resources.startingScreen
 import shifa.doctor.generated.resources.usa
+import shifa.doctor.generated.resources.usageData
+import shifa.doctor.generated.resources.usageDataHint
 import shifa.doctor.generated.resources.uzbekistan
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
@@ -82,6 +89,7 @@ import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.ShifaSubHeader
+import shifa.doctor.ui.widgets.ShifaSwitch
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.askBrowserNotifications
 import shifa.doctor.utils.browserNotificationPermission
@@ -109,6 +117,8 @@ data class SettingsUiState(
     // The Security row's preview (SET-03): app lock on, and with biometrics.
     val appLock: Boolean = false,
     val biometrics: Boolean = false,
+    // The usage-data switch (D3): on until the doctor turns it off, kept on this device.
+    val usageData: Boolean = true,
 ) {
     val startTabs: List<ShellTab>
         get() = ShellTab.entries.filter { it != ShellTab.Tasks || tasksAllowed }
@@ -127,6 +137,9 @@ class SettingsViewModel(
     private val profile: ProfileRepository = profileRepository,
     private val language: LanguageStorage = languageStorage,
     private val lock: AppLockRepository = appLockRepository,
+    private val optedOut: () -> Boolean = { Tracking.optedOut },
+    private val setOptOut: (Boolean) -> Unit = Tracking::setOptOut,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsUiState(staff = staff))
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
@@ -148,7 +161,9 @@ class SettingsViewModel(
 
     fun open() {
         // Read on every open: the lock is set on the Security screen and Back lands here.
-        _state.update { it.copy(appLock = lock.enabled, biometrics = lock.biometricEnabled) }
+        _state.update {
+            it.copy(appLock = lock.enabled, biometrics = lock.biometricEnabled, usageData = !optedOut())
+        }
         if (staff || writes.isLocked) return
         val me = profile.me.value ?: return
         confirmed = me.settings
@@ -156,6 +171,13 @@ class SettingsViewModel(
     }
 
     fun ui(change: (SettingsUiState) -> SettingsUiState) = _state.update(change)
+
+    /** The usage-data switch. Only turning it on is tracked: once off, nothing is sent (it would be dropped anyway). */
+    fun setUsageData(on: Boolean) {
+        setOptOut(!on)
+        _state.update { it.copy(usageData = on) }
+        if (on) tracker.track(ProfileEvents.UsageDataEnabled)
+    }
 
     fun change(edit: (DoctorSettings) -> DoctorSettings) {
         val current = _state.value.settings ?: return
@@ -177,9 +199,14 @@ class SettingsViewModel(
                             } ?: ShellTab.Home.key,
                     )
                 if (body == confirmed) return@withLock
+                val before = confirmed
                 profile.updateSettings(body).fold(
-                    onSuccess = { confirmed = it },
+                    onSuccess = {
+                        confirmed = it
+                        before?.let { old -> settingsSaved(old, body)?.let(tracker::track) }
+                    },
                     onFailure = { e ->
+                        tracker.track(ProfileEvents.SettingsSaveFailed(e.toFailureReason()))
                         // Only what this request carried goes back; a change made since stays and goes out next.
                         _state.update { st ->
                             st.copy(
@@ -193,6 +220,25 @@ class SettingsViewModel(
             pending--
             _state.update { it.copy(saving = pending > 0) }
         }
+    }
+
+    /** What the doctor changed (the language has its own event); null when only the language went out. */
+    private fun settingsSaved(
+        old: DoctorSettings,
+        new: DoctorSettings,
+    ): ProfileEvents.SettingsSaved? {
+        val country = new.country.takeIf { it != old.country }
+        val startTab = new.defaultStartTab.takeIf { it != old.defaultStartTab }
+        val changed =
+            listOfNotNull(
+                "country".takeIf { country != null },
+                "start_tab".takeIf { startTab != null },
+                "two_fa".takeIf { new.twoFA != old.twoFA },
+                "encrypted_docs".takeIf { new.encryptedDocs != old.encryptedDocs },
+            )
+        if (changed.isEmpty()) return null
+        val countryWord = country?.let { c -> SettingsCountry.entries.firstOrNull { it.wire.equals(c, true) } }
+        return ProfileEvents.SettingsSaved(changed, countryWord?.trackName(), startTab)
     }
 
     private fun revert(
@@ -219,6 +265,7 @@ class SettingsActions(
     val ui: ((SettingsUiState) -> SettingsUiState) -> Unit = {},
     // Privacy & data (flow 08/12): doctors only, null for clinic staff (the account endpoints are DOCTOR-scoped).
     val privacy: (() -> Unit)? = null,
+    val usageData: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -240,6 +287,7 @@ fun SettingsScreen(
             viewModel::change,
             viewModel::ui,
             privacy = actions.privacy,
+            usageData = viewModel::setUsageData,
         ),
         languageStorage.language.collectAsStateWithLifecycle().value.displayName,
     )
@@ -315,6 +363,22 @@ fun SettingsContent(
                     // No two-factor or encrypted-documents switches: the backend only stores those flags and nothing
                     // acts on them (2026-11-09, the user's call; backend-improvements BE-38). Their values still go
                     // back unchanged in every settings save.
+                }
+            }
+            // D3: doctors and staff alike; the wording is to be confirmed by the owner (not in the design).
+            ShifaSection(null) {
+                Column {
+                    ShifaSettingsItem(
+                        tr(Res.string.usageData),
+                        { actions.usageData(!state.usageData) },
+                        divider = false,
+                        trailing = { ShifaSwitch(state.usageData, actions.usageData) },
+                    )
+                    Text(
+                        tr(Res.string.usageDataHint),
+                        style = ShifaTextStyles.metaSmall(),
+                        color = ShifaColors.Text.Secondary,
+                    )
                 }
             }
             ShifaSection(null) {

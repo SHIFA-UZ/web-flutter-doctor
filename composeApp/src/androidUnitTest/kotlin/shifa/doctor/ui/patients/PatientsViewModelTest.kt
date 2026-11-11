@@ -26,6 +26,8 @@ import shifa.doctor.data.model.PatientStatus
 import shifa.doctor.data.patients.FavoritesRepository
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.storage.FavoritesStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.stopAll
 import shifa.doctor.utils.PracticeClock
 
@@ -171,5 +173,45 @@ class PatientsViewModelTest {
         assertThat(classToTest.state.value.shown).hasSize(5)
         typed(classToTest, "Alice 90") // no Alice: the digits alone must not match the phone
         assertThat(classToTest.state.value.visible).isEmpty()
+    }
+
+    @Test
+    fun `search is tracked by its result count and filters by the choice, never the text`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            PatientsViewModel(
+                repo,
+                FavoritesRepository(FavoritesStorage(settings)),
+                flowOf(42L to "Asia/Tashkent"),
+                { clock },
+                tracker,
+            ).also { created += it }
+        classToTest.load()
+        settle { classToTest.state.value.patients != null }
+        typed(classToTest, "patient 1")
+        typed(classToTest, "")
+        classToTest.filter { it.copy(tab = PatientTab.FollowUps) }
+        classToTest.filter { it.copy(tab = PatientTab.FollowUps) }
+        assertThat(tracker.events)
+            .containsExactly(
+                PatientsEvents.PatientsSearched("6-20"),
+                PatientsEvents.PatientsFiltered("follow_ups", null, false),
+            ).inOrder()
+    }
+
+    @Test
+    fun `a search before the directory loaded isn't tracked as no results`() {
+        val tracker = RecordingTracker()
+        val classToTest =
+            PatientsViewModel(
+                repo,
+                FavoritesRepository(FavoritesStorage(settings)),
+                flowOf(42L to "Asia/Tashkent"),
+                { clock },
+                tracker,
+            ).also { created += it }
+        typed(classToTest, "patient 1")
+        assertThat(classToTest.state.value.patients).isNull()
+        assertThat(tracker.events).isEmpty()
     }
 }

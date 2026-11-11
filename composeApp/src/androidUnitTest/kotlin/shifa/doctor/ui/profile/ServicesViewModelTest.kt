@@ -20,6 +20,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.services.ServicesRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.fieldRequired
 import shifa.doctor.generated.resources.serviceManagedByClinic
@@ -107,10 +109,13 @@ class ServicesViewModelTest {
         }
     }
 
+    private val tracker = RecordingTracker()
+
     private fun loaded() =
         ServicesViewModel(
             repo,
             shifa.doctor.data.locations.LocationsRepository { createHttpClient({ null }, engine) },
+            tracker,
         ).also { created += it }.also {
                 vm ->
             settle { !vm.state.value.loading }
@@ -267,5 +272,33 @@ class ServicesViewModelTest {
         classToTest.saveGroups()
         settle { !classToTest.state.value.editing }
         assertThat(sent.none { it.startsWith("POST") || it.startsWith("DELETE") }).isTrue()
+    }
+
+    @Test
+    fun `a save and a delete are tracked by outcome, the price only as a range`() {
+        val classToTest = loaded()
+        classToTest.open(null)
+        classToTest.edit { it.copy(title = "Braces", prices = listOf(PriceRow("150 000", "UZS"))) }
+        classToTest.save()
+        settle { !classToTest.state.value.saving && !classToTest.state.value.editing }
+        deleteStatus = HttpStatusCode.InternalServerError
+        classToTest.ui { st -> st.copy(askDelete = st.services.first()) }
+        classToTest.delete()
+        settle { tracker.events.size == 2 }
+        deleteStatus = HttpStatusCode.NoContent
+        classToTest.ui { st -> st.copy(askDelete = st.services.first()) }
+        classToTest.delete()
+        settle { tracker.events.size == 3 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.ServiceSaved(
+                    isNew = true,
+                    isFree = false,
+                    hasLocationRate = false,
+                    priceBucket = "100k-500k",
+                ),
+                ProfileEvents.ServiceDeleteFailed("server"),
+                ProfileEvents.ServiceDeleted,
+            ).inOrder()
     }
 }

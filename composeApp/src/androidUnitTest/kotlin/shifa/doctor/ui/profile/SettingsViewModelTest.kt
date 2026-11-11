@@ -23,6 +23,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.LanguageStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ProfileEvents
 import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellTab
 import java.io.File
@@ -72,8 +74,13 @@ class SettingsViewModelTest {
         }
     }
 
+    private val tracker = RecordingTracker()
+    private var optedOut = false
+
     private fun opened(staff: Boolean = false) =
-        SettingsViewModel(staff, repo, language).also {
+        SettingsViewModel(staff, repo, language, optedOut = {
+            optedOut
+        }, setOptOut = { optedOut = it }, tracker = tracker).also {
             created += it
         }.apply { open() }
 
@@ -154,12 +161,43 @@ class SettingsViewModelTest {
     fun `the Security row says whether the app lock is on, read again on every open`() {
         val store = shifa.doctor.data.storage.AppLockStorage(MapSettings())
         val lock = shifa.doctor.data.applock.AppLockRepository({ store })
-        val classToTest = SettingsViewModel(false, repo, language, lock).also { created += it }.apply { open() }
+        val classToTest =
+            SettingsViewModel(false, repo, language, lock, {
+                optedOut
+            }, { optedOut = it }).also { created += it }.apply { open() }
         assertThat(classToTest.state.value.appLock).isFalse()
         lock.turnOn("1234")
         lock.setBiometric(true)
         classToTest.open()
         assertThat(classToTest.state.value.appLock).isTrue()
         assertThat(classToTest.state.value.biometrics).isTrue()
+    }
+
+    @Test
+    fun `the usage-data switch reads and writes the opt-out, only turning it on is tracked`() {
+        optedOut = true
+        val classToTest = opened()
+        assertThat(classToTest.state.value.usageData).isFalse()
+        classToTest.setUsageData(true)
+        assertThat(optedOut).isFalse()
+        classToTest.setUsageData(false)
+        assertThat(optedOut).isTrue()
+        assertThat(classToTest.state.value.usageData).isFalse()
+        assertThat(tracker.events).containsExactly(ProfileEvents.UsageDataEnabled)
+    }
+
+    @Test
+    fun `a settings save is tracked with what changed, a failure with its reason`() {
+        val classToTest = opened()
+        classToTest.change { it.copy(country = "Germany", defaultStartTab = "calendar") }
+        settle { !classToTest.state.value.saving }
+        fail = true
+        classToTest.change { it.copy(twoFA = !it.twoFA) }
+        settle { classToTest.state.value.banner != null }
+        assertThat(tracker.events)
+            .containsExactly(
+                ProfileEvents.SettingsSaved(listOf("country", "start_tab"), "germany", "calendar"),
+                ProfileEvents.SettingsSaveFailed("server"),
+            ).inOrder()
     }
 }

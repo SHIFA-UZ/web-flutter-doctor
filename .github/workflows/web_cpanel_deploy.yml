@@ -9,6 +9,7 @@ name: Deploy Doctor Web to cPanel
 #   CPANEL_FTP_USER      one FTP account for both sites (cPanel → FTP Accounts), e.g. deploy@shifa.uz with directory
 #                        doctor-web: the deploy can't reach anything outside it
 #   CPANEL_FTP_PASSWORD  that account's password
+#   POSTHOG_API_KEY_PROD the PostHog project key (product analytics; only doctor.shifa.uz on production sends anything)
 #
 # In that directory, production/ is the document root of doctor.shifa.uz and development/ that of doctor-dev.shifa.uz.
 #
@@ -50,7 +51,9 @@ jobs:
 
       # The wasm link needs about 6 GB (CLAUDE.md "Web build"); the runner has 16 GB.
       - name: Build the web bundle
-        run: ./gradlew :composeApp:wasmJsBrowserDistribution --no-daemon -Pkotlin.daemon.jvmargs=-Xmx8g
+        env:
+          POSTHOG_API_KEY_PROD: ${{ secrets.POSTHOG_API_KEY_PROD }}
+        run: ./gradlew :composeApp:wasmJsBrowserDistribution --no-daemon -Pkotlin.daemon.jvmargs=-Xmx8g "-Pposthog.apiKey.prod=$POSTHOG_API_KEY_PROD"
 
       - name: Check the bundle
         run: |

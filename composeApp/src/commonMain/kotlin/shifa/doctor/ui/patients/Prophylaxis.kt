@@ -19,11 +19,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinics.clinicsRepository
 import shifa.doctor.data.model.ProphylaxisSetting
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.prophylaxisEnabled
 import shifa.doctor.generated.resources.prophylaxisIntervalMonths
@@ -75,6 +79,7 @@ class ProphylaxisViewModel(
     private val patientId: Long,
     private val clinicId: Long,
     private val repo: PatientsRepository = patientsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProphylaxisUiState())
     val state: StateFlow<ProphylaxisUiState> = _state.asStateFlow()
@@ -105,6 +110,7 @@ class ProphylaxisViewModel(
         viewModelScope.launch {
             repo.saveProphylaxis(ProphylaxisSetting(patientId, clinicId, s.interval, s.enabled)).fold(
                 { saved ->
+                    tracker.track(PatientsEvents.ProphylaxisSaved(s.enabled, s.interval))
                     _state.update {
                         // "Last sent" stays as it was when the answer leaves it out (flow 06/05 §7).
                         it.from(saved.copy(lastSentAt = saved.lastSentAt ?: it.lastSentAt))
@@ -112,6 +118,7 @@ class ProphylaxisViewModel(
                     }
                 },
                 { e ->
+                    tracker.track(PatientsEvents.ProphylaxisSaveFailed(e.toFailureReason()))
                     _state.update { it.copy(saving = false, banner = failure(e, Res.string.prophylaxisSaveFailed)) }
                 },
             )

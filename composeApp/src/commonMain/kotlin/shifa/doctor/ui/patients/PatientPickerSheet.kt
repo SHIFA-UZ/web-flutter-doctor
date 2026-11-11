@@ -16,6 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.model.PatientOption
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.ic_check_16
 import shifa.doctor.generated.resources.newPatient
@@ -46,6 +49,7 @@ fun List<PatientOption>.matching(query: String): List<PatientOption> {
 /**
  * Picks one of the doctor's patients (booking, a new task): search by name or id, a tap picks and closes. [patients]
  * null shows skeletons; [onNew] adds "New patient" (booking only); [selectedId] ticks the current one.
+ * A pick is tracked here, once for every host (whether it was searched, the list size as a range; never the text).
  */
 @Composable
 internal fun PatientPickerSheet(
@@ -60,7 +64,12 @@ internal fun PatientPickerSheet(
     onNew: (() -> Unit)? = null,
     selectedId: Long? = null,
 ) = ProfileSheet(onClose) {
-    PatientPickerTray(title, patients, error, query, onQuery, onPick, onRetry, onClose, onNew, selectedId)
+    val pick = { p: PatientOption ->
+        val searched = query.isNotBlank()
+        Tracking.track(PatientsEvents.PatientPicked(searched, patients?.size?.let(::countBucket)?.takeIf { searched }))
+        onPick(p)
+    }
+    PatientPickerTray(title, patients, error, query, onQuery, pick, onRetry, onClose, onNew, selectedId)
 }
 
 /** The sheet's content (previews draw it without the sheet). */

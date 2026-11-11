@@ -52,6 +52,11 @@ import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.favoritesRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.PatientsEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.age
 import shifa.doctor.generated.resources.allPatients
@@ -186,6 +191,7 @@ class PatientsViewModel(
     // practice date for ages follow when it does.
     doctors: Flow<Pair<Long?, String?>> = profileRepository.me.map { it?.profile?.id to it?.profile?.timeZone },
     private val clockOf: (String?) -> PracticeClock = { PracticeClock(it) },
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(PatientsUiState(today = clockOf(profileRepository.me.value?.profile?.timeZone).today()))
@@ -235,13 +241,24 @@ class PatientsViewModel(
             viewModelScope.launch {
                 delay(DEBOUNCE)
                 _state.update { it.copy(query = text, page = 0) }
+                // The result count as a range, never the text; not before the directory loaded (it would say 0).
+                if (text.isNotBlank() && _state.value.patients != null) {
+                    tracker.track(PatientsEvents.PatientsSearched(countBucket(_state.value.visible.size)))
+                }
             }
     }
 
     fun ui(change: (PatientsUiState) -> PatientsUiState) = _state.update(change)
 
     /** A change of what is shown (segment, status, order) starts again on page 1 (Flutter kept the page on sort). */
-    fun filter(change: (PatientsUiState) -> PatientsUiState) = _state.update { change(it).copy(page = 0) }
+    fun filter(change: (PatientsUiState) -> PatientsUiState) {
+        val before = _state.value
+        _state.update { change(it).copy(page = 0) }
+        val s = _state.value
+        if (s.tab != before.tab || s.status != before.status || s.descending != before.descending) {
+            tracker.track(PatientsEvents.PatientsFiltered(s.tab.trackName(), s.status?.trackName(), s.descending))
+        }
+    }
 
     fun page(to: Int) = _state.update { it.copy(page = to.coerceIn(0, it.pages - 1)) }
 

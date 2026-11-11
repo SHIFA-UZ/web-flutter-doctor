@@ -11,6 +11,11 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.endpointMissing
+import shifa.doctor.data.api.toFailureReason
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.durationBucket
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.data.video.JOIN_AFTER
 import shifa.doctor.data.video.JOIN_BEFORE
 import shifa.doctor.data.video.VideoRepository
@@ -19,6 +24,9 @@ import shifa.doctor.data.video.videoRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.callErrorOccurred
 import shifa.doctor.generated.resources.videoCallEnded
+import shifa.doctor.generated.resources.videoCallJoinWindowClosedMessage
+import shifa.doctor.generated.resources.videoCallNotYetAvailableMessage
+import shifa.doctor.generated.resources.videoCallPaymentRequiredMessage
 import shifa.doctor.utils.VideoCall
 import shifa.doctor.utils.VideoCallState
 import shifa.doctor.utils.currentInstant
@@ -63,6 +71,7 @@ class VideoVisit(
     private val window: () -> Pair<Instant?, Instant?>,
     private val repo: VideoRepository = videoRepository,
     private val now: () -> Instant = ::currentInstant,
+    private val tracker: Tracker = Tracking,
 ) {
     private val _state = MutableStateFlow(VideoVisitState())
     val state: StateFlow<VideoVisitState> = _state.asStateFlow()
@@ -131,6 +140,21 @@ class VideoVisit(
                             )
                     val dropped = before.stage == VideoStage.InCall && after.stage == VideoStage.Left
                     val ended = refused || dropped
+                    when {
+                        before.stage == VideoStage.Joining && after.stage == VideoStage.InCall -> {
+                            joinedAt = now()
+                            tracker.track(VisitEvents.VideoJoined(wasLeft))
+                        }
+                        refused -> tracker.track(VisitEvents.VideoJoinFailed("daily_failed"))
+                        dropped ->
+                            tracker.track(
+                                VisitEvents.VideoCallEnded(
+                                    if (c.failed) "error" else "remote",
+                                    after.patientSeen,
+                                    callDuration(),
+                                ),
+                            )
+                    }
                     if (ended) {
                         free()
                         if (after.stage == VideoStage.PreJoin) renew()
@@ -161,6 +185,7 @@ class VideoVisit(
     ) {
         val before = _state.value
         _state.update { it.copy(camera = camera, mic = mic) }
+        if (before.camera != camera || before.mic != mic) tracker.track(VisitEvents.VideoPermissionsResult(camera, mic))
         if (before.stage != VideoStage.PreJoin || (before.camera == camera && before.mic == mic)) return
         // The preview follows the doctor's choices as far as allowed: a newly granted device doesn't switch the other
         // one back on, and without the camera the call goes on with it off.
@@ -178,10 +203,12 @@ class VideoVisit(
                 val token =
                     repo.token(appointmentId).getOrElse { e ->
                         val (start, end) = window()
+                        val error = videoJoinError(e, start, end, now())
+                        tracker.track(VisitEvents.VideoJoinFailed(JOIN_REASONS[error] ?: e.toFailureReason()))
                         return@launch _state.update {
                             it.copy(
                                 stage = if (wasLeft) VideoStage.Left else VideoStage.PreJoin,
-                                error = videoJoinError(e, start, end, now()),
+                                error = error,
                             )
                         }
                     }
@@ -204,29 +231,47 @@ class VideoVisit(
         if (_state.value.camera != true) return
         wantCamera = !_state.value.call.cameraOn
         call.setCamera(wantCamera)
+        tracker.track(VisitEvents.VideoControlToggled("camera", wantCamera))
     }
 
     fun toggleMic() {
         if (_state.value.mic != true) return
         wantMic = !_state.value.call.micOn
         call.setMic(wantMic)
+        tracker.track(VisitEvents.VideoControlToggled("mic", wantMic))
     }
 
-    fun flip() = call.flipCamera()
+    fun flip() {
+        call.flipCamera()
+        tracker.track(VisitEvents.VideoControlToggled("flip", null))
+    }
 
     fun askLeave(ask: Boolean) = _state.update { it.copy(confirmLeave = ask) }
 
     /** Leave call: the call is freed, the visit stays open (Rejoin, or End appointment). */
     fun leave() {
+        ended("doctor")
         free()
         _state.update { it.copy(stage = VideoStage.Left, confirmLeave = false, error = null) }
     }
 
     /** Going back from the visit or ending it: the call (and a token on its way) is freed whatever the stage. */
     fun release() {
+        ended("visit_closed")
         free()
         _state.update { it.copy(stage = VideoStage.Left, confirmLeave = false) }
     }
+
+    /** The call ended from this side: tracked only when the doctor was in it. */
+    private fun ended(by: String) {
+        val s = _state.value
+        if (s.stage == VideoStage.InCall) tracker.track(VisitEvents.VideoCallEnded(by, s.patientSeen, callDuration()))
+    }
+
+    // When the doctor last got into the call, for `video_call_ended`'s duration.
+    private var joinedAt: Instant? = null
+
+    private fun callDuration(): String? = joinedAt?.let { durationBucket((now() - it).inWholeSeconds) }
 
     private fun free() {
         presence?.cancel()
@@ -267,5 +312,13 @@ class VideoVisit(
 
     private companion object {
         const val PRESENCE_POLL_MS = 5_000L
+
+        // The refusals the doctor is told about by name; anything else is its `toFailureReason()` word.
+        val JOIN_REASONS =
+            mapOf(
+                Res.string.videoCallNotYetAvailableMessage to "too_early",
+                Res.string.videoCallJoinWindowClosedMessage to "too_late",
+                Res.string.videoCallPaymentRequiredMessage to "payment_required",
+            )
     }
 }

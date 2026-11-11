@@ -31,6 +31,7 @@ import shifa.doctor.stopAll
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatientBriefingViewModelTest {
     private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+    private val tracker = shifa.doctor.data.tracking.RecordingTracker()
 
     // Each briefing request takes the next answer; a held one waits for [gate].
     private val answers = ArrayDeque<Pair<HttpStatusCode, String>>()
@@ -56,6 +57,7 @@ class PatientBriefingViewModelTest {
             AiRepository { client },
             { language },
             ProfileRepository { client },
+            tracker,
         ).also { created += it }
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -165,5 +167,27 @@ class PatientBriefingViewModelTest {
         assertThat(classToTest.state.value.error!!.text).isEqualTo(Res.string.aiUnavailable)
         assertThat(classToTest.state.value.briefing).isNotNull()
         assertThat(classToTest.state.value.copied).isFalse()
+    }
+
+    @Test
+    fun `the summary is tracked by its outcome, never its text`() {
+        answers += HttpStatusCode.BadRequest to """{"status":400}"""
+        answers += ok
+        answers += HttpStatusCode.TooManyRequests to """{"status":429,"code":"RATE_LIMITED"}"""
+        val classToTest = vm()
+        classToTest.open()
+        settle { classToTest.state.value.empty }
+        classToTest.generate()
+        settle { classToTest.state.value.briefing != null }
+        classToTest.copied()
+        classToTest.generate()
+        settle { classToTest.state.value.error != null }
+        assertThat(tracker.events)
+            .containsExactly(
+                shifa.doctor.data.tracking.events.PatientsEvents.PatientBriefingFailed(false, "empty"),
+                shifa.doctor.data.tracking.events.PatientsEvents.PatientBriefingGenerated(false),
+                shifa.doctor.data.tracking.events.PatientsEvents.PatientBriefingCopied,
+                shifa.doctor.data.tracking.events.PatientsEvents.PatientBriefingFailed(true, "rate_limited"),
+            ).inOrder()
     }
 }

@@ -17,6 +17,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.appointments.appointmentsRepository
@@ -51,6 +52,7 @@ import shifa.doctor.data.model.IcdSuggestion
 import shifa.doctor.data.model.Patient
 import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientForm
+import shifa.doctor.data.model.ScribeStatus
 import shifa.doctor.data.model.SignatureState
 import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.model.composeVisitDocumentationText
@@ -60,6 +62,12 @@ import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.services.ServicesRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.amountBucket
+import shifa.doctor.data.tracking.countBucket
+import shifa.doctor.data.tracking.events.VisitEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.data.treatmentplans.treatmentPlansRepository
 import shifa.doctor.data.video.VideoRepository
@@ -245,11 +253,13 @@ class VisitViewModel(
     // VIDEO-02: a video visit's calls (Daily); null for a visit in person.
     calls: (() -> VideoCall)? = null,
     videoRepo: VideoRepository = videoRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(VisitUiState())
     val state: StateFlow<VisitUiState> = _state.asStateFlow()
 
-    val notes = VisitNotes(appointmentId, { _state.value.visit?.patientId }, viewModelScope, consultation)
+    val notes =
+        VisitNotes(appointmentId, { _state.value.visit?.patientId }, viewModelScope, consultation, tracker = tracker)
 
     // DENTAL-02: read for a dental doctor only.
     val dentalRecord = DentalNotes(appointmentId, viewModelScope, dentalRepo, services)
@@ -262,7 +272,7 @@ class VisitViewModel(
                         v ->
                     v?.start to v?.end
                 }
-            }, videoRepo)
+            }, videoRepo, tracker = tracker)
         }
 
     // DENTAL-03: the patient's treatment plan in this visit.
@@ -291,6 +301,7 @@ class VisitViewModel(
                     }
                 }
             val dental = documentationTemplateFor(profession()) == DocumentationTemplate.Dental
+            if (_state.value.visit == null) tracker.track(VisitEvents.VisitOpened(visit.kind, dental, visit.completed))
             // The patient's record before the workspace opens (at most PATIENT_WAIT), so a chronic-disease warning comes
             // before any action, never after a doctor has started (flow 02/02 §8; Flutter skipped it when not loaded).
             val early =
@@ -367,7 +378,12 @@ class VisitViewModel(
         watching =
             viewModelScope.launch {
                 appointments.signatureUpdates(appointmentId).collect { r ->
-                    r.getOrNull()?.let { d -> _state.update { it.copy(visit = d) } }
+                    r.getOrNull()?.let { d ->
+                        if (_state.value.signature == SignatureState.Waiting && d.signature == SignatureState.Signed) {
+                            tracker.track(VisitEvents.VisitPatientSigned)
+                        }
+                        _state.update { it.copy(visit = d) }
+                    }
                 }
             }
     }
@@ -378,8 +394,15 @@ class VisitViewModel(
         _state.update { it.copy(signing = true, banner = null) }
         viewModelScope.launch {
             // The notes go first, so what the patient is asked to sign is saved; unsaved, nothing is asked.
-            if (!notes.flush()) return@launch _state.update { it.copy(signing = false) }
+            if (!notes.flush()) {
+                tracker.track(VisitEvents.VisitSignatureRequestFailed("notes_not_saved"))
+                return@launch _state.update { it.copy(signing = false) }
+            }
             val result = appointments.requestSignature(appointmentId)
+            tracker.track(
+                result.exceptionOrNull()?.let { VisitEvents.VisitSignatureRequestFailed(it.toFailureReason()) }
+                    ?: VisitEvents.VisitSignatureRequested,
+            )
             _state.update {
                 it.copy(
                     signing = false,
@@ -417,6 +440,7 @@ class VisitViewModel(
         audio: ByteArray,
         recordingId: String?,
     ): CodeBanner {
+        val retry = unsent?.first === audio
         unsent = audio to recordingId
         _state.update { it.copy(scribeUploading = true, scribeRetry = false) }
         val result =
@@ -426,6 +450,16 @@ class VisitViewModel(
                 _state.update { it.copy(scribeUploading = false) }
             }
         if (result.isSuccess) unsent = null
+        tracker.track(
+            result.exceptionOrNull()?.toFailureReason()?.let {
+                // No plan or the daily limit: the plan's rules, not a broken scribe (kept off the alert).
+                if (it == "forbidden" || it == "rate_limited") {
+                    VisitEvents.ScribeBlocked(it)
+                } else {
+                    VisitEvents.ScribeFailed(it, "upload")
+                }
+            } ?: VisitEvents.ScribeUploaded(retry),
+        )
         _state.update {
             it.copy(
                 awaitingScribe = it.awaitingScribe || result.isSuccess,
@@ -500,6 +534,7 @@ class VisitViewModel(
         // Before any step: the plan's ticks are applied (and lock the plan) before the payment is sent, so an amount
         // that can't be paid must stop End here, not after them.
         if (p.pendingPayment && p.amountInvalid) {
+            tracker.track(VisitEvents.VisitPaymentInvalid)
             return _state.update {
                 it.copy(end = EndUiState(confirm = true, error = CodeBanner(Res.string.amountGreaterThanZero)))
             }
@@ -514,22 +549,47 @@ class VisitViewModel(
                 EndStep.Summary,
             )
         _state.update { it.copy(end = EndUiState(running = true, steps = steps, at = EndStep.Notes)) }
+        tracker.track(
+            VisitEvents.VisitEndStarted(s.kind, EndStep.Plan in steps, EndStep.Payment in steps, s.awaitingScribe),
+        )
         // A video visit leaves its call first (flow 05/12; the visit's End, not the call's).
         video?.release()
         ending =
             viewModelScope.launch {
-                if (!notes.flush()) return@launch fail(CodeBanner(Res.string.notesSaveFailed))
+                if (!notes.flush()) {
+                    return@launch fail(
+                        "notes_not_saved",
+                        "notes",
+                        CodeBanner(Res.string.notesSaveFailed),
+                    )
+                }
                 // A dental record that couldn't be read would be left out of the summary: read it first (or stop).
-                if (s.dental && !dentalRecord.loaded()) return@launch fail(CodeBanner(Res.string.dentalLoadFailed))
-                if (!dentalRecord.flush()) return@launch fail(CodeBanner(Res.string.dentalDocSaveFailed))
+                if (s.dental && !dentalRecord.loaded()) {
+                    return@launch fail("dental_not_loaded", "dental", CodeBanner(Res.string.dentalLoadFailed))
+                }
+                if (!dentalRecord.flush()) {
+                    return@launch fail(
+                        "dental_not_saved",
+                        "dental",
+                        CodeBanner(Res.string.dentalDocSaveFailed),
+                    )
+                }
                 // DENTAL-03: the ticked plan lines, then the payment; either failing leaves the visit open.
                 if (EndStep.Plan in steps) {
                     step(EndStep.Plan)
-                    plan.applyTicks()?.let { return@launch fail(CodeBanner(it)) }
+                    plan.applyTicks()?.let { return@launch fail("plan_not_saved", "plan", CodeBanner(it)) }
+                    tracker.track(VisitEvents.VisitPlanLinesCompleted(countBucket(p.ticks.size)))
                 }
                 if (EndStep.Payment in steps) {
                     step(EndStep.Payment)
-                    plan.recordPayment()?.let { return@launch fail(CodeBanner(it)) }
+                    plan.recordPayment()?.let { return@launch fail("payment_not_recorded", "payment", CodeBanner(it)) }
+                    val paid = plan.state.value
+                    tracker.track(
+                        VisitEvents.VisitPaymentRecorded(
+                            paid.method.trackName(),
+                            paid.recorded?.let { amountBucket(it, p.currency.orEmpty()) },
+                        ),
+                    )
                 }
                 step(EndStep.Complete)
                 val body = notes.state.value.text.body(notes.labels)
@@ -540,7 +600,11 @@ class VisitViewModel(
                         awaitingScribe = s.awaitingScribe,
                     ).getOrElse {
                             e ->
-                        return@launch fail(CodeBanner(e.toUserMessage(Res.string.endFailed), requestId = e.requestId))
+                        return@launch fail(
+                            e.toFailureReason(),
+                            "complete",
+                            CodeBanner(e.toUserMessage(Res.string.endFailed), requestId = e.requestId),
+                        )
                     }
                 endedAt = clock().local(currentInstant())
                 _state.update {
@@ -549,6 +613,14 @@ class VisitViewModel(
                         end = it.end.copy(completed = true),
                     )
                 }
+                tracker.track(
+                    VisitEvents.VisitCompleted(
+                        s.kind,
+                        _state.value.mode.trackName(),
+                        s.awaitingScribe || done.scribePending,
+                        _state.value.photos.isNotEmpty(),
+                    ),
+                )
                 s.visit.start?.let { start -> launch { completedOn(clock(), clock().local(start).date) } }
                 if ((done.scribePending || s.awaitingScribe) && !done.hasScribeNote) waitForScribe()
                 summary()
@@ -562,10 +634,16 @@ class VisitViewModel(
             s.copy(end = s.end.copy(at = at, steps = steps))
         }
 
-    private fun fail(error: CodeBanner) =
+    private fun fail(
+        reason: String,
+        step: String,
+        error: CodeBanner,
+    ) {
+        tracker.track(VisitEvents.VisitEndFailed(reason, step))
         _state.update {
             it.copy(end = it.end.copy(running = false, at = null, error = error))
         }
+    }
 
     /** SCRIBE-02: the scribe's status every 3 s (120 s at most) until its notes are there, or the doctor skips. */
     private suspend fun waitForScribe() {
@@ -583,9 +661,18 @@ class VisitViewModel(
                         delay(1.seconds)
                     }
                 }
-            waitingScribe = launch { consultation.scribeUpdates(appointmentId).collect {} }
-            waitingScribe?.join()
+            var last: Result<ScribeStatus>? = null
+            val waiting = launch { consultation.scribeUpdates(appointmentId).collect { last = it } }
+            waitingScribe = waiting
+            waiting.join()
             ticker.cancel()
+            tracker.track(
+                when {
+                    waiting.isCancelled -> VisitEvents.ScribeWaitSkipped
+                    last?.getOrNull()?.hasScribeNote == true -> VisitEvents.ScribeNotesReady
+                    else -> VisitEvents.ScribeFailed(last?.exceptionOrNull()?.toFailureReason() ?: "timeout", "notes")
+                },
+            )
         }
     }
 
@@ -610,16 +697,16 @@ class VisitViewModel(
                     ),
             )
         }
-        ending = viewModelScope.launch { summary() }
+        ending = viewModelScope.launch { summary(retry = true) }
     }
 
-    private suspend fun summary() {
+    private suspend fun summary(retry: Boolean = false) {
         step(EndStep.Summary)
         val visit = appointments.detail(appointmentId).getOrNull() ?: _state.value.visit
         notes.read()
         val n = notes.state.value
         // Unread notes would make a summary without them (or none at all): it fails and is retried instead.
-        if (n.loadError != null) return summaryFailed()
+        if (n.loadError != null) return summaryFailed("notes_not_read", retry)
         val labels = endLabels
         // The doctor's text as typed when the server has no manual note yet (Flutter's extraDoctorNotes).
         val local = n.text.body(notes.labels).takeIf { n.notes.orEmpty().none { note -> !note.fromAi } }.orEmpty()
@@ -638,6 +725,7 @@ class VisitViewModel(
         val planPart = planSummary(labels)
         if (text.isBlank() && dental == null && photos.isEmpty() && planPart == null) {
             val pending = _state.value.awaitingScribe
+            tracker.track(VisitEvents.VisitSummarySkipped(if (pending) "ai_later" else "nothing_to_save"))
             return _state.update {
                 it.copy(
                     end =
@@ -684,24 +772,27 @@ class VisitViewModel(
                 labels.summary,
             )
         val patientId = visit?.patientId
+        if (pdf == null) return summaryFailed("pdf_failed", retry)
+        if (patientId == null) return summaryFailed("no_patient", retry)
+        val day = at.date.toString()
         val uploaded =
-            if (pdf == null || patientId == null) {
-                null
-            } else {
-                val day = at.date.toString()
-                documents.upload(
+            documents
+                .upload(
                     patientId,
                     UploadFile(pdf, "appointment_${appointmentId}_$day.pdf", DocumentFile.PDF),
                     labels.documentTitle(displayDate(at.date), displayTime(at.time)),
                     DocumentCategory.APPOINTMENT_NOTE.name,
                     appointmentId = appointmentId,
-                ).getOrNull()
-            }
-        if (uploaded == null) return summaryFailed()
+                ).getOrElse { e -> return summaryFailed(e.toFailureReason(), retry) }
+        tracker.track(VisitEvents.VisitSummarySaved(retry, dental != null, photos.isNotEmpty(), planPart != null))
         _state.update { it.copy(end = it.end.copy(running = false, at = null, done = true, summary = uploaded)) }
     }
 
-    private fun summaryFailed() =
+    private fun summaryFailed(
+        reason: String,
+        retry: Boolean,
+    ) {
+        tracker.track(VisitEvents.VisitSummaryFailed(reason, retry))
         _state.update {
             it.copy(
                 end =
@@ -713,11 +804,13 @@ class VisitViewModel(
                     ),
             )
         }
+    }
 
     /** A mode change saves the notes first (they autosave, so nothing is asked; the backend can't empty them). */
     fun mode(to: VisitMode) {
         if (to == _state.value.mode) return _state.update { it.copy(menu = false) }
         _state.update { it.copy(mode = to, menu = false, helper = null) }
+        tracker.track(VisitEvents.VisitModeChanged(to.trackName()))
         if (to == VisitMode.Dental) dentalRecord.load()
         viewModelScope.launch {
             notes.flush()
@@ -742,6 +835,7 @@ class VisitViewModel(
                 VisitHelper.Ai -> n.drafts.isNullOrEmpty() && n.notes.orEmpty().none { it.fromAi }
                 VisitHelper.Form -> _state.value.forms.isEmpty()
             }
+        tracker.track(VisitEvents.VisitHelperOpened(which.trackName(), empty))
         _state.update {
             if (empty) {
                 it.copy(
@@ -765,6 +859,7 @@ class VisitViewModel(
     /** APPT-08: the suggestion is kept for the 025-2 (opened from the Form 025-2 mode) and that mode shows it. */
     fun applyIcd(suggestion: IcdSuggestion) {
         mode(VisitMode.Form0252)
+        tracker.track(VisitEvents.VisitIcdApplied)
         _state.update {
             it.copy(
                 helper = null,
@@ -829,12 +924,16 @@ class VisitViewModel(
         }
 
     /** The picker's answer (null: cancelled or refused); the label is "Before Treatment · name". */
-    fun addPhoto(picked: PickedImage?) =
+    fun addPhoto(picked: PickedImage?) {
+        val before = _state.value.photos.size
         _state.update { s ->
             val kind = s.photoPending ?: return@update s
             val add = picked?.takeIf { s.photos.size < MAX_PHOTOS }?.let { VisitPhoto(kind, it.fileName, it.bytes) }
             s.copy(photoPending = null, photos = s.photos + listOfNotNull(add))
         }
+        val photos = _state.value.photos
+        if (photos.size > before) tracker.track(VisitEvents.VisitPhotoAdded(photos.last().kind.trackName()))
+    }
 
     fun removePhoto(index: Int) = _state.update { s -> s.copy(photos = s.photos.filterIndexed { i, _ -> i != index }) }
 
@@ -885,6 +984,7 @@ class VisitViewModel(
         viewModelScope.launch {
             appointments.noShow(appointmentId, s.notifyNoShow).fold(
                 {
+                    tracker.track(VisitEvents.VisitNoShowMarked(s.notifyNoShow))
                     _state.update {
                         it.copy(
                             markingNoShow = false,
@@ -897,6 +997,12 @@ class VisitViewModel(
                     leave(VisitExit.Back)
                 },
                 { e ->
+                    val code = (e as? ApiException)?.code
+                    tracker.track(
+                        VisitEvents.VisitNoShowFailed(
+                            if (code == "NO_SHOW_NOT_ALLOWED") "not_allowed" else e.toFailureReason(),
+                        ),
+                    )
                     _state.update {
                         it.copy(
                             markingNoShow = false,

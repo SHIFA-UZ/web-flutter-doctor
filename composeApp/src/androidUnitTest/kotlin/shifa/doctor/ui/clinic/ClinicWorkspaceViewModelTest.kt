@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicLoadFailed
 import shifa.doctor.generated.resources.clinicStatsFailed
@@ -126,5 +128,17 @@ class ClinicWorkspaceViewModelTest {
                 ClinicSection.Finance,
                 ClinicSection.Services,
             ).inOrder()
+    }
+
+    @Test
+    fun `switching to another clinic is tracked, picking the one shown is not`() {
+        val tracker = RecordingTracker()
+        val classToTest = ClinicWorkspaceViewModel(repo, tracker).also { created += it }
+        classToTest.load()
+        settle { classToTest.state.value.clinic != null }
+        val shown = classToTest.state.value.clinic!!.clinicId
+        classToTest.select(shown)
+        classToTest.select(if (shown == 5L) 2 else 5)
+        assertThat(tracker.events).containsExactly(ClinicEvents.ClinicSwitched)
     }
 }

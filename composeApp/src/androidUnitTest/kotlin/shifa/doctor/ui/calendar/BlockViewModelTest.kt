@@ -29,6 +29,8 @@ import shifa.doctor.data.calendar.BlocksRepository
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.DayKey
 import shifa.doctor.data.model.CalendarEntry
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.blockTimeSuccessWithCancel
 import shifa.doctor.generated.resources.unblockSuccess
@@ -46,6 +48,8 @@ class BlockViewModelTest {
     private val counts = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var countFails = false
+    private var writeFails = false
+    private val tracker = RecordingTracker()
     private var hold7 = CompletableDeferred(Unit)
     private val engine =
         MockEngine { req ->
@@ -63,6 +67,7 @@ class BlockViewModelTest {
                         respond("""{"count":2}""", HttpStatusCode.OK, json)
                     }
                 }
+                req.method != HttpMethod.Get && writeFails -> respond("", HttpStatusCode.InternalServerError)
                 req.method == HttpMethod.Post -> {
                     sent += req.body.toByteArray().decodeToString()
                     respond(
@@ -257,5 +262,43 @@ class BlockViewModelTest {
         settle { classToTest.state.value.done }
         prefetch.join()
         assertThat(read.count { it == "2026-11-07" }).isEqualTo(2)
+    }
+
+    @Test
+    fun `blocking and removing a block are tracked by their outcome`() {
+        val classToTest =
+            BlockViewModel(
+                LocalDate(2026, 11, 6),
+                clock,
+                calendar,
+                blocks,
+                tracker,
+            ).also { created += it }
+        writeFails = true
+        classToTest.block()
+        settle { classToTest.state.value.banner != null }
+        writeFails = false
+        classToTest.block()
+        settle { classToTest.state.value.done }
+        runBlocking { calendar.day(DayKey(LocalDate(2026, 11, 6), 22)) }
+        val entry =
+            calendar.state.value.days.getValue(
+                DayKey(LocalDate(2026, 11, 6), 22),
+            ).single() as CalendarEntry.Blocked
+        val panel = BlockPanelViewModel(entry, clock, calendar, blocks, doctorId = 22, tracker = tracker)
+        created += panel
+        writeFails = true
+        panel.remove()
+        settle { panel.state.value.banner != null }
+        writeFails = false
+        panel.remove()
+        settle { panel.state.value.done }
+        assertThat(tracker.events)
+            .containsExactly(
+                CalendarEvents.TimeBlockFailed("server", "day"),
+                CalendarEvents.TimeBlocked("day", cancelsOverlapping = true, cancelledBucket = "2-5"),
+                CalendarEvents.TimeBlockRemoveFailed("server", isOnBehalf = true),
+                CalendarEvents.TimeBlockRemoved(isOnBehalf = true),
+            ).inOrder()
     }
 }

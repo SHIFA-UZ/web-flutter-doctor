@@ -22,6 +22,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.model.Patient
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.profile.Gender
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.createPatientInvalid
 import shifa.doctor.stopAll
@@ -186,5 +188,31 @@ class CreatePatientViewModelTest {
         settle { !classToTest.state.value.saving && classToTest.state.value.gone }
         assertThat(classToTest.state.value.gone).isTrue()
         assertThat(classToTest.state.value.banner).isNull()
+    }
+
+    @Test
+    fun `create and edit are tracked by their outcome`() {
+        val tracker = RecordingTracker()
+        val repo = PatientsRepository(client = { createHttpClient({ null }, engine) })
+        val classToTest = CreatePatientViewModel(repo, tracker = tracker).also { created += it }
+        classToTest.create()
+        classToTest.edit { it.copy(name = "Anna", phones = listOf("901234567")) }
+        status = HttpStatusCode.Conflict
+        classToTest.create()
+        settle { !classToTest.state.value.saving && sent.isNotEmpty() }
+        status = HttpStatusCode.OK
+        classToTest.create()
+        settle { classToTest.state.value.created != null }
+        val editing = CreatePatientViewModel(repo, Patient(12, "Anna Karimova"), tracker).also { created += it }
+        editing.edit { it.copy(name = "Anna K") }
+        editing.create()
+        settle { editing.state.value.created != null }
+        assertThat(tracker.events)
+            .containsExactly(
+                PatientsEvents.PatientCreateFailed("invalid_fields"),
+                PatientsEvents.PatientCreateFailed("conflict"),
+                PatientsEvents.PatientCreated(hasPhone = true),
+                PatientsEvents.PatientDetailsEdited,
+            ).inOrder()
     }
 }

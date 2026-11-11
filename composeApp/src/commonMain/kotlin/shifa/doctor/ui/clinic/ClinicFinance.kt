@@ -14,6 +14,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.clinics.clinicsRepository
@@ -33,6 +34,11 @@ import shifa.doctor.data.model.MarkPaidBody
 import shifa.doctor.data.model.MyClinic
 import shifa.doctor.data.model.NewFinancialRecord
 import shifa.doctor.data.model.TreatmentPlanSummary
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.amountBucket
+import shifa.doctor.data.tracking.events.ClinicEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.data.treatmentplans.treatmentPlansRepository
 import shifa.doctor.generated.resources.Res
@@ -244,6 +250,7 @@ class ClinicFinanceViewModel(
     private val repo: FinanceRepository = financeRepository,
     private val clinics: ClinicsRepository = clinicsRepository,
     private val plans: TreatmentPlansRepository = treatmentPlansRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(ClinicFinanceUiState(zone = clinic.timeZone, month = FinanceMonth.of(today)))
@@ -270,6 +277,7 @@ class ClinicFinanceViewModel(
     }
 
     fun month(m: FinanceMonth?) {
+        if (m != _state.value.month) tracker.track(ClinicEvents.FinanceMonthChanged(isAllTime = m == null))
         _state.update { it.copy(month = m) }
         load()
     }
@@ -283,6 +291,7 @@ class ClinicFinanceViewModel(
     }
 
     fun kpi(k: FinanceKpi) {
+        tracker.track(ClinicEvents.FinanceKpiSelected(k.trackName()))
         _state.update { it.copy(kpi = k) }
         loadDrill()
     }
@@ -509,7 +518,7 @@ class ClinicFinanceViewModel(
         method: PayMethod,
     ) {
         _state.update { it.copy(payMenu = null) }
-        record(row, row.remainingMinor, method, null) { e -> _state.update { it.copy(banner = e) } }
+        record("ledger_full", row, row.remainingMinor, method, null) { e -> _state.update { it.copy(banner = e) } }
     }
 
     fun openCustomPay(row: LedgerRow) =
@@ -535,12 +544,13 @@ class ClinicFinanceViewModel(
         if (sheet.busy || _state.value.busy) return
         val amount = sheet.minor ?: return _state.update { it.copy(pay = sheet.copy(tried = true)) }
         _state.update { it.copy(pay = sheet.copy(tried = true, busy = true)) }
-        record(sheet.row, amount, sheet.method, sheet.memo.trim().ifEmpty { null }) { e ->
+        record("ledger_custom", sheet.row, amount, sheet.method, sheet.memo.trim().ifEmpty { null }) { e ->
             _state.update { s -> s.copy(pay = s.pay?.copy(busy = false, error = e)) }
         }
     }
 
     private fun record(
+        source: String,
         row: LedgerRow,
         amount: Long,
         method: PayMethod,
@@ -556,6 +566,9 @@ class ClinicFinanceViewModel(
                 RecordPayment(plan, amount, row.currency, method.wire, row.appointmentId, memo),
             ).fold(
                 {
+                    tracker.track(
+                        ClinicEvents.PaymentRecorded(source, method.trackName(), amountBucket(amount, row.currency)),
+                    )
                     _state.update {
                         it.copy(
                             busy = false,
@@ -566,6 +579,7 @@ class ClinicFinanceViewModel(
                     load()
                 },
                 { e ->
+                    tracker.track(ClinicEvents.PaymentFailed(source, method.trackName(), e.toFailureReason()))
                     _state.update { it.copy(busy = false) }
                     onFailure(failure(e, Res.string.clinicFinancePaymentFailed))
                 },
@@ -601,6 +615,13 @@ class ClinicFinanceViewModel(
                 MarkPaidBody(sheet.method.wire, sheet.memo.trim().ifEmpty { null }),
             ).fold(
                 {
+                    tracker.track(
+                        ClinicEvents.InstallmentStatusChanged(
+                            "paid",
+                            sheet.method.trackName(),
+                            amountBucket(sheet.row.amountMinor, sheet.row.currency),
+                        ),
+                    )
                     _state.update {
                         it.copy(
                             markPaid = null,
@@ -610,6 +631,7 @@ class ClinicFinanceViewModel(
                     load()
                 },
                 { e ->
+                    tracker.track(ClinicEvents.InstallmentStatusFailed("paid", e.toFailureReason()))
                     _state.update {
                             s ->
                         s.copy(
@@ -634,6 +656,11 @@ class ClinicFinanceViewModel(
         _state.update { it.copy(installmentMenu = null, busy = true, banner = null) }
         viewModelScope.launch {
             val r = repo.setInstallmentStatus(clinic.clinicId, row.id, status)
+            val word = status.lowercase()
+            tracker.track(
+                r.exceptionOrNull()?.let { ClinicEvents.InstallmentStatusFailed(word, it.toFailureReason()) }
+                    ?: ClinicEvents.InstallmentStatusChanged(word, null, amountBucket(row.amountMinor, row.currency)),
+            )
             _state.update {
                 it.copy(
                     busy = false,
@@ -653,6 +680,10 @@ class ClinicFinanceViewModel(
         _state.update { it.copy(busy = true, banner = null) }
         viewModelScope.launch {
             val r = repo.notifyInstallment(clinic.clinicId, row.id)
+            tracker.track(
+                r.exceptionOrNull()?.let { ClinicEvents.InstallmentReminderFailed(it.toFailureReason()) }
+                    ?: ClinicEvents.InstallmentReminderSent,
+            )
             _state.update {
                 it.copy(
                     busy = false,
@@ -754,6 +785,13 @@ class ClinicFinanceViewModel(
                 ),
             ).fold(
                 {
+                    tracker.track(
+                        ClinicEvents.FinancialRecordCreated(
+                            sheet.type.lowercase(),
+                            hasPlan = sheet.plan != null,
+                            amountBucket = amountBucket(amount.takeIf { sheet.plan == null }, currency),
+                        ),
+                    )
                     _state.update {
                         it.copy(
                             record = null,
@@ -764,6 +802,7 @@ class ClinicFinanceViewModel(
                 },
                 {
                         e ->
+                    tracker.track(ClinicEvents.FinancialRecordFailed(sheet.type.lowercase(), e.toFailureReason()))
                     _state.update {
                             s ->
                         s.copy(

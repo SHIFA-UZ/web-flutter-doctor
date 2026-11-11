@@ -2814,6 +2814,8 @@
     <string name="uploadingFile">Fayl yuklanmoqda...</string>
     <string name="upperJaw">Yuqori jag'</string>
     <string name="usa">AQSH</string>
+    <string name="usageData">Foydalanish ma'lumotlarini ulashish</string>
+    <string name="usageDataHint">Ilovadan qanday foydalanilishini ism, xabar va tibbiy ma'lumotlarsiz ulashib, uni yaxshilashimizga yordam beradi.</string>
     <string name="useBiometrics">Face ID / barmoq izidan foydalanish</string>
     <string name="useEndAppointmentToSave">Barcha hujjatlarni saqlash uchun "Uchrashuvni tugatish" tugmasidan foydalaning</string>
     <string name="useEndDate">Tugash sanasidan foydalanish (aks holda davomiylik)</string>

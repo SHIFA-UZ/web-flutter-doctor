@@ -20,6 +20,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.chat.ChatRepository
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ChatEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.failedToStartConversation
 import shifa.doctor.stopAll
@@ -80,12 +82,14 @@ class PatientChatViewModelTest {
     @Test
     fun `a refused start says so and gives up`() {
         status = HttpStatusCode.BadRequest
-        val classToTest = PatientChatViewModel(11, repo).also { created += it }
+        val tracker = RecordingTracker()
+        val classToTest = PatientChatViewModel(11, repo, tracker).also { created += it }
         settle { classToTest.state.value.failed != null }
         assertThat(classToTest.state.value.failed?.text).isEqualTo(Res.string.failedToStartConversation)
         assertThat(classToTest.state.value.failed?.requestId).isEqualTo("req-7")
         assertThat(classToTest.state.value.conversation).isNull()
         // The screen says it, only while it's still there.
         assertThat(ShellNotice.pending.value).isNull()
+        assertThat(tracker.events).containsExactly(ChatEvents.ChatConversationStartFailed("validation", "patient"))
     }
 }

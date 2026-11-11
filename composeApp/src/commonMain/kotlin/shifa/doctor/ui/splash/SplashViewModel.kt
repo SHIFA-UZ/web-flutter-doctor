@@ -10,12 +10,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.config.BootGate
 import shifa.doctor.data.config.PublicConfigRepository
 import shifa.doctor.data.session.Session
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
 
 sealed interface SplashUiState {
     /** The brand animation; the checks run underneath. */
@@ -46,6 +50,7 @@ class SplashViewModel(
     private val sessions: SessionRepository = sessionRepository,
     private val language: () -> String = { languageStorage.language.value.backendCode },
     private val splashLimitMs: Long = SPLASH_LIMIT_MS,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow<SplashUiState>(SplashUiState.Loading)
     val state: StateFlow<SplashUiState> = _state.asStateFlow()
@@ -75,7 +80,12 @@ class SplashViewModel(
             val gate =
                 coroutineScope {
                     // Launch is never blocked by the check: a failure or timeout counts as no gate (flow §6).
-                    val gate = async { bootGate(language()).getOrDefault(BootGate.None) }
+                    val gate =
+                        async {
+                            bootGate(language())
+                                .onFailure { tracker.track(AuthEvents.BootGateFailed(it.toFailureReason())) }
+                                .getOrDefault(BootGate.None)
+                        }
                     if (firstRun) withTimeoutOrNull(splashLimitMs) { skipped.await() }
                     gate.await()
                 }
@@ -85,6 +95,8 @@ class SplashViewModel(
                     is BootGate.Maintenance -> SplashUiState.Maintenance(gate.message)
                     BootGate.None -> SplashUiState.Finished(sessions.restore())
                 }
+            val shown = if (gate is BootGate.Update) "update" else "maintenance"
+            if (gate != BootGate.None) tracker.track(AuthEvents.BootGateShown(shown, isRetry = !firstRun))
         }
     }
 }

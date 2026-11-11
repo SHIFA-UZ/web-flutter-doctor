@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.config.PublicConfigRepository
 import shifa.doctor.data.config.publicConfigRepository
 import shifa.doctor.data.model.ApiException
@@ -17,6 +18,10 @@ import shifa.doctor.data.speech.TranscriptionRepository
 import shifa.doctor.data.speech.transcriptionRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.durationBucket
+import shifa.doctor.data.tracking.events.VisitEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
 import shifa.doctor.generated.resources.errorRecordingVoice
@@ -56,6 +61,7 @@ class Dictation(
     private val config: PublicConfigRepository = publicConfigRepository,
     private val language: () -> AppLanguage = { languageStorage.language.value },
     private val now: () -> Instant = ::currentInstant,
+    private val tracker: Tracker = Tracking,
 ) {
     private val _state = MutableStateFlow(DictationState())
     val state: StateFlow<DictationState> = _state.asStateFlow()
@@ -64,13 +70,31 @@ class Dictation(
     private var last: Pair<String, ByteArray>? = null
     private var lastId: String? = null
 
-    /** The microphone was refused (flow 05/05 §6). */
-    fun denied() = _state.update { it.copy(banner = CodeBanner(Res.string.microphonePermissionDenied)) }
+    /** The microphone was refused for [field] (flow 05/05 §6). */
+    fun denied(field: String) {
+        tracker.track(VisitEvents.DictationMicDenied(fieldKind(field)))
+        _state.update { it.copy(banner = CodeBanner(Res.string.microphonePermissionDenied)) }
+    }
 
     /** Starts recording for [field] (the microphone is allowed); a second field waits for the first. */
     fun start(field: String) {
         if (_state.value.field != null) return
-        if (!recorder.start()) return _state.update { it.copy(banner = CodeBanner(Res.string.errorRecordingVoice)) }
+        if (!recorder.start()) {
+            tracker.track(
+                if (field == SCRIBE_FIELD) {
+                    VisitEvents.ScribeFailed(RECORDING_FAILED, "record")
+                } else {
+                    VisitEvents.DictationFailed(fieldKind(field), RECORDING_FAILED)
+                },
+            )
+            return _state.update { it.copy(banner = CodeBanner(Res.string.errorRecordingVoice)) }
+        }
+        tracker.track(
+            when (field) {
+                SCRIBE_FIELD -> VisitEvents.ScribeRecordingStarted
+                else -> VisitEvents.DictationStarted(fieldKind(field))
+            },
+        )
         val started = now()
         _state.update {
             it.copy(field = field, transcribing = false, banner = null, reportable = null, level = 0f, seconds = 0)
@@ -91,7 +115,16 @@ class Dictation(
 
     /** ✕: the recording is dropped, nothing is added. */
     fun cancel() {
+        val field = _state.value.field
         if (_state.value.transcribing) return
+        if (field != null) {
+            tracker.track(
+                when (field) {
+                    SCRIBE_FIELD -> VisitEvents.ScribeRecordingCancelled
+                    else -> VisitEvents.DictationCancelled(fieldKind(field))
+                },
+            )
+        }
         ticking?.cancel()
         recorder.cancel()
         _state.update { DictationState() }
@@ -109,10 +142,21 @@ class Dictation(
             val audio = recorder.stop()
             if (audio == null) {
                 // The recorder gave nothing back: a failed recording, not silence (chat says the same).
+                tracker.track(VisitEvents.DictationFailed(fieldKind(field), RECORDING_FAILED))
                 return@launch _state.update { DictationState(banner = CodeBanner(Res.string.errorRecordingVoice)) }
             }
             val result = repo.transcribe(audio, language(), id)
             val transcript = result.getOrNull()
+            tracker.track(
+                if (transcript == null) {
+                    VisitEvents.DictationFailed(
+                        fieldKind(field),
+                        result.exceptionOrNull()?.toFailureReason() ?: "client",
+                    )
+                } else {
+                    VisitEvents.DictationTranscribed(fieldKind(field), !transcript.empty)
+                },
+            )
             if (transcript != null && !transcript.empty) {
                 append(field, transcript.text)
                 last = transcript.text to audio
@@ -151,8 +195,10 @@ class Dictation(
             val audio = recorder.stop()
             if (audio == null) {
                 // The recorder gave nothing back: a failed recording, not silence (chat says the same).
+                tracker.track(VisitEvents.ScribeFailed(RECORDING_FAILED, "record"))
                 return@launch _state.update { DictationState(banner = CodeBanner(Res.string.errorRecordingVoice)) }
             }
+            tracker.track(VisitEvents.ScribeRecordingFinished(durationBucket(recorder.lastDurationSeconds.toLong())))
             val banner = process(audio, id)
             _state.update { DictationState(banner = banner) }
         }
@@ -169,6 +215,10 @@ class Dictation(
         scope.launch {
             val result = repo.report(text, language(), audio, lastId)
             val e = result.exceptionOrNull()
+            when {
+                e == null -> tracker.track(VisitEvents.DictationReported)
+                e !is ApiException.NotFound -> tracker.track(VisitEvents.DictationReportFailed(e.toFailureReason()))
+            }
             _state.update {
                 when {
                     e == null -> it.copy(banner = CodeBanner(Res.string.transcriptionReportThanks, error = false))
@@ -207,8 +257,25 @@ class Dictation(
     private companion object {
         val TICK = 60.milliseconds
         val FAILED = Res.string.transcriptionFailed
+        const val RECORDING_FAILED = "recording_failed"
     }
 }
+
+/** The field the visit's AI scribe records under, in a Dictation of its own (its events are the scribe's). */
+const val SCRIBE_FIELD = "scribe"
+
+/**
+ * What kind of field [field] is, for tracking: the screens' field keys are fixed words except a form's, which is its
+ * label (never sent).
+ */
+private fun fieldKind(field: String): String =
+    when {
+        field == SCRIBE_FIELD -> "scribe"
+        field.startsWith("soap-") -> "soap"
+        field == "free" -> "free_notes"
+        field == "dental-notes" -> "dental_notes"
+        else -> "form"
+    }
 
 /** A transcript added to [text] (02 §7.2): a space between, unless the text is empty or already ends in one. */
 fun appendTranscript(

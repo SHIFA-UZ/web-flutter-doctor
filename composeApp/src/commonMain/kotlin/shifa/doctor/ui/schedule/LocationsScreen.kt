@@ -34,12 +34,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.locations.LocationsRepository
 import shifa.doctor.data.locations.locationsRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.DoctorLocation
 import shifa.doctor.data.model.LocationRequest
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addLocation
 import shifa.doctor.generated.resources.cancel
@@ -164,6 +168,7 @@ data class LocationsUiState(
  */
 class LocationsViewModel(
     private val repo: LocationsRepository = locationsRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(LocationsUiState())
     val state: StateFlow<LocationsUiState> = _state.asStateFlow()
@@ -215,6 +220,9 @@ class LocationsViewModel(
         viewModelScope.launch {
             repo.save(draft.id, draft.request()).fold(
                 onSuccess = { _ ->
+                    tracker.track(
+                        CalendarEvents.PracticeLocationSaved(draft.id == null, draft.isPrimary, draft.latitude != null),
+                    )
                     _state.update {
                         it.copy(
                             saving = false,
@@ -227,6 +235,7 @@ class LocationsViewModel(
                     load()
                 },
                 onFailure = { e ->
+                    tracker.track(CalendarEvents.PracticeLocationSaveFailed(e.toFailureReason(), draft.id == null))
                     _state.update {
                         it.copy(
                             saving = false,
@@ -249,6 +258,7 @@ class LocationsViewModel(
         viewModelScope.launch {
             repo.delete(id).fold(
                 onSuccess = {
+                    tracker.track(CalendarEvents.PracticeLocationDeleted)
                     _state.update {
                         it.copy(
                             saving = false,
@@ -263,8 +273,12 @@ class LocationsViewModel(
                 },
                 onFailure = { e ->
                     // One 409 for "only one", "has rules" and "has appointments" (BE-34): one message names all three.
+                    val inUse = e is ApiException && e.status == 409
+                    tracker.track(
+                        CalendarEvents.PracticeLocationDeleteFailed(if (inUse) "in_use" else e.toFailureReason()),
+                    )
                     val text =
-                        if (e is ApiException && e.status == 409) {
+                        if (inUse) {
                             Res.string.locationDeleteBlocked
                         } else {
                             e.toUserMessage(

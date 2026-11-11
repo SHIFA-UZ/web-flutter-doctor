@@ -41,6 +41,7 @@ import kotlinx.coroutines.yield
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.endpointMissing
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinics.clinicsRepository
 import shifa.doctor.data.finance.FinanceRepository
@@ -56,6 +57,11 @@ import shifa.doctor.data.model.TreatmentPlanDetail
 import shifa.doctor.data.model.TreatmentPlanSummary
 import shifa.doctor.data.model.mayManageFinance
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.amountBucket
+import shifa.doctor.data.tracking.events.ClinicEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.data.treatmentplans.TreatmentPlanPdf
 import shifa.doctor.data.treatmentplans.TreatmentPlanPdfData
 import shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels
@@ -267,6 +273,7 @@ data class ClinicPlansUiState(
 class ClinicPlansViewModel(
     private val clinicId: Long,
     private val repo: TreatmentPlansRepository = treatmentPlansRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ClinicPlansUiState())
     val state: StateFlow<ClinicPlansUiState> = _state.asStateFlow()
@@ -342,6 +349,7 @@ class ClinicPlansViewModel(
         viewModelScope.launch {
             repo.setStatus(sheet.plan.id, status.wire()).fold(
                 {
+                    tracker.track(ClinicEvents.PlanStatusChanged(status.trackName(), "list"))
                     _state.update {
                         it.copy(
                             busy = false,
@@ -353,6 +361,7 @@ class ClinicPlansViewModel(
                 },
                 {
                         e ->
+                    tracker.track(ClinicEvents.PlanStatusFailed(status.trackName(), "list", e.toFailureReason()))
                     _state.update {
                         it.copy(
                             busy = false,
@@ -700,6 +709,7 @@ class PlanDetailViewModel(
     },
     // The language the server renders in (BE-01): the app's, as the backend names it (Cyrillic Uzbek is `uz`).
     private val language: () -> String = { languageStorage.language.value.backendCode },
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PlanDetailUiState())
     val state: StateFlow<PlanDetailUiState> = _state.asStateFlow()
@@ -766,6 +776,7 @@ class PlanDetailViewModel(
         viewModelScope.launch {
             repo.setStatus(planId, status.wire()).fold(
                 {
+                    tracker.track(ClinicEvents.PlanStatusChanged(status.trackName(), "detail"))
                     _state.update {
                         it.copy(
                             busy = false,
@@ -776,6 +787,7 @@ class PlanDetailViewModel(
                     load()
                 },
                 { e ->
+                    tracker.track(ClinicEvents.PlanStatusFailed(status.trackName(), "detail", e.toFailureReason()))
                     _state.update {
                         it.copy(
                             busy = false,
@@ -829,6 +841,13 @@ class PlanDetailViewModel(
                 ),
             ).fold(
                 {
+                    tracker.track(
+                        ClinicEvents.PaymentRecorded(
+                            "plan",
+                            sheet.method.trackName(),
+                            amountBucket(amount, plan.currency),
+                        ),
+                    )
                     _state.update {
                         it.copy(
                             pay = null,
@@ -838,6 +857,7 @@ class PlanDetailViewModel(
                     load()
                 },
                 { e ->
+                    tracker.track(ClinicEvents.PaymentFailed("plan", sheet.method.trackName(), e.toFailureReason()))
                     _state.update { s ->
                         s.copy(
                             pay =
@@ -872,14 +892,21 @@ class PlanDetailViewModel(
         viewModelScope.launch {
             val server = repo.pdf(planId, language())
             val failure = server.exceptionOrNull()?.takeIf { !it.endpointMissing }
+            val fromServer = server.getOrNull()?.takeIf { it.isNotEmpty() }
             val bytes =
-                server.getOrNull()?.takeIf { it.isNotEmpty() } ?: if (failure == null) {
+                fromServer ?: if (failure == null) {
                     // Let "Preparing PDF…" draw before the pages are laid out.
                     yield()
                     runCatching { makePdf(data(detail), labels) }.getOrNull()?.takeIf { it.isNotEmpty() }
                 } else {
                     null
                 }
+            tracker.track(
+                when {
+                    bytes == null -> ClinicEvents.PlanPdfExportFailed(failure?.toFailureReason() ?: "render_failed")
+                    else -> ClinicEvents.PlanPdfExported(if (fromServer != null) "server" else "app")
+                },
+            )
             _state.update {
                 it.copy(
                     exporting = false,

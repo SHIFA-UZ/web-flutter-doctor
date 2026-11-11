@@ -10,12 +10,16 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.SessionEndReason
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.session.Session
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accountDeleted
 import shifa.doctor.generated.resources.accountDisabledBanner
@@ -54,6 +58,7 @@ data class LoginUiState(
 class LoginViewModel(
     private val auth: AuthRepository = AuthRepository(),
     private val sessions: SessionRepository = sessionRepository,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     // Why the last session ended by itself, shown once (flow 01/14).
     private val _state =
@@ -76,12 +81,17 @@ class LoginViewModel(
         val idError = Res.string.enterEmailOrPhone.takeIf { s.identifier.isBlank() }
         val pwError = Res.string.minimum6Characters.takeIf { s.password.trim().length < MIN_PASSWORD }
         if (idError != null || pwError != null) {
+            tracker.track(AuthEvents.SignInFailed(METHOD, "invalid_input"))
             _state.update { it.copy(identifierError = idError, passwordError = pwError) }
             return
         }
         _state.update { it.copy(loading = true, banner = null) }
         viewModelScope.launch {
             val result = auth.login(s.identifier, s.password).mapCatching { sessions.signIn(it).getOrThrow() }
+            result.fold(
+                { tracker.track(AuthEvents.SignInSucceeded(METHOD, AuthEvents.role(it))) },
+                { tracker.track(AuthEvents.SignInFailed(METHOD, failureReason(it))) },
+            )
             _state.update {
                 result.fold(
                     onSuccess = { session -> it.copy(loading = false, signedIn = session) },
@@ -108,6 +118,15 @@ class LoginViewModel(
             else -> e.toUserMessage(Res.string.somethingWentWrong)
         }
 
+    // The same cases as [errorText], as fixed words.
+    private fun failureReason(e: Throwable): String =
+        when {
+            e is ApiException.Unauthorized || e is ApiException.ValidationError -> "invalid_credentials"
+            e is ApiException.Forbidden && e.code != "ACCOUNT_DISABLED" -> "not_doctor_account"
+            e is IllegalArgumentException -> "unusable_token"
+            else -> e.toFailureReason()
+        }
+
     private fun reasonBanner(reason: SessionEndReason) =
         LoginBanner(
             when (reason) {
@@ -124,5 +143,6 @@ class LoginViewModel(
 
     private companion object {
         const val MIN_PASSWORD = 6
+        const val METHOD = "password"
     }
 }

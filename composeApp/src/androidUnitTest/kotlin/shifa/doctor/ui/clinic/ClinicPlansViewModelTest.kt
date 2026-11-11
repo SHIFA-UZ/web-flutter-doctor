@@ -20,6 +20,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.finance.FinanceRepository
 import shifa.doctor.data.model.PlanStatus
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.ClinicEvents
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicTreatmentPlanExportPdfFailed
@@ -29,6 +31,7 @@ import shifa.doctor.stopAll
 class ClinicPlansViewModelTest {
     private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var detailMissing = false
+    private var statusFails = false
     private val plan = """{"id":501,"clinicId":2,"patientId":12,"patientName":"Jasur","title":"Molars","status":"ACTIVE","totalMinor":160000000,"paidMinor":100000000,"owedMinor":60000000,"currency":"UZS","visitCount":2,"linesCompletedCount":1,"linesTotalCount":3}"""
 
     // BE-01's `GET /treatment-plans/{id}/pdf`: missing (404, today's production) unless a test serves it.
@@ -51,6 +54,8 @@ class ClinicPlansViewModelTest {
                         ok(
                             """[{"appointmentId":101,"startAt":"2026-11-04T05:00:00Z","endAt":"2026-11-04T05:30:00Z","status":"COMPLETED","doctorProfileId":21,"doctorName":"Aziza","services":["Root canal"],"timing":"PAST"}]""",
                         )
+                    path == "treatment-plans/501/status" && statusFails ->
+                        respond("""{"status":500,"code":"INTERNAL"}""", HttpStatusCode.InternalServerError, json)
                     path == "treatment-plans/501/status" -> ok(plan)
                     path == "treatment-plans/501/detail" && detailMissing ->
                         respond(
@@ -242,5 +247,62 @@ class ClinicPlansViewModelTest {
         settle { vm.state.value.pdf != null }
         assertThat(vm.state.value.pdf!!.bytes.decodeToString()).isEqualTo("%PDF-server")
         assertThat(calls).contains("GET treatment-plans/501/pdf?lang=ru")
+    }
+
+    @Test
+    fun `a status change is tracked by its outcome and where it was made`() {
+        val tracker = RecordingTracker()
+        val vm = ClinicPlansViewModel(2, TreatmentPlansRepository { client }, tracker).also { created += it }
+        settle { vm.state.value.plans != null }
+        val p = vm.state.value.plans!!.single()
+        vm.statusSheet(StatusSheet(p))
+        vm.setStatus(PlanStatus.OnHold)
+        settle { tracker.events.size == 1 && !vm.state.value.busy }
+        statusFails = true
+        vm.statusSheet(StatusSheet(p))
+        vm.setStatus(PlanStatus.Completed)
+        settle { tracker.events.size == 2 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ClinicEvents.PlanStatusChanged("on_hold", "list"),
+                ClinicEvents.PlanStatusFailed("completed", "list", "server"),
+            ).inOrder()
+    }
+
+    @Test
+    fun `the plan's payment and PDF are tracked by outcome, the amount as a range`() {
+        val tracker = RecordingTracker()
+        var bytes: ByteArray? = byteArrayOf(37, 80)
+        val vm =
+            PlanDetailViewModel(
+                501,
+                2,
+                TreatmentPlansRepository { client },
+                FinanceRepository { client },
+                { _, _ -> bytes },
+                language = { "en" },
+                tracker = tracker,
+            ).also { created += it }
+        vm.load()
+        settle { vm.state.value.detail != null }
+        vm.openPay()
+        vm.editPay { it.copy(amount = "200 000", method = PayMethod.Transfer) }
+        vm.savePay()
+        settle { vm.state.value.pay == null }
+        val data = { d: shifa.doctor.data.model.TreatmentPlanDetail ->
+            shifa.doctor.data.treatmentplans.TreatmentPlanPdfData(d, "Clinic", "06.11.2026 10:00", null, null, null)
+        }
+        vm.exportPdf(data, shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels(), "2026-11-06")
+        settle { vm.state.value.pdf != null }
+        vm.pdfShared(true)
+        bytes = null
+        vm.exportPdf(data, shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels(), "2026-11-06")
+        settle { tracker.events.size == 3 }
+        assertThat(tracker.events)
+            .containsExactly(
+                ClinicEvents.PaymentRecorded("plan", "transfer", "100k-500k"),
+                ClinicEvents.PlanPdfExported("app"),
+                ClinicEvents.PlanPdfExportFailed("render_failed"),
+            ).inOrder()
     }
 }

@@ -31,6 +31,8 @@ import shifa.doctor.data.schedule.RangeProblem
 import shifa.doctor.data.schedule.ScheduleRepository
 import shifa.doctor.data.schedule.TimeRange
 import shifa.doctor.data.storage.ActiveLocationStorage
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.CalendarEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.scheduleSaved
 import shifa.doctor.generated.resources.scheduleSavedPeriodFailed
@@ -51,6 +53,7 @@ class ScheduleViewModelTest {
     private var hold1 = CompletableDeferred(Unit)
     private var holdPut = CompletableDeferred(Unit)
     private val store = ActiveLocationStorage(MapSettings())
+    private val tracker = RecordingTracker()
     private val engine =
         MockEngine { req ->
             val json = headersOf(HttpHeaders.ContentType, "application/json")
@@ -140,6 +143,7 @@ class ScheduleViewModelTest {
                 {
                     99L
                 },
+                tracker,
             )
         created += vm
         vm.load()
@@ -333,5 +337,50 @@ class ScheduleViewModelTest {
         val classToTest = opened()
         assertThat(classToTest.state.value.loadError).isNotNull()
         assertThat(classToTest.state.value.saved).isNull()
+    }
+
+    @Test
+    fun `saving the schedule is tracked by its outcome, a failed period with its stage`() {
+        val classToTest = opened()
+        classToTest.openDay(2)
+        classToTest.addRange()
+        classToTest.startPeriod()
+        periodFails = true
+        classToTest.save()
+        settle { classToTest.state.value.banner != null }
+        periodFails = false
+        classToTest.save()
+        settle { classToTest.state.value.closed }
+        assertThat(tracker.events)
+            .containsExactly(
+                CalendarEvents.ScheduleSaveFailed("validation", "period"),
+                CalendarEvents.ScheduleSaved(
+                    hasHoursChanged = false,
+                    hasPeriod = true,
+                    isFirstSetup = false,
+                    workingDays = 2,
+                ),
+            ).inOrder()
+    }
+
+    @Test
+    fun `extra hours and discarded edits are tracked`() {
+        val classToTest = opened()
+        classToTest.openDateHours()
+        classToTest.editDateHours { it.copy(from = LocalDate(2026, 12, 27), to = LocalDate(2026, 12, 29)) }
+        classToTest.addDateHours()
+        settle { classToTest.state.value.dates.isNotEmpty() }
+        classToTest.deleteDateHours(7)
+        settle { classToTest.state.value.dates.isEmpty() }
+        classToTest.openDay(3)
+        classToTest.addRange()
+        classToTest.back()
+        classToTest.discard()
+        assertThat(tracker.events)
+            .containsExactly(
+                CalendarEvents.ScheduleDateHoursAdded(3),
+                CalendarEvents.ScheduleDateHoursDeleted,
+                CalendarEvents.ScheduleChangesDiscarded,
+            ).inOrder()
     }
 }

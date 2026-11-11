@@ -11,10 +11,15 @@ import kotlinx.coroutines.launch
 import shifa.doctor.data.model.AppNotification
 import shifa.doctor.data.model.RemoteCareTask
 import shifa.doctor.data.model.TaskStatus
+import shifa.doctor.data.notifications.NotificationKind
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.tasks.TasksRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.HomeEvents
 import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.notifications.NotificationOpener
+import shifa.doctor.ui.notifications.trackTarget
 import shifa.doctor.utils.PracticeClock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
@@ -70,6 +75,7 @@ class HomeAttentionViewModel(
     private val notifications: NotificationsRepository = NotificationsRepository(),
     private val tasks: TasksRepository = TasksRepository(),
     private val opener: NotificationOpener = NotificationOpener(),
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeAttentionUiState())
     val state: StateFlow<HomeAttentionUiState> = _state.asStateFlow()
@@ -195,11 +201,22 @@ class HomeAttentionViewModel(
         viewModelScope.launch {
             // Nothing to open here (no ids, no screen yet): the inbox (flow 02/03 §5).
             val to = opener.go(n, staff, clock) ?: NotificationGo.Inbox.takeIf { !opener.slow(n, staff) }
+            val source = if (read) "home_attention" else "home_activity"
+            tracker.track(
+                HomeEvents.NotificationOpened(
+                    NotificationKind.trackType(n.type) ?: "other",
+                    to?.trackTarget ?: "none",
+                    source,
+                ),
+            )
             _state.update { it.copy(opening = null, go = to ?: it.go) }
         }
     }
 
-    fun openTask(t: RemoteCareTask) = _state.update { it.copy(go = NotificationGo.Task(t.id)) }
+    fun openTask(t: RemoteCareTask) {
+        tracker.track(HomeEvents.HomeAttentionTaskOpened)
+        _state.update { it.copy(go = NotificationGo.Task(t.id)) }
+    }
 
     fun opened() = _state.update { it.copy(go = null) }
 

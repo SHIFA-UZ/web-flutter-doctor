@@ -29,9 +29,9 @@ import shifa.doctor.ui.widgets.ShifaSwitch
 import shifa.doctor.utils.tr
 
 /**
- * Debug menu (CORE-08), debug builds only, English (not translated): demo data, the development backend, and the
- * native spikes and, signed in, push checks ([DebugPushSection]). Switching the backend signs out, because a token from
- * one backend means nothing on the other.
+ * Debug menu (CORE-08), debug builds only, English (not translated): demo data, the development backend, the native
+ * spikes, tracking ([DebugTrackingSection]) and, signed in, push checks ([DebugPushSection]). Switching the backend
+ * signs out, because a token from one backend means nothing on the other.
  */
 @Composable
 fun DebugMenuScreen(
@@ -73,6 +73,7 @@ fun DebugMenuScreen(
                 onSignOut = onSignOut,
                 extra = {
                     extra()
+                    DebugTrackingSection()
                     if (session != null) DebugPushSection()
                 },
             )

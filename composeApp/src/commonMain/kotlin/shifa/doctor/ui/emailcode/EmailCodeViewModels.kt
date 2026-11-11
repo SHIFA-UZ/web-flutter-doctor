@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toFailureReason
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.OtpCooldown
@@ -18,6 +19,10 @@ import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.session.Session
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.tracking.Tracker
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.events.AuthEvents
+import shifa.doctor.data.tracking.trackName
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.enterEmail
 import shifa.doctor.generated.resources.failedToSendCode
@@ -66,6 +71,7 @@ class EmailEntryViewModel(
     initialEmail: String = "",
     private val auth: AuthRepository = AuthRepository(),
     private val cooldown: OtpCooldown = otpCooldown,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     // Back from the code screen keeps the address (flow 01/03 §2).
     private val _state = MutableStateFlow(EmailEntryUiState(initialEmail))
@@ -79,7 +85,10 @@ class EmailEntryViewModel(
         val s = _state.value
         if (s.loading) return
         val (email, error) = address(mode, s.email)
-        if (error != null) return _state.update { it.copy(error = error) }
+        if (error != null) {
+            tracker.track(AuthEvents.AuthCodeFailed(mode.trackName(), isResend = false, "invalid_input"))
+            return _state.update { it.copy(error = error) }
+        }
         // A code sent less than a minute ago is still valid: go on without a second e-mail.
         if (cooldown.secondsLeft(email, mode.name) > 0) {
             return _state.update { it.copy(sentTo = email) }
@@ -88,6 +97,7 @@ class EmailEntryViewModel(
         viewModelScope.launch {
             val result = send(auth, mode, email)
             result.onSuccess { hint -> cooldown.start(email, mode.name, hint) }
+            tracker.trackSent(mode, isResend = false, result)
             _state.update {
                 result.fold(
                     onSuccess = { _ -> it.copy(loading = false, sentTo = email) },
@@ -127,6 +137,7 @@ class CodeViewModel(
     private val auth: AuthRepository = AuthRepository(),
     private val sessions: SessionRepository = sessionRepository,
     private val cooldown: OtpCooldown = otpCooldown,
+    private val tracker: Tracker = Tracking,
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(
@@ -166,6 +177,11 @@ class CodeViewModel(
                     auth.verifyEmailOtp(s.email, s.code)
                 }
             val result = token.mapCatching { sessions.signIn(it).getOrThrow() }
+            val method = if (mode == EmailCodeMode.SmsSignIn) "sms_code" else "email_code"
+            result.fold(
+                { tracker.track(AuthEvents.SignInSucceeded(method, AuthEvents.role(it))) },
+                { tracker.track(AuthEvents.SignInFailed(method, verifyReason(it))) },
+            )
             _state.update {
                 result.fold(
                     onSuccess = { session -> it.copy(loading = false, signedIn = session) },
@@ -190,6 +206,7 @@ class CodeViewModel(
         viewModelScope.launch {
             val result = send(auth, mode, s.email)
             result.onSuccess { hint -> cooldown.start(s.email, mode.name, hint) }
+            tracker.trackSent(mode, isResend = true, result)
             _state.update {
                 result.fold(
                     onSuccess = { hint ->
@@ -287,6 +304,34 @@ private fun sendError(
     }
 
 private const val SERVICE_UNAVAILABLE = 503
+
+/** `auth_code_sent` or `auth_code_failed`, with [sendError]'s cases as fixed words. */
+private fun Tracker.trackSent(
+    mode: EmailCodeMode,
+    isResend: Boolean,
+    result: Result<String?>,
+) = result.fold(
+    { hint -> track(AuthEvents.AuthCodeSent(mode.trackName(), isResend, isEmailFallback = hint != null)) },
+    { e ->
+        val reason =
+            when {
+                mode == EmailCodeMode.SmsSignIn && e is ApiException && e.status == SERVICE_UNAVAILABLE ->
+                    "sms_unavailable"
+                e is ApiException.NotFound -> "no_account"
+                else -> e.toFailureReason()
+            }
+        track(AuthEvents.AuthCodeFailed(mode.trackName(), isResend, reason))
+    },
+)
+
+// [verifyError]'s cases as fixed words.
+private fun verifyReason(e: Throwable): String =
+    when {
+        e is ApiException.Unauthorized || e is ApiException.ValidationError || e is ApiException.NotFound ->
+            "wrong_code"
+        e is IllegalArgumentException -> "unusable_token"
+        else -> e.toFailureReason()
+    }
 
 private fun verifyError(e: Throwable): StringResource =
     when {

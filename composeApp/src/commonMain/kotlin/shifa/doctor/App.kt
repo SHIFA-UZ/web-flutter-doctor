@@ -38,6 +38,9 @@ import shifa.doctor.data.push.pushRegistration
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.tracking.TrackScreen
+import shifa.doctor.data.tracking.Tracking
+import shifa.doctor.data.tracking.trackingSession
 import shifa.doctor.ui.applock.LockScreen
 import shifa.doctor.ui.auth.LanguageSwitch
 import shifa.doctor.ui.auth.LocalLanguageSwitch
@@ -57,6 +60,7 @@ import shifa.doctor.ui.splash.SplashScreen
 import shifa.doctor.ui.theme.ShifaTheme
 import shifa.doctor.ui.widgets.LocalActivity
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.TrackScreenView
 import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.ProvideAppLocale
@@ -93,6 +97,9 @@ fun App() {
             sessionRepository.enforce()
         }
     }
+    // Tracking (A5): identify, session_started / session_ended and the reset; the language on every event.
+    LaunchedEffect(Unit) { trackingSession.start() }
+    LaunchedEffect(language) { Tracking.register("app_language", language.tag) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
         sessionRepository.onForeground() // LOCK-02: expiry and 30 days of inactivity, before the lock asks for a PIN
         appLockRepository.onForeground()
@@ -109,6 +116,7 @@ fun App() {
                 // Debug menu → Demo data or Development backend restarts everything from the splash.
                 val demo by DemoMode.enabled.collectAsState()
                 val backend by BackendChoice.current.collectAsState()
+                LaunchedEffect(demo, backend) { Tracking.refresh() } // demo data and the dev backend are never tracked
                 key(demo, backend) { ScopedViewModels { AppScreens() } }
             }
         }
@@ -184,6 +192,17 @@ private fun AppScreens() {
     // expiry, 401), not at every start, when the session is still being restored. The phones keep them, encrypted.
     LaunchedEffect(Unit) {
         if (platformName == "web") sessionRepository.ended.collect { chatSessionStore.forgetAll() }
+    }
+    // A6: a screen view each time a signed-out screen is shown. The shell sends its own, registration its own (B1, with
+    // its step); the debug menu none. The code screens say their mode, never the address.
+    when (val s = screen) {
+        Screen.Splash -> TrackScreenView(TrackScreen.Splash)
+        Screen.SignIn -> TrackScreenView(TrackScreen.SignIn)
+        is Screen.EmailEntry -> TrackScreenView(TrackScreen.EmailEntry, "mode" to s.mode, step = s)
+        is Screen.EmailCode -> TrackScreenView(TrackScreen.EmailCode, "mode" to s.mode, step = s)
+        is Screen.ResetPassword -> TrackScreenView(TrackScreen.ResetPassword)
+        Screen.VerifyKey -> TrackScreenView(TrackScreen.VerifyKey)
+        is Screen.Register, Screen.Debug, Screen.Shell -> Unit
     }
     val locked by appLockRepository.locked.collectAsState()
     // Presses and releases are activity (LOCK-02); separate windows (sheets, the lock) track it themselves.
@@ -273,7 +292,10 @@ private fun AppScreens() {
             }
         }
         // Above everything once the splash is done; what was on screen is kept underneath (flow 01/12 §2).
-        if (locked && session != null && screen != Screen.Splash) ScopedViewModels { LockScreen() }
+        if (locked && session != null && screen != Screen.Splash) {
+            TrackScreenView(TrackScreen.Lock)
+            ScopedViewModels { LockScreen() }
+        }
     }
 }
 

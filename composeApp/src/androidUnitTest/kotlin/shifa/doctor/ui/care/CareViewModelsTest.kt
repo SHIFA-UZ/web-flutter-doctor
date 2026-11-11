@@ -21,6 +21,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.care.CarePartnershipsRepository
 import shifa.doctor.data.care.PartnershipAction
 import shifa.doctor.data.model.PartnershipStatus
+import shifa.doctor.data.tracking.RecordingTracker
+import shifa.doctor.data.tracking.events.PatientsEvents
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.careAccepted
 import shifa.doctor.generated.resources.careInviteExists
@@ -286,5 +288,50 @@ class CareViewModelsTest {
         val gone = PartnershipViewModel(404, repo).also { created += it }
         gone.load()
         settle { gone.state.value.notFound }
+    }
+
+    @Test
+    fun `search, invite, filter, actions and updates are tracked by their outcome, never the text`() {
+        val tracker = RecordingTracker()
+        val find = FindPartnerViewModel(12, repo = repo, tracker = tracker).also { created += it }
+        settle { find.state.value.hits != null }
+        find.specialty("ortho")
+        pause()
+        settle { find.state.value.hits?.size == 1 }
+        find.pick(find.state.value.hits!!.single())
+        inviteConflict = true
+        find.send()
+        settle { find.state.value.banner != null }
+        inviteConflict = false
+        find.send()
+        settle { find.state.value.sent != null }
+
+        val list = PartnershipsViewModel(12, { 9L }, repo, tracker).also { created += it }
+        list.filter(PartnershipFilter.NeedsAnswer)
+        list.filter(PartnershipFilter.NeedsAnswer)
+
+        val detail = PartnershipViewModel(2, repo, tracker).also { created += it }
+        detail.load()
+        settle { detail.state.value.partnership != null }
+        detail.ask(PartnershipAction.Accept)
+        detail.act()
+        settle { detail.state.value.partnership?.status == PartnershipStatus.Active }
+        postFails = true
+        detail.draft("Saw them")
+        detail.post()
+        settle { detail.state.value.banner?.text == Res.string.carePostFailed }
+        postFails = false
+        detail.post()
+        settle { detail.state.value.draft.isEmpty() }
+        assertThat(tracker.events)
+            .containsExactly(
+                PatientsEvents.CarePartnerSearched("1", hasSpecialty = true),
+                PatientsEvents.CareInviteFailed("conflict"),
+                PatientsEvents.CareInviteSent(hasMessage = false),
+                PatientsEvents.CarePartnershipsFiltered("needs_answer"),
+                PatientsEvents.CarePartnershipActed("accept"),
+                PatientsEvents.CareProgressPostFailed("server"),
+                PatientsEvents.CareProgressPosted,
+            ).inOrder()
     }
 }

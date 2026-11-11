@@ -13,6 +13,7 @@ the backend team: [../backend-improvements.md](../backend-improvements.md). Code
 | Design tokens and the UI kit | [design-system.md](design-system.md) |
 | Strings and localization | [strings.md](strings.md) |
 | Appointments and visits (M5) | [visits.md](visits.md) |
+| Product analytics (PostHog tracking) | [tracking/README.md](tracking/README.md) |
 
 ## Decisions
 
@@ -244,6 +245,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | TASK-03 Task details | Done | Pushed details: the info card (name, status, the patient linking to their record, category, input type and label, description, locale dates, duration, progress with Completed / Pending / Missed, "hasn't submitted anything yet"), check-ins newest first with values as written ("120", not "120.0") and missed by the **patient's** clock, a check-in's sheet (submitted in patient time), Cancel Task with its confirm while active (one request, back to the list with "Task cancelled successfully"); 404 "Task not found" vs "Couldn't load task" + Retry; read on open, return and pull (no 15 s poll). The inbox's task rows and "View Result" open it. See tasks.md. |
 | TASK-04 Create task | Done | "Create Remote Care Task": the patient from the shared picker (now also booking's), name, description, category and input type, input label; even spacing (times, start, interval, the day's slots live, orange with how many won't fit) or custom times (sorted, no repeats, 1–15); start date, end date (cleared when the start passes it) or a duration ≥ 1; notes; a sticky Create; inline errors; Back with changes asks; the payload as the spec says, sending the slot count that fits; template prefill with the interval snapped up and said. See tasks.md. |
 | TASK-05 Templates | Done | "Use Templates": the doctor's earlier tasks' settings (no editing exists): category tile, name, "Vital · 3× per day · Numeric", the day's times ("+3 more" past four); skeletons, "No templates yet" + Create Task, "Couldn't load templates" + Retry; a tap opens the form pre-filled (one per tap), a create closes the form and the list onto Tasks, Back returns to the list. Also: `ShifaSwitchRow`, one labelled switch row (the row toggles, the label names it) for the form, Settings and Services. See tasks.md. |
+| TRACK PostHog product analytics | Done (on `feature/posthog-tracking`, not pushed) | Tracking core, Android/iOS/web sinks, identity and session, screen views, debug list, feature events B1–B9, review fixes; 262 events and 71 screen ids, listed from the code in `docs/posthog/05-event-catalogue.md`. Sends only from release builds on the production backend; doctors can opt out in Settings. Open: the owner confirms the UZS money ranges, the legal wording, the GitHub secret and doctor dashboards. See tracking/README.md. |
 
 ## Log
 
@@ -430,3 +432,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-10 · WEB-10 · The web address names the screen (tabs, a patient, a conversation, a task): links and reloads open it.
 - 2026-11-10 · DOCS-04 · Doctors rename, retype and delete documents they uploaded (BE-21).
 - 2026-11-10 · AUDIT · Security, speed and UX audit: https redirect, HSTS and a report-only CSP on the web; file URLs only on the backend's hosts; Intelligence chats leave the browser at session end; pinned CI actions; one tasks read for both counts, patients pages four at a time, start reads in parallel, pictures decoded off the UI thread and kept across re-signed URLs; clinic staff get their zone, no Forms tab, no dead New appointment; a scribe recording is no longer lost by leaving the visit; Enter sends and confirms on the web; feedback that sat off-screen (form editor, clinic sections) is in view. Not in the design: the "Discard recording?" question on leaving a visit, the label for patient files attached before a visit. Backend asks BE-39…43.
+- 2026-11-11 · TRACK · PostHog tracking complete on `feature/posthog-tracking` (stage A, B1–B9, review fixes); event catalogue generated from the code.

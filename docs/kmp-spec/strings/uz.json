@@ -2891,6 +2891,8 @@
   "registrationOwnershipRequired": "Bu email bilan Shifa hisobi allaqachon mavjud. Shu emailga yuborilgan kod bilan tasdiqlang.",
   "privacyAndData": "Maxfiylik va ma'lumotlar",
   "privacyAndDataHint": "Ma'lumotlarni yuklab olish, ruxsatlar, hisobni o'chirish",
+  "usageData": "Foydalanish ma'lumotlarini ulashish",
+  "usageDataHint": "Ilovadan qanday foydalanilishini ism, xabar va tibbiy ma'lumotlarsiz ulashib, uni yaxshilashimizga yordam beradi.",
   "yourData": "Sizning ma'lumotlaringiz",
   "yourDataBody": "Shifa sizning profilingiz, jadvalingiz, qabullaringiz, chat xabarlaringiz hamda siz va bemorlaringiz yuklagan hujjatlarni saqlaydi. Bemor yozuvlari bemorlarga tegishli va tibbiy hujjatlarni saqlash qoidalariga muvofiq saqlanadi.",
   "downloadMyData": "Ma'lumotlarim nusxasini yuklab olish",
