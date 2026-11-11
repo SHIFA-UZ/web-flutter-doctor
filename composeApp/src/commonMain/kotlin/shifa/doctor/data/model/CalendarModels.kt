@@ -70,8 +70,10 @@ sealed interface CalendarEntry {
 
         val isVideo: Boolean get() = kind == VisitKind.Video
 
-        // Video is paid online (or free); an in-person visit only when the patient pays in clinic (a pay-later service).
-        val showsPayment: Boolean get() = isVideo || paymentStatus.equals("PAY_IN_CLINIC", ignoreCase = true)
+        // Video always; an in-person visit whenever the patient pays (online or in clinic), so reception sees a prepaid
+        // visit. One the doctor booked has no payment (NOT_REQUIRED) and shows none.
+        val showsPayment: Boolean get() =
+            isVideo || (!paymentStatus.isNullOrBlank() && !paymentStatus.equals("NOT_REQUIRED", ignoreCase = true))
 
         val cancelled: Boolean get() = status.equals("CANCELLED", ignoreCase = true)
     }

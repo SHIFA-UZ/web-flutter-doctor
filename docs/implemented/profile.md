@@ -295,8 +295,9 @@ app already reads it. Not in the design: the segmented control and its hints fol
   person or by video"), Pay online ("pay online when they book, in person or by video"), Pay in clinic ("pay at the
   visit … only in person, not by video": the backend allows video only for free and pay-now services).
 - **List:** a "Pay in clinic" tag. **Calendar:** an in-person appointment booked that way has payment status
-  `PAY_IN_CLINIC`; its "Pay in clinic" chip shows in the details chips, the compact line and the panel (before, the
-  payment chip showed only for video).
+  `PAY_IN_CLINIC`; its "Pay in clinic" chip shows in the details chips, the compact line and the panel. Every
+  in-person visit with a payment now shows its chip (paid online, pending), so reception doesn't charge a prepaid
+  patient again; one the doctor booked (`NOT_REQUIRED`) shows none. Before, the payment chip showed only for video.
 - **Not built (the user's defaults, 2026-11-11):** clinic catalogue services can't be pay-later (the catalogue item has
   no payment type: a backend change plus Clinic → Services), and nothing marks a pay-in-clinic visit as paid (no
   endpoint).
