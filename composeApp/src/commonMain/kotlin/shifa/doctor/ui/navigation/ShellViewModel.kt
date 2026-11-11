@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import shifa.doctor.data.api.BACKEND_CODE
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.calendar.changed
@@ -31,6 +30,7 @@ import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.AppNotification
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.VisitKind
+import shifa.doctor.data.notifications.NotificationKind
 import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.profile.ProfileRepository
@@ -779,8 +779,8 @@ class ShellViewModel(
         val staff = _state.value.staff
         val mine = ++pushTaps // a later tap wins over a slower earlier one
         viewModelScope.launch {
-            // The push's type only (a backend code, else `other`): the rest of its data names patients.
-            val type = data["type"]?.takeIf { it.isNotBlank() }?.let { if (BACKEND_CODE.matches(it)) it else "other" }
+            // The push's type only (a known backend type, else `other`): the rest of its data names patients.
+            val type = NotificationKind.trackType(data["type"])
             val n = AppNotification.fromPush(data, currentInstant())
             if (n == null) {
                 if (mine == pushTaps) tracker.track(ShellEvents.PushOpened(type, NotificationGo.Inbox.trackTarget))

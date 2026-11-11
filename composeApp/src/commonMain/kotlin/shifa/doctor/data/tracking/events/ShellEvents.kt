@@ -20,7 +20,7 @@ object ShellEvents {
 
     /**
      * A tapped push, once its target is found; the patient app's event and property names (one PostHog project).
-     * [type]: the push's `type` as the backend spells it (`APPOINTMENT_REMINDER`), `other` when it isn't a backend code,
+     * [type]: the push's `type` as the backend spells it (`APPOINTMENT_REMINDER`), `other` when it isn't a known backend type,
      * left out without one; nothing else from its data (it names patients). [routedTo]: `appointment` / `patient` /
      * `document` / `chat` / `partnership` / `task` / `inbox`, or `home` when its appointment is gone.
      */

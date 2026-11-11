@@ -175,7 +175,7 @@ internal fun trackApiSlow(
 }
 
 // The backend's error codes look like `APPOINTMENT_LOCKED_24H`; anything else isn't sent.
-internal val BACKEND_CODE = Regex("[A-Z][A-Z0-9_]{1,39}")
+private val BACKEND_CODE = Regex("[A-Z][A-Z0-9_]{1,39}")
 
 private val BACKEND_HOSTS = setOf(Url(ApiConfig.BASE_URL).host, Url(ApiConfig.DEV_BASE_URL).host)
 

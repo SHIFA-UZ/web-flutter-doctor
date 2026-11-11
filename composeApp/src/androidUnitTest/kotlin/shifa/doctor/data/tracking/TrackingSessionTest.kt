@@ -181,25 +181,6 @@ class TrackingSessionTest {
     }
 
     @Test
-    fun `an identity left by a process that died before its reset goes at the next launch without a session`() =
-        runTest {
-            Tracking.settings.identified = "doctor_7"
-            running(launchToken = null)
-
-            assertThat(sink.calls).containsExactly("reset", "register {app=doctor, app_language=uz}").inOrder()
-            assertThat(Tracking.settings.identified).isNull()
-        }
-
-    @Test
-    fun `a launch with a saved session keeps its identity`() =
-        runTest {
-            Tracking.settings.identified = "doctor_7"
-            running(launchToken = doctor7.token)
-
-            assertThat(sink.calls).isEmpty()
-        }
-
-    @Test
     fun `an admin token is never identified or tracked`() =
         runTest {
             running()

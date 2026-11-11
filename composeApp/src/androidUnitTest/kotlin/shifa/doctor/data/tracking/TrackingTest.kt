@@ -21,6 +21,7 @@ class TrackingTest {
         Tracking.environment = { environment }
         Tracking.settings = TrackingSettings { stored }
         Tracking.language = { "uz" }
+        Tracking.hasSavedSession = { true }
     }
 
     @After
@@ -31,6 +32,28 @@ class TrackingTest {
     private fun started() {
         Tracking.start(sink)
         sink.calls.clear()
+    }
+
+    @Test
+    fun `an identity left by a process that died before its reset goes at the next start without a session`() {
+        Tracking.settings.identified = "doctor_7"
+        Tracking.hasSavedSession = { false }
+
+        Tracking.start(sink)
+
+        assertThat(sink.calls.takeLast(2)).containsExactly("reset", "register {app=doctor, app_language=uz}").inOrder()
+        assertThat(Tracking.settings.identified).isNull()
+    }
+
+    @Test
+    fun `a start with a saved session keeps its identity`() {
+        Tracking.settings.identified = "doctor_7"
+        Tracking.hasSavedSession = { true }
+
+        Tracking.start(sink)
+
+        assertThat(sink.calls).doesNotContain("reset")
+        assertThat(Tracking.settings.identified).isEqualTo("doctor_7")
     }
 
     @Test

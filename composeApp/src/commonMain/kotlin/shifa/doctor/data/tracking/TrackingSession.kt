@@ -68,8 +68,6 @@ class TrackingSession(
 
     suspend fun run(): Unit =
         coroutineScope {
-            // Nothing saved at launch, yet an identity held: the process died between a sign-out and its reset.
-            if (launchToken == null) Tracking.dropStaleIdentity()
             // A reason already in the replay is not this process's to send (restore, which can emit one, runs later).
             launch { ended.drop(ended.replayCache.size).collect(::end) }
             launch { session.collect { it?.let(::begin) } }

@@ -5,6 +5,7 @@ import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.storage.tokenStorage
 import shifa.doctor.data.tracking.events.TrackEvent
 import shifa.doctor.utils.isDebugBuild
 
@@ -67,6 +68,7 @@ object Tracking : SynchronizedObject(), Tracker {
     internal var environment: () -> TrackingEnvironment = ::appTrackingEnvironment
     internal var settings = TrackingSettings()
     internal var language: () -> String = { languageStorage.language.value.tag }
+    internal var hasSavedSession: () -> Boolean = { runCatching { tokenStorage.token }.getOrNull() != null }
 
     /**
      * The platform's startup, right after its SDK is set up. The SDK is told on or off before anything else, so a
@@ -86,6 +88,9 @@ object Tracking : SynchronizedObject(), Tracker {
             superProperties["app_language"] = language()
             refresh()
             sink.register(superProperties.toMap())
+            // An identity held with no session saved: the process died between a sign-out and its reset. It goes now,
+            // before the SDK's first lifecycle event could be sent under the previous doctor's id.
+            if (settings.identified != null && !hasSavedSession()) reset()
         }
     }
 
@@ -169,16 +174,6 @@ object Tracking : SynchronizedObject(), Tracker {
         }
     }
 
-    /**
-     * At a launch with no saved session: an identity still held belongs to a session whose reset never ran (the process
-     * died between the sign-out and the reset), so it goes now, before anything is sent under it.
-     */
-    fun dropStaleIdentity() {
-        synchronized(this) {
-            if (sink != null && settings.identified != null) reset()
-        }
-    }
-
     /** A super property on every event. Registered even while off, so it is there once tracking is back on. */
     fun register(
         key: String,
@@ -220,6 +215,7 @@ object Tracking : SynchronizedObject(), Tracker {
         environment = ::appTrackingEnvironment
         settings = TrackingSettings()
         language = { languageStorage.language.value.tag }
+        hasSavedSession = { runCatching { tokenStorage.token }.getOrNull() != null }
     }
 }
 

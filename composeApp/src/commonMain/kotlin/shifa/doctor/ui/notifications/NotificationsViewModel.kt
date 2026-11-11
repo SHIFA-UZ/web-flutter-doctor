@@ -14,6 +14,7 @@ import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.AppNotification
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.notifications.NotificationFilter
+import shifa.doctor.data.notifications.NotificationKind
 import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.notifications.shows
@@ -196,7 +197,13 @@ class NotificationsViewModel(
         if (opener.slow(n, staff)) _state.update { it.copy(opening = n.id) }
         viewModelScope.launch {
             val to = opener.go(n, staff, clock)
-            tracker.track(HomeEvents.NotificationOpened(n.type, to?.trackTarget ?: "none", "inbox"))
+            tracker.track(
+                HomeEvents.NotificationOpened(
+                    NotificationKind.trackType(n.type) ?: "other",
+                    to?.trackTarget ?: "none",
+                    "inbox",
+                ),
+            )
             _state.update { it.copy(opening = null, go = to ?: it.go) }
         }
     }

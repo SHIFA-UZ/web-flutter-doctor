@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import shifa.doctor.data.model.AppNotification
 import shifa.doctor.data.model.RemoteCareTask
 import shifa.doctor.data.model.TaskStatus
+import shifa.doctor.data.notifications.NotificationKind
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.tasks.TasksRepository
 import shifa.doctor.data.tracking.Tracker
@@ -201,7 +202,13 @@ class HomeAttentionViewModel(
             // Nothing to open here (no ids, no screen yet): the inbox (flow 02/03 §5).
             val to = opener.go(n, staff, clock) ?: NotificationGo.Inbox.takeIf { !opener.slow(n, staff) }
             val source = if (read) "home_attention" else "home_activity"
-            tracker.track(HomeEvents.NotificationOpened(n.type, to?.trackTarget ?: "none", source))
+            tracker.track(
+                HomeEvents.NotificationOpened(
+                    NotificationKind.trackType(n.type) ?: "other",
+                    to?.trackTarget ?: "none",
+                    source,
+                ),
+            )
             _state.update { it.copy(opening = null, go = to ?: it.go) }
         }
     }
