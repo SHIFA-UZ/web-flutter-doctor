@@ -467,7 +467,13 @@ fun MainScreenContent(
                             Modifier
                                 .align(Alignment.BottomCenter)
                                 .navigationBarsPadding()
-                                .padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSpacing.Inset.Xs),
+                                // A clear gap above the system navigation bar (gesture handle, buttons, home indicator).
+                                .padding(
+                                    start = ShifaSpacing.Inset.Md,
+                                    end = ShifaSpacing.Inset.Md,
+                                    top = ShifaSpacing.Inset.Xs,
+                                    bottom = ShifaSpacing.Inset.Md,
+                                ),
                     )
                 }
             }
