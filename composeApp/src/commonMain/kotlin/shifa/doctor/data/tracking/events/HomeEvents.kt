@@ -40,7 +40,7 @@ object HomeEvents {
 
     /**
      * An inbox row, or one on Home, tapped and its target found. [type]: the row's backend type as spelled there
-     * (`APPOINTMENT_BOOKED`), nothing else from it; [target]: `appointment` / `patient` / `document` / `chat` /
+     * (`APPOINTMENT_BOOKED`), `other` when it isn't a known backend type, nothing else from it; [target]: `appointment` / `patient` / `document` / `chat` /
      * `partnership` / `task` / `inbox`, or `none` when nothing opened (the appointment is gone, its read failed, or
      * the row leads nowhere); [source]: `inbox` / `home_attention` / `home_activity`.
      */

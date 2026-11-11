@@ -23,7 +23,7 @@ Every event, its properties and where it fires, and every screen id: `docs/posth
 | B7 | Chat and Shifa Intelligence: [chat.md](chat.md) | Done 2026-11-10 (`eaef87d`) |
 | B8 | Clinic workspace: [clinic.md](clinic.md) | Done 2026-11-10 (`d0561db`) |
 | B9 | Profile, billing, the usage-data switch: [profile.md](profile.md) | Done 2026-11-11 (`7d79ef9`); the feature jobs' shared requests (screen ids, shell properties): `b749a8a` |
-| Review fixes | Independent review of the whole diff: real outcomes only, the visit alert, no exception messages or web addresses, catalogue professions, stale identities, start-tab screen views, `push_opened` | Done 2026-11-11 (`15f21fb`, `696c706`, `f56978c`, `dc9cbb5`, `fda6fb4`) |
+| Review fixes | Independent review of the whole diff: real outcomes only, the visit alert, no exception messages or web addresses, catalogue professions, stale identities, start-tab screen views, `push_opened`; round 2: stale identity dropped at SDK start, known push and inbox types only | Done 2026-11-11 (`15f21fb`, `696c706`, `f56978c`, `dc9cbb5`, `fda6fb4`, `f5f0440`) |
 | C1 | Event catalogue generated from the code: [05-event-catalogue.md](../../posthog/05-event-catalogue.md) (262 events, 71 screen ids) | Done 2026-11-11 |
 | C2–C4 | Device checks with a real key, doctor dashboards, store privacy forms | Not started (the owner's) |
 
