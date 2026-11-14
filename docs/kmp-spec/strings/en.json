@@ -2181,6 +2181,8 @@
   "unreadCountLabel": "unread",
   "unreadOnlyNewest": "Unread only (newest first)",
   "unreadOnlyOldest": "Unread only (oldest first)",
+  "unsavedChanges": "Unsaved changes",
+  "noChangesYet": "No changes yet",
   "unsavedChangesMessage": "You have unsaved changes. Discard them?",
   "unsavedChangesSwitch": "You have unsaved changes. Save before switching?",
   "unsavedMayBeLost": "Some unsaved changes may be lost.",

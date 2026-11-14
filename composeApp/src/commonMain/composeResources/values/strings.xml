@@ -1833,6 +1833,7 @@
     <string name="noBookablePeriod">No bookable period yet</string>
     <string name="noCarePartnerships">No care partnerships yet</string>
     <string name="noCertificatesYet">No certificates yet</string>
+    <string name="noChangesYet">No changes yet</string>
     <string name="noCheckInsFound">No check-ins found</string>
     <string name="noCheckInsScheduled">No check-ins scheduled yet</string>
     <string name="noChronicDisease">No chronic disease</string>
@@ -2800,6 +2801,7 @@
     <string name="unreadCountLabel">unread</string>
     <string name="unreadOnlyNewest">Unread only (newest first)</string>
     <string name="unreadOnlyOldest">Unread only (oldest first)</string>
+    <string name="unsavedChanges">Unsaved changes</string>
     <string name="unsavedChangesMessage">You have unsaved changes. Discard them?</string>
     <string name="unsavedChangesSwitch">You have unsaved changes. Save before switching?</string>
     <string name="unsavedMayBeLost">Some unsaved changes may be lost.</string>

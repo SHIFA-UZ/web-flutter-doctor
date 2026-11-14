@@ -1833,6 +1833,7 @@
     <string name="noBookablePeriod">Период записи ещё не задан</string>
     <string name="noCarePartnerships">Партнёрств пока нет</string>
     <string name="noCertificatesYet">Сертификатов пока нет</string>
+    <string name="noChangesYet">Изменений пока нет</string>
     <string name="noCheckInsFound">Отметки не найдены</string>
     <string name="noCheckInsScheduled">Отметок пока не запланировано</string>
     <string name="noChronicDisease">Нет хронических заболеваний</string>
@@ -2800,6 +2801,7 @@
     <string name="unreadCountLabel">непрочитанных</string>
     <string name="unreadOnlyNewest">Только Непрочитанные (Сначала Новые)</string>
     <string name="unreadOnlyOldest">Только Непрочитанные (Сначала Старые)</string>
+    <string name="unsavedChanges">Несохранённые изменения</string>
     <string name="unsavedChangesMessage">Есть несохранённые изменения. Отменить их?</string>
     <string name="unsavedChangesSwitch">У вас есть несохраненные изменения. Сохранить перед переключением?</string>
     <string name="unsavedMayBeLost">Некоторые несохранённые изменения могут быть потеряны.</string>

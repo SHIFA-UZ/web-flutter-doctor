@@ -2181,6 +2181,8 @@
   "unreadCountLabel": "o'qilmagan",
   "unreadOnlyNewest": "Faqat O'qilmaganlar (Avval Yangilari)",
   "unreadOnlyOldest": "Faqat O'qilmaganlar (Avval Eskilari)",
+  "unsavedChanges": "Saqlanmagan oʻzgarishlar",
+  "noChangesYet": "Hali oʻzgarishlar yoʻq",
   "unsavedChangesMessage": "Saqlanmagan o'zgarishlar bor. Bekor qilinsinmi?",
   "unsavedChangesSwitch": "Saqlanmagan o'zgarishlar bor. Almashishdan oldin saqlaysizmi?",
   "unsavedMayBeLost": "Saqlanmagan ayrim o'zgarishlar yo'qolishi mumkin.",

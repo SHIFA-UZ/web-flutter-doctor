@@ -1833,6 +1833,7 @@
     <string name="noBookablePeriod">Hali band qilish davri yo'q</string>
     <string name="noCarePartnerships">Hali hamkorlik yo‘q</string>
     <string name="noCertificatesYet">Hali sertifikatlar yo'q</string>
+    <string name="noChangesYet">Hali oʻzgarishlar yoʻq</string>
     <string name="noCheckInsFound">Tekshiruvlar topilmadi</string>
     <string name="noCheckInsScheduled">Hozircha belgilashlar rejalashtirilmagan</string>
     <string name="noChronicDisease">Surunkali kasallik yo'q</string>
@@ -2800,6 +2801,7 @@
     <string name="unreadCountLabel">o'qilmagan</string>
     <string name="unreadOnlyNewest">Faqat O'qilmaganlar (Avval Yangilari)</string>
     <string name="unreadOnlyOldest">Faqat O'qilmaganlar (Avval Eskilari)</string>
+    <string name="unsavedChanges">Saqlanmagan oʻzgarishlar</string>
     <string name="unsavedChangesMessage">Saqlanmagan o'zgarishlar bor. Bekor qilinsinmi?</string>
     <string name="unsavedChangesSwitch">Saqlanmagan o'zgarishlar bor. Almashishdan oldin saqlaysizmi?</string>
     <string name="unsavedMayBeLost">Saqlanmagan ayrim o'zgarishlar yo'qolishi mumkin.</string>
