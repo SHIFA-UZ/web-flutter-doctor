@@ -8,19 +8,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -138,12 +135,12 @@ import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaBanner
 import shifa.doctor.ui.widgets.ShifaBannerType
 import shifa.doctor.ui.widgets.ShifaCheckboxRow
-import shifa.doctor.ui.widgets.ShifaIconButton
-import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaLoadError
+import shifa.doctor.ui.widgets.ShifaPageToolbar
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.ui.widgets.ShifaToolbarAction
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.TimeZones
@@ -201,8 +198,8 @@ data class CalendarUiState(
     val staff: StaffCalendars? = null,
     // Colleagues' days that failed to read (their section offers Retry).
     val staffFailed: Set<DayKey> = emptySet(),
-    // CAL-5: wide panes show the week grid (the board's default there) or the month and the day's agenda.
-    val week: Boolean = true,
+    // CAL-5, design review D9: wide panes show the day, the week (the board's default there) or the month.
+    val view: CalendarView = CalendarView.Week,
 ) {
     val today: LocalDate get() = clock.today()
 
@@ -479,7 +476,7 @@ fun CalendarContent(
             verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
         ) {
             if (state.showMismatch) MismatchBanner(state.clock) { actions.ui { it.copy(mismatchDismissed = true) } }
-            Header(state, actions, wide)
+            Header(state, actions)
             if (state.scope != null) {
                 Text(
                     tr(Res.string.clinicSchedulePreviewHint),
@@ -517,20 +514,20 @@ fun CalendarContent(
                 Agenda(state, actions)
                 staff?.colleagues?.forEach { StaffSection(it, state, actions) }
             }
-            // Colleagues shown (CAL-10 A): their sections live in the day view, so the week grid waits.
-            val weekable = wide && state.staff?.colleagues.isNullOrEmpty()
-            if (weekable) ViewToggle(state.week) { w -> actions.ui { it.copy(week = w) } }
-            if (weekable && state.week) {
-                failure()
-                WeekGrid(state, actions)
-            } else if (wide) {
-                // The month card at its phone size on the left, the chosen day's agenda beside it.
-                Row(horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Inset.Lg)) {
-                    Column(Modifier.width(ShifaDimens.Layout.ListPane)) { month() }
-                    Column(
-                        Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
-                    ) { day() }
+            // Colleagues shown (CAL-10 A): their sections live in the agenda, so the grids wait.
+            val grids = wide && state.staff?.colleagues.isNullOrEmpty()
+            if (wide) {
+                // Design review D9/D10: Today, previous / next and the Day, Week, Month switch; no side month card.
+                CalendarNav(state, actions, switchable = grids)
+                if (grids) {
+                    failure()
+                    when (state.view) {
+                        CalendarView.Day -> TimeGrid(state, actions, listOf(state.selected))
+                        CalendarView.Week -> TimeGrid(state, actions, weekOf(state.selected))
+                        CalendarView.Month -> MonthGrid(state, actions)
+                    }
+                } else {
+                    day()
                 }
             } else {
                 month()
@@ -545,50 +542,35 @@ fun CalendarContent(
 private fun Header(
     state: CalendarUiState,
     actions: CalendarActions,
-    wide: Boolean,
-) = Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    actions.back?.let {
-        ShifaActionButton(
-            it,
-            icon = Res.drawable.ic_arrow_l_16,
-            contentDescription = tr(Res.string.back),
-            variant = ShifaActionVariant.Secondary,
-        )
-        Spacer(Modifier.width(ShifaSpacing.Gap.Md))
-    }
-    Column(Modifier.weight(1f)) {
-        // A colleague's calendar is titled with the doctor's name (the board's calDoctor).
-        Text(
-            state.scope?.let { it.name ?: tr(Res.string.clinicMemberFallback, it.doctorId.toString()) }
-                ?: tr(Res.string.calendar),
-            style = if (wide) MaterialTheme.typography.headlineLarge else ShifaTextStyles.trayTitle(),
-            color = ShifaColors.Text.Primary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(longDate(state.selected), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
-    }
-    // Blocks are created on one's own calendar only (flow 04/14 §3 B).
-    if (state.scope == null) {
-        ShifaIconButton(
-            Res.drawable.ic_block_22,
-            tr(Res.string.blockTime),
-            actions.block,
-            variant = ShifaIconButtonVariant.Ghost,
-        )
-    }
-    ShifaIconButton(
-        Res.drawable.ic_refresh_22,
-        tr(Res.string.refresh),
-        actions.retry,
-        variant = ShifaIconButtonVariant.Ghost,
-    )
-    ShifaIconButton(
+) = ShifaPageToolbar(
+    // A colleague's calendar is titled with the doctor's name (the board's calDoctor).
+    state.scope?.let { it.name ?: tr(Res.string.clinicMemberFallback, it.doctorId.toString()) }
+        ?: tr(Res.string.calendar),
+    subtitle = longDate(state.selected),
+    leading =
+        actions.back?.let {
+            {
+                ShifaActionButton(
+                    it,
+                    icon = Res.drawable.ic_arrow_l_16,
+                    contentDescription = tr(Res.string.back),
+                    variant = ShifaActionVariant.Secondary,
+                )
+            }
+        },
+) {
+    // The same quick actions, in the same order, as every page's toolbar (design review D8); the page's own action,
+    // Block time, comes last. Blocks are created on one's own calendar only (flow 04/14 §3 B).
+    ShifaToolbarAction(Res.drawable.ic_refresh_22, tr(Res.string.refresh), actions.retry)
+    ShifaToolbarAction(
         Res.drawable.ic_sliders_22,
         tr(Res.string.filter),
         { actions.ui { it.copy(filterDraft = it.filter) } },
-        variant = if (state.filter.on) ShifaIconButtonVariant.Primary else ShifaIconButtonVariant.Secondary,
+        active = state.filter.on,
     )
+    if (state.scope == null) {
+        ShifaToolbarAction(Res.drawable.ic_block_22, tr(Res.string.blockTime), actions.block)
+    }
 }
 
 /** "4 November 2026", the month in the app's language. */

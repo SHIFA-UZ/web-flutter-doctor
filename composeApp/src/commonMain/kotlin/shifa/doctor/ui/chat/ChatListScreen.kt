@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -28,8 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,6 +84,7 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaOptionList
+import shifa.doctor.ui.widgets.ShifaPageToolbar
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.pressable
@@ -158,12 +156,7 @@ internal fun ChatListContent(
         Modifier.padding(horizontal = ShifaSpacing.Inset.Md).padding(top = ShifaSize.S16, bottom = ShifaSize.S12),
         verticalArrangement = Arrangement.spacedBy(ShifaSize.S12),
     ) {
-        Text(
-            tr(Res.string.chat),
-            Modifier.semantics { heading() },
-            style = MaterialTheme.typography.headlineSmall,
-            color = ShifaColors.Text.Primary,
-        )
+        ShifaPageToolbar(tr(Res.string.chat))
         Row(
             horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
             verticalAlignment = Alignment.CenterVertically,

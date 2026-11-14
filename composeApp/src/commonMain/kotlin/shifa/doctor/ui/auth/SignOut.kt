@@ -1,11 +1,8 @@
 package shifa.doctor.ui.auth
 
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +23,7 @@ import shifa.doctor.generated.resources.signOutConfirm
 import shifa.doctor.generated.resources.signOutTitle
 import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.ShifaDialogSheet
+import shifa.doctor.ui.widgets.ShifaSheetHost
 import shifa.doctor.utils.tr
 
 data class SignOutUiState(
@@ -71,7 +69,7 @@ fun SignOutSheet(
     onCancel: () -> Unit,
 ) {
     if (!state.asking) return
-    ModalBottomSheet(onCancel, shape = RectangleShape, containerColor = Color.Transparent, dragHandle = null) {
+    ShifaSheetHost(onCancel) {
         SignOutSheetContent(state, onConfirm, onCancel)
     }
 }

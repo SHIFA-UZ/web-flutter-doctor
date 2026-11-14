@@ -119,6 +119,9 @@ object ShifaDimens {
 
     // The splash's blobs, copied from the patient app (Figma 1614:12212 → 1614:12237). Blob centres are offsets from
     // the screen centre; index.html repeats the start frame.
+    // The design frame the blob sizes and offsets below are drawn in; a larger screen scales them up to fill it.
+    val SplashFrameWidth = 390.dp
+    val SplashFrameHeight = 844.dp
     val SplashBlobWidth = 891.563.dp
     val SplashBlobHeight = 609.879.dp
     val SplashBlobBlur = 25.dp

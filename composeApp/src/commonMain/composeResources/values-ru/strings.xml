@@ -314,6 +314,7 @@
     <string name="calendarDayView">День</string>
     <string name="calendarDayViewCount">Дней в сетке</string>
     <string name="calendarForDoctor">Календарь врача</string>
+    <string name="calendarMonthView">Месяц</string>
     <string name="calendarOccupancyLegend">Тёмный = занято · Без заливки = свободно</string>
     <string name="calendarStaffCalendars">Календари сотрудников</string>
     <string name="calendarTimezoneMismatchHint">Текущий часовой пояс устройства не совпадает с часовым поясом расписания (%1$s). Слоты были заданы в одном часовом поясе, а сейчас вы в другом. Пожалуйста, учитывайте это при работе с приёмами.</string>
@@ -1816,6 +1817,7 @@
     <string name="nextAppointment">Следующий приём</string>
     <string name="nextAppointmentInMinutes">Следующий приём через %1$s мин.</string>
     <string name="nextAvailable">Ближайшая дата: %1$s</string>
+    <string name="nextDay">Следующий день</string>
     <string name="nextMonth">Следующий месяц</string>
     <string name="nextPatient">Следующий пациент</string>
     <string name="nextWeek">Следующая неделя</string>
@@ -1991,6 +1993,7 @@
     <string name="openDocuments">Документы</string>
     <string name="openForm0252">Открыть форму 025-2</string>
     <string name="openPatientCard">Открыть карту</string>
+    <string name="openPatients">Открыть пациентов</string>
     <string name="openRoom">Открыть комнату</string>
     <string name="openRoomWhenReady">Откройте комнату, когда будете готовы начать звонок</string>
     <string name="openServicesPricing">Открыть «Услуги и цены»</string>
@@ -2191,6 +2194,7 @@
     <string name="prescriptions">Рецепты</string>
     <string name="previous">Назад</string>
     <string name="previousChartUnavailable">Не удалось загрузить прежнюю карту; форма начинается с пустой.</string>
+    <string name="previousDay">Предыдущий день</string>
     <string name="previousMonth">Предыдущий месяц</string>
     <string name="previousWeek">Предыдущая неделя</string>
     <string name="pricePerMonth">%1$s / мес.</string>
@@ -2369,6 +2373,7 @@
     <string name="seePlans">Смотреть тарифы</string>
     <string name="selectChronicDisease">Выбрать хроническое заболевание</string>
     <string name="selectConversation">Выбрать беседу</string>
+    <string name="selectConversationBody">Выберите беседу из списка, чтобы прочитать и ответить. Чтобы начать новую, напишите пациенту из его карты.</string>
     <string name="selectDate">Выбрать дату</string>
     <string name="selectDateHint">Выберите дату рождения</string>
     <string name="selectDateRange">Выберите период</string>

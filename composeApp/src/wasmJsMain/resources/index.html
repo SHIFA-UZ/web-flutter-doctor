@@ -20,12 +20,17 @@
            breathes meanwhile, so a slow download doesn't look stuck. */
         #boot { position: fixed; inset: 0; z-index: 1; overflow: hidden; background: #FFFFFF; display: flex;
                 align-items: center; justify-content: center; transition: opacity .25s; }
-        /* An ellipse 941.6 x 644.1 (blob plus fade), turned 45°, its centre offset from the screen centre. */
-        .blob { position: absolute; width: 941.56px; height: 644.08px; transform: rotate(45deg);
+        /* An ellipse 941.6 x 644.1 (blob plus fade), turned 45°, its centre offset from the screen centre. Sizes and
+           offsets are for the design's 390 x 844 frame and grow with a larger window so the blobs fill it (never
+           smaller than drawn), exactly as SplashScreen.kt's blob() does. */
+        #boot { --w: max(941.56px, 241.43vw, 111.56vh); --h: max(644.08px, 165.15vw, 76.31vh); }
+        .blob { position: absolute; width: var(--w); height: var(--h); transform: rotate(45deg);
                 background: radial-gradient(closest-side, rgba(0, 163, 154, .651) 89.38%,
                                             rgba(0, 163, 154, .325) 94.69%, rgba(0, 163, 154, 0) 100%); }
-        .blob.a { left: calc(50% - 99.61px - 470.78px); top: calc(50% + 139.6px - 322.04px); }
-        .blob.b { left: calc(50% - 10.16px - 470.78px); top: calc(50% - 233.16px - 322.04px); }
+        .blob.a { left: calc(50% - max(99.61px, 25.54vw, 11.8vh) - var(--w) / 2);
+                  top: calc(50% + max(139.6px, 35.79vw, 16.54vh) - var(--h) / 2); }
+        .blob.b { left: calc(50% - max(10.16px, 2.605vw, 1.204vh) - var(--w) / 2);
+                  top: calc(50% - max(233.16px, 59.78vw, 27.63vh) - var(--h) / 2); }
         #boot img { position: relative; width: 96px; height: 96px; animation: breathe 1.6s ease-in-out infinite alternate; }
         @keyframes breathe { to { opacity: .7; } }
         @media (prefers-reduced-motion: reduce) { #boot img { animation: none; } }

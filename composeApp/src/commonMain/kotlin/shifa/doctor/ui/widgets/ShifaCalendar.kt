@@ -235,12 +235,15 @@ data class MonthDay(
     val outside: Boolean = false,
     val off: Boolean = false,
     val description: String = label,
+    // Between the two ends of a chosen range (the ends themselves are [selected]).
+    val ranged: Boolean = false,
 )
 
 /**
  * `.dr-month`: the calendar's month picker with occupancy. Today has the focus ring, the selected day is teal,
  * light/busy days carry the teal tints, blocked days the error tint, days off are struck through. [legend] explains
- * the tints below the grid.
+ * the tints below the grid. It is the app's one month grid: the date-range dialog shows it too, with the days between
+ * the two ends [MonthDay.ranged] and [card] off (the dialog is the surface).
  */
 @Composable
 fun MonthCalendar(
@@ -254,12 +257,17 @@ fun MonthCalendar(
     nextDescription: String,
     modifier: Modifier = Modifier,
     legend: List<Pair<DayLoad, String>> = emptyList(),
+    card: Boolean = true,
 ) {
     Column(
-        modifier.fillMaxWidth().background(
-            ShifaColors.Bg.Surface,
-            ShifaRadius.ControlLg,
-        ).padding(ShifaSpacing.Inset.Md),
+        if (card) {
+            modifier.fillMaxWidth().background(
+                ShifaColors.Bg.Surface,
+                ShifaRadius.ControlLg,
+            ).padding(ShifaSpacing.Inset.Md)
+        } else {
+            modifier.fillMaxWidth()
+        },
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -320,6 +328,7 @@ private fun DayCell(
     val bg =
         when {
             d.selected -> ShifaColors.Interactive.Primary
+            d.ranged -> ShifaColors.Bg.Selected
             else -> d.load.tint
         }
     val ink =

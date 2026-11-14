@@ -54,6 +54,8 @@ import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.theme.lineBox
 
+// Buttons in the page are flat (design review 12 Nov 2026, D4/D5): elevation is kept for what floats over the page
+// (the FAB, trays, menus).
 // `.sh-btn` (shifa-ds.css "Buttons" + the audit's "two heights only"): Regular is 46 (size-control-lg) for screen
 // actions, Compact 40 on phones (36 on web) for toolbars and card rows. Icons are drawn at their drawable size
 // (22 for Regular, 16 for Compact and the action pill).
@@ -85,7 +87,6 @@ fun ShifaPrimaryButton(
         size = size,
         modifier =
             modifier
-                .then(if (enabled) Modifier.dropShadow(ShifaRadius.ControlMd, ShifaShadow.Default) else Modifier)
                 .clip(ShifaRadius.ControlMd)
                 .background(bg)
                 .pointerHoverIcon(
@@ -119,7 +120,6 @@ fun ShifaSecondaryButton(
         size = size,
         modifier =
             modifier
-                .dropShadow(ShifaRadius.ControlMd, ShifaShadow.Default)
                 .clip(ShifaRadius.ControlMd)
                 .background(ShifaColors.Bg.Surface)
                 .border(ShifaSize.S2, border, ShifaRadius.ControlMd)
@@ -177,7 +177,6 @@ fun ShifaAiButton(
     size = size,
     modifier =
         modifier
-            .then(if (enabled) Modifier.dropShadow(ShifaRadius.ControlMd, ShifaShadow.Dropdown) else Modifier)
             .clip(ShifaRadius.ControlMd)
             .background(if (enabled) ShifaColors.Text.Primary else ShifaColors.Interactive.DisabledBg)
             .pointerHoverIcon(
@@ -185,7 +184,7 @@ fun ShifaAiButton(
             ).clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick),
 )
 
-// `.sh-action` variants: Primary (teal), Secondary (canvas), Surface (white lifted pill on the canvas), Tint (teal-subtle).
+// `.sh-action` variants: Primary (teal), Secondary (canvas), Surface (the neutral white pill on the canvas), Tint (teal-subtle).
 enum class ShifaActionVariant { Primary, Secondary, Surface, Tint }
 
 /** `.sh-action`, the pill. Text only, icon only (pass [contentDescription]) or both. [selected] is the toggle state. */
@@ -221,13 +220,7 @@ fun ShifaActionButton(
     Row(
         modifier =
             modifier
-                .then(
-                    if (variant == ShifaActionVariant.Surface && enabled && !selected) {
-                        Modifier.dropShadow(ShifaRadius.Full, ShifaShadow.Dropdown)
-                    } else {
-                        Modifier
-                    },
-                ).clip(ShifaRadius.Full)
+                .clip(ShifaRadius.Full)
                 .background(bg)
                 .then(
                     if (selected) {
@@ -262,7 +255,7 @@ fun ShifaActionButton(
     }
 }
 
-// `.sh-icon-btn` variants. Primary is teal with a shadow; the rest are flat.
+// `.sh-icon-btn` variants, all flat.
 enum class ShifaIconButtonVariant { Primary, Secondary, Ghost, Surface, Danger, OnDark }
 
 /** `.sh-icon-btn`: always a 44 square (the touch size) with an 18 icon; never stretches. [selected] is the toggle state. */
@@ -295,13 +288,7 @@ fun ShifaIconButton(
         modifier =
             modifier
                 .size(ShifaSize.Touch)
-                .then(
-                    if (variant == ShifaIconButtonVariant.Primary && enabled) {
-                        Modifier.dropShadow(ShifaRadius.Full, ShifaShadow.Default)
-                    } else {
-                        Modifier
-                    },
-                ).clip(ShifaRadius.Full)
+                .clip(ShifaRadius.Full)
                 .background(bg)
                 .then(
                     if (selected) {

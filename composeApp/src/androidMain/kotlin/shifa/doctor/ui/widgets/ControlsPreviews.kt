@@ -134,7 +134,8 @@ internal fun InputsPreview() =
         ShifaSearchField("", {}, "Search", wide, enabled = false)
         val options = listOf("Main Clinic", "Video consultation", "Chilonzor branch")
         ShifaDropdown("Location", options, null, {}, expanded = false, onExpandedChange = {}, modifier = wide)
-        ShifaDropdown("Location", options, "Main Clinic", {}, expanded = true, onExpandedChange = {}, modifier = wide)
+        // Collapsed with a value: the open menu is an overlay window (design review D13), which a widget capture leaves out.
+        ShifaDropdown("Location", options, "Main Clinic", {}, expanded = false, onExpandedChange = {}, modifier = wide)
         ShifaDropdown("Location", options, null, {}, false, {}, wide, isError = true)
     }
 

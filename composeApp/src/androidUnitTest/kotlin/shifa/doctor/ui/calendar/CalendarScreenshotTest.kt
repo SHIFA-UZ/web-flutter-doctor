@@ -56,6 +56,10 @@ class CalendarScreenshotTest {
     fun week() = captureRoboImage("screenshots/Calendar_week.png") { CalendarWeekPreview() }
 
     @Test
+    @Config(qualifiers = "w1180dp-h900dp-mdpi")
+    fun month() = captureRoboImage("screenshots/Calendar_month.png") { CalendarMonthPreview() }
+
+    @Test
     fun appointmentPanelLate() =
         captureRoboImage("screenshots/Calendar_appointmentPanelLate.png") { AppointmentPanelLatePreview() }
 }

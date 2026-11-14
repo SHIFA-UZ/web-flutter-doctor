@@ -16,19 +16,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DateRangePicker
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,13 +38,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.datetime.DatePeriod
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
@@ -74,10 +65,10 @@ import shifa.doctor.generated.resources.documentsReceived
 import shifa.doctor.generated.resources.engagementSummary
 import shifa.doctor.generated.resources.export
 import shifa.doctor.generated.resources.ic_block_20
-import shifa.doctor.generated.resources.ic_calendar_18
+import shifa.doctor.generated.resources.ic_calendar_16
 import shifa.doctor.generated.resources.ic_calendar_20
 import shifa.doctor.generated.resources.ic_check_circle_20
-import shifa.doctor.generated.resources.ic_download_18
+import shifa.doctor.generated.resources.ic_download_16
 import shifa.doctor.generated.resources.ic_file_text_20
 import shifa.doctor.generated.resources.ic_sparkles_20
 import shifa.doctor.generated.resources.ic_user_plus_20
@@ -96,6 +87,8 @@ import shifa.doctor.generated.resources.monthNov
 import shifa.doctor.generated.resources.monthOct
 import shifa.doctor.generated.resources.monthSep
 import shifa.doctor.generated.resources.newPatientsToday
+import shifa.doctor.generated.resources.nextMonth
+import shifa.doctor.generated.resources.previousMonth
 import shifa.doctor.generated.resources.reportsSmsNotAllowed
 import shifa.doctor.generated.resources.reportsSmsRateHint
 import shifa.doctor.generated.resources.reportsSmsSent
@@ -104,20 +97,28 @@ import shifa.doctor.generated.resources.reportsSmsTitle
 import shifa.doctor.generated.resources.save
 import shifa.doctor.generated.resources.seePlans
 import shifa.doctor.generated.resources.selectDateRange
+import shifa.doctor.ui.calendar.WEEKDAYS
+import shifa.doctor.ui.calendar.longDate
+import shifa.doctor.ui.calendar.monthCells
+import shifa.doctor.ui.calendar.monthTitle
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
+import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.LocalWideLayout
+import shifa.doctor.ui.widgets.MonthCalendar
+import shifa.doctor.ui.widgets.MonthDay
 import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaChip
-import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaLoadError
-import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
+import shifa.doctor.ui.widgets.ShifaSheetHost
 import shifa.doctor.ui.widgets.ShifaSkeleton
+import shifa.doctor.ui.widgets.ShifaTertiaryButton
 import shifa.doctor.utils.Money
 import shifa.doctor.utils.rememberFileShare
 import shifa.doctor.utils.tr
@@ -186,7 +187,8 @@ internal fun AnalyticsContent(
             color = ShifaColors.Text.Secondary,
         )
     }
-    // The toolbar, stacked full width on phones (board `DaHome`); side by side at their own width on wide screens.
+    // The card's controls (design review D3): the range is a control (secondary), Export a tertiary action; neither is
+    // the page's primary action. Stacked full width on phones (board `DaHome`), side by side on wide screens.
     val wide = LocalWideLayout.current
     val label = rangeLabel(state.range)
     val described = tr(Res.string.analyticsDateRange, label)
@@ -195,14 +197,16 @@ internal fun AnalyticsContent(
             label,
             { picking = true },
             fill.semantics { contentDescription = described },
-            icon = Res.drawable.ic_calendar_18,
+            icon = Res.drawable.ic_calendar_16,
+            size = ShifaButtonSize.Compact,
         )
-        ShifaPrimaryButton(
+        ShifaTertiaryButton(
             tr(Res.string.export),
             onExport,
             fill,
-            icon = Res.drawable.ic_download_18,
-            loading = state.exporting,
+            icon = Res.drawable.ic_download_16,
+            enabled = !state.exporting,
+            size = ShifaButtonSize.Compact,
         )
     }
     if (wide) {
@@ -540,10 +544,11 @@ internal fun rangeLabel(range: AnalyticsRange): String {
 }
 
 /**
- * "Select date range" (flow 02/06 §3, board `DaHome`): presets for the last 7, 30 and 90 days, the system range picker
- * from a year back to 30 days ahead of the practice date, Cancel and Save (Save only with both ends).
+ * "Select date range" (flow 02/06 §3, board `DaHome`; design review D6): the app's ResponsiveDialog (a tray on phones)
+ * with the shared [MonthCalendar]: presets for the last 7, 30 and 90 days, days from a year back to 30 days ahead of
+ * the practice date, Save as the primary action (only with both ends) and Cancel as the secondary.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RangeDialog(
     range: AnalyticsRange,
@@ -553,79 +558,75 @@ private fun RangeDialog(
 ) {
     val first = today.minus(DatePeriod(days = 365))
     val last = today.plus(DatePeriod(days = 30))
-    val picker =
-        rememberDateRangePickerState(
-            initialSelectedStartDateMillis = range.start.millis(),
-            initialSelectedEndDateMillis = range.end.millis(),
-            yearRange = first.year..last.year,
-            selectableDates =
-                object : SelectableDates {
-                    override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis.toDate() in first..last
+    var start by remember { mutableStateOf<LocalDate?>(range.start) }
+    var end by remember { mutableStateOf<LocalDate?>(range.end) }
+    var month by remember { mutableStateOf(LocalDate(range.end.year, range.end.monthNumber, 1)) }
+    val from = start
+    val to = end
+    ShifaSheetHost(onClose) {
+        ShifaDialogSheet(
+            tr(Res.string.selectDateRange),
+            tr(Res.string.save),
+            { if (from != null && to != null) onSave(AnalyticsRange(from, to)) },
+            body = tr(Res.string.analyticsRangeHint),
+            cancelText = tr(Res.string.cancel),
+            onCancel = onClose,
+            confirmEnabled = from != null && to != null,
+        ) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
+                verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
+            ) {
+                listOf(7, 30, 90).forEach { n ->
+                    val preset = AnalyticsRange.lastDays(today, n)
+                    ShifaChip(trPlural(Res.plurals.lastDaysCount, n, n), from == preset.start && to == preset.end, {
+                        start = preset.start
+                        end = preset.end
+                        month = LocalDate(preset.end.year, preset.end.monthNumber, 1)
+                    })
+                }
+            }
+            val cells = monthCells(month)
+            MonthCalendar(
+                monthTitle(month),
+                WEEKDAYS.map { tr(it).take(1).uppercase() },
+                cells.map { d ->
+                    if (d == null) {
+                        MonthDay("", outside = true)
+                    } else {
+                        MonthDay(
+                            d.dayOfMonth.toString(),
+                            today = d == today,
+                            selected = d == from || d == to,
+                            outside = d !in first..last,
+                            description = longDate(d),
+                            ranged = from != null && to != null && d > from && d < to,
+                        )
+                    }
                 },
-        )
-    val colors =
-        DatePickerDefaults.colors(
-            containerColor = ShifaColors.Bg.Surface,
-            selectedDayContainerColor = ShifaColors.Interactive.Primary,
-            dayInSelectionRangeContainerColor = ShifaColors.Bg.SuccessSubtle,
-            todayDateBorderColor = ShifaColors.Border.Brand,
-        )
-    val start = picker.selectedStartDateMillis?.toDate()
-    val end = picker.selectedEndDateMillis?.toDate()
-    DatePickerDialog(
-        onDismissRequest = onClose,
-        confirmButton = {
-            ShifaLink(tr(Res.string.save), { if (start != null && end != null) onSave(AnalyticsRange(start, end)) })
-        },
-        dismissButton = { ShifaLink(tr(Res.string.cancel), onClose) },
-        colors = colors,
-    ) {
-        DateRangePicker(
-            picker,
-            Modifier.weight(1f),
-            // The title slot carries the board's presets and its bounds hint (the dialog lays out only the picker).
-            title = {
-                Column(
-                    Modifier.padding(start = ShifaSize.S24, end = ShifaSize.S16, top = ShifaSize.S16),
-                    verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-                ) {
-                    Text(
-                        tr(Res.string.selectDateRange),
-                        style = ShifaTextStyles.contextName(),
-                        color = ShifaColors.Text.Primary,
-                    )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
-                        verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
-                    ) {
-                        listOf(7, 30, 90).forEach { n ->
-                            val preset = AnalyticsRange.lastDays(today, n)
-                            ShifaChip(
-                                trPlural(
-                                    Res.plurals.lastDaysCount,
-                                    n,
-                                    n,
-                                ),
-                                start == preset.start && end == preset.end,
-                                {
-                                    picker.setSelection(preset.start.millis(), preset.end.millis())
-                                },
-                            )
+                onDay = { i ->
+                    // The first tap starts a range, the second ends it; a day before the start starts again.
+                    cells.getOrNull(i)?.let { d ->
+                        if (from == null || to != null || d < from) {
+                            start = d
+                            end = null
+                        } else {
+                            end = d
                         }
                     }
-                    Text(
-                        tr(Res.string.analyticsRangeHint),
-                        style = ShifaTextStyles.metaSmall(),
-                        color = ShifaColors.Text.Secondary,
-                    )
-                }
-            },
-            showModeToggle = false,
-            colors = colors,
-        )
+                },
+                onPrevious = {
+                    val previous = month.minus(DatePeriod(months = 1))
+                    if (month > first) month = previous
+                },
+                onNext = {
+                    val next = month.plus(DatePeriod(months = 1))
+                    if (next <= last) month = next
+                },
+                previousDescription = tr(Res.string.previousMonth),
+                nextDescription = tr(Res.string.nextMonth),
+                card = false,
+            )
+        }
     }
 }
-
-private fun LocalDate.millis() = atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
-
-private fun Long.toDate() = Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date

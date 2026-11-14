@@ -3,6 +3,8 @@ package shifa.doctor.ui.chat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -90,7 +92,7 @@ import shifa.doctor.generated.resources.doctor
 import shifa.doctor.generated.resources.document
 import shifa.doctor.generated.resources.errorRecordingVoice
 import shifa.doctor.generated.resources.ic_chev_l_16
-import shifa.doctor.generated.resources.ic_clip_22
+import shifa.doctor.generated.resources.ic_plus_18
 import shifa.doctor.generated.resources.ic_send_18
 import shifa.doctor.generated.resources.microphonePermissionDenied
 import shifa.doctor.generated.resources.openSettings
@@ -110,8 +112,10 @@ import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.navigation.openPermissionSettings
 import shifa.doctor.ui.speech.RecordingPill
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
+import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ReceivedShape
 import shifa.doctor.ui.widgets.SentShape
@@ -317,17 +321,21 @@ internal fun ThreadContent(
             .background(ShifaColors.Bg.Surface),
     ) {
         val messages = state.messages
-        when {
-            messages == null && state.error == null -> ShifaListSkeleton(Modifier.padding(ShifaSize.S12), count = 5)
-            messages == null ->
-                ShifaLoadError(
-                    tr(state.error?.text ?: Res.string.couldNotLoad),
-                    actions.reload,
-                    Modifier.padding(ShifaSize.S12),
-                    requestId = state.error?.requestId,
-                )
-            messages.isEmpty() && state.pending.isEmpty() -> Empty(state.conversation)
-            else -> Messages(state, messages, actions, clock, overlays.playback) { actions.view(it) }
+        // Design review D16: on a wide pane the conversation is a reading column (720) in the middle, so received and
+        // sent messages stay near each other instead of at the pane's two edges.
+        Box(Modifier.align(Alignment.TopCenter).widthIn(max = ShifaDimens.Layout.Reading).fillMaxSize()) {
+            when {
+                messages == null && state.error == null -> ShifaListSkeleton(Modifier.padding(ShifaSize.S12), count = 5)
+                messages == null ->
+                    ShifaLoadError(
+                        tr(state.error?.text ?: Res.string.couldNotLoad),
+                        actions.reload,
+                        Modifier.padding(ShifaSize.S12),
+                        requestId = state.error?.requestId,
+                    )
+                messages.isEmpty() && state.pending.isEmpty() -> Empty(state.conversation)
+                else -> Messages(state, messages, actions, clock, overlays.playback) { actions.view(it) }
+            }
         }
     }
     // An attachment on its way (flow 07/03 §3: a strip above the composer, Flutter's SnackBars).
@@ -816,60 +824,65 @@ private fun linkified(text: String): AnnotatedString {
     }
 }
 
-/** The composer: the message (up to 4 lines) and Send, off while there is nothing to send (flow 07/02 §9). */
+/**
+ * The composer (flow 07/02 §9), drawn as the kit's chat tray (design review D17: `ShifaChatTray`'s attach and send
+ * buttons around the chat bar's bordered field): attach, the message (up to 4 lines) and Send, off while there is
+ * nothing to send. In line with the message column on wide panes.
+ */
 @Composable
 private fun Composer(
     state: ThreadUiState,
     actions: ThreadActions,
     onAttach: () -> Unit,
-) = Row(
-    Modifier
-        .fillMaxWidth()
-        .background(ShifaColors.Bg.Surface)
-        .navigationBarsPadding()
-        .padding(horizontal = ShifaSize.S10, vertical = ShifaSize.S8),
-    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-    verticalAlignment = Alignment.Bottom,
-) {
-    // The paperclip: the attach sheet (CHAT-04 photos; documents and voice notes join with CHAT-05 and CHAT-06).
-    ShifaIconButton(
-        Res.drawable.ic_clip_22,
-        tr(Res.string.attachFile),
-        onAttach,
-        variant = ShifaIconButtonVariant.Ghost,
-        enabled = state.messages != null,
-    )
-    val style = ShifaTextStyles.chatInput()
-    val hint = tr(Res.string.typeMessage)
-    BasicTextField(
-        state.draft,
-        actions.draft,
+) = Box(Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface).navigationBarsPadding(), Alignment.Center) {
+    Row(
         Modifier
-            .weight(1f)
-            .heightIn(min = ShifaSize.Touch)
-            .clip(ShifaRadius.ControlLg)
-            .background(ShifaColors.Bg.Canvas)
-            .padding(horizontal = ShifaSize.S14, vertical = ShifaSize.S12)
-            .sendOnEnter { if (state.canSend) actions.send() }
-            .semantics { contentDescription = hint },
-        textStyle = style.copy(color = ShifaColors.Text.Primary),
-        maxLines = 4,
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-        cursorBrush = SolidColor(ShifaColors.Border.Focus),
-        decorationBox = { field ->
-            Box {
-                if (state.draft.isEmpty()) Text(hint, style = style, color = ShifaColors.Text.Tertiary)
-                field()
-            }
-        },
-    )
-    ShifaIconButton(
-        Res.drawable.ic_send_18,
-        tr(Res.string.send),
-        actions.send,
-        variant = ShifaIconButtonVariant.Primary,
-        enabled = state.canSend,
-    )
+            .widthIn(max = ShifaDimens.Layout.Reading)
+            .fillMaxWidth()
+            .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs),
+        horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        // The attach sheet (CHAT-04 photos, CHAT-05 documents, CHAT-06 voice notes).
+        ShifaIconButton(
+            Res.drawable.ic_plus_18,
+            tr(Res.string.attachFile),
+            onAttach,
+            variant = ShifaIconButtonVariant.Secondary,
+            enabled = state.messages != null,
+        )
+        val style = ShifaTextStyles.chatInput()
+        val hint = tr(Res.string.typeMessage)
+        val interaction = remember { MutableInteractionSource() }
+        val focused by interaction.collectIsFocusedAsState()
+        BasicTextField(
+            state.draft,
+            actions.draft,
+            Modifier
+                .weight(1f)
+                .heightIn(min = ShifaSize.Touch)
+                .background(ShifaColors.Bg.Surface, ShifaRadius.Xl)
+                .border(
+                    ShifaSize.S2,
+                    if (focused || state.draft.isNotEmpty()) ShifaColors.Border.Focus else ShifaColors.Border.Default,
+                    ShifaRadius.Xl,
+                ).padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSpacing.Inset.Sm)
+                .sendOnEnter { if (state.canSend) actions.send() }
+                .semantics { contentDescription = hint },
+            textStyle = style.copy(color = ShifaColors.Text.Primary),
+            maxLines = 4,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            cursorBrush = SolidColor(ShifaColors.Border.Focus),
+            interactionSource = interaction,
+            decorationBox = { field ->
+                Box {
+                    if (state.draft.isEmpty()) Text(hint, style = style, color = ShifaColors.Text.Tertiary)
+                    field()
+                }
+            },
+        )
+        ShifaIconButton(Res.drawable.ic_send_18, tr(Res.string.send), actions.send, enabled = state.canSend)
+    }
 }
 
 // The recorder bar's level and timer refresh (the shared wave reads 60–100 ms steps).

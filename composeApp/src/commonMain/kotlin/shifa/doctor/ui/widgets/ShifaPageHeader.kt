@@ -1,12 +1,16 @@
 package shifa.doctor.ui.widgets
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,9 +23,11 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
@@ -41,6 +47,79 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.utils.tr
+
+/**
+ * PageToolbar (`.dr-toolbar`, design review D7/D8): the one header of every tab and page. An optional [overline] (Home's
+ * date), the title at headline size (24/28 on phones, 32/40 from 768 wide: the shell swaps `headlineSmall`), an optional
+ * [subtitle], and the page's actions at the right. The action rule: quick actions are [ShifaToolbarAction]s, in the
+ * order refresh, search, filter or settings, notifications; the page's one commit action ("New patient") is a primary
+ * button and comes last. [leading] is the back button or the phone's photo.
+ */
+@Composable
+fun ShifaPageToolbar(
+    title: String,
+    modifier: Modifier = Modifier,
+    overline: String? = null,
+    subtitle: String? = null,
+    leading: (@Composable () -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+) = Row(
+    modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
+    verticalAlignment = Alignment.CenterVertically,
+) {
+    leading?.invoke()
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Xs)) {
+        overline?.let { Text(it, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary) }
+        HeaderTitle(title, MaterialTheme.typography.headlineSmall, Modifier.semantics { heading() })
+        subtitle?.let {
+            Text(
+                it,
+                style = ShifaTextStyles.dialogBody(),
+                color = ShifaColors.Text.Secondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+        content = actions,
+    )
+}
+
+/**
+ * A toolbar's quick action: the white 44 disc on the canvas, the same on every page. [active] is a filter that is on
+ * (teal); [dot] the unread mark on the bell.
+ */
+@Composable
+fun ShifaToolbarAction(
+    icon: DrawableResource,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    active: Boolean = false,
+    dot: Boolean = false,
+    enabled: Boolean = true,
+) = Box(modifier) {
+    ShifaIconButton(
+        icon,
+        contentDescription,
+        onClick,
+        variant = if (active) ShifaIconButtonVariant.Primary else ShifaIconButtonVariant.Surface,
+        enabled = enabled,
+    )
+    if (dot) {
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = ShifaSize.S10, end = ShifaSize.S12)
+                .size(ShifaSize.S8)
+                .background(ShifaColors.Interactive.Destructive, ShifaRadius.Full),
+        )
+    }
+}
 
 /** Figma page-header, page = main: the 32 title on every tab. */
 @Composable

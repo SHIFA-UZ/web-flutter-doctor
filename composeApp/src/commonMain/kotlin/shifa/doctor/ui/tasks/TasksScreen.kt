@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -38,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,15 +84,15 @@ import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaDropdown
 import shifa.doctor.ui.widgets.ShifaFab
-import shifa.doctor.ui.widgets.ShifaIconButton
-import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaLoadError
+import shifa.doctor.ui.widgets.ShifaPageToolbar
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaProgressBar
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
+import shifa.doctor.ui.widgets.ShifaToolbarAction
 import shifa.doctor.ui.widgets.pressable
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
@@ -227,78 +225,31 @@ internal fun TasksContent(
 private fun Header(
     actions: TasksActions,
     wide: Boolean,
-) = if (wide) {
-    // The title with the actions beside it (board) where they fit at the reader's text size, else the actions under it.
-    BoxWithConstraints {
-        val title = @Composable { m: Modifier ->
-            Column(m, verticalArrangement = Arrangement.spacedBy(ShifaSize.S4)) {
-                Text(
-                    tr(Res.string.remoteCareTasks),
-                    Modifier.semantics { heading() },
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = ShifaColors.Text.Primary,
-                )
-                Text(
-                    tr(Res.string.remoteCareTasksSubtitle),
-                    style = ShifaTextStyles.dialogBody(),
-                    color = ShifaColors.Text.Secondary,
-                )
-            }
-        }
-        val buttons = @Composable {
-            ShifaIconButton(
-                Res.drawable.ic_refresh_22,
-                tr(Res.string.refresh),
-                actions.refresh,
-                variant = ShifaIconButtonVariant.Secondary,
-            )
-            ShifaSecondaryButton(tr(Res.string.useTemplate), actions.templates)
-            ShifaPrimaryButton(tr(Res.string.createTask), actions.create, icon = Res.drawable.ic_plus_16)
-        }
-        if (maxWidth >= ShifaDimens.Layout.Document && LocalDensity.current.fontScale <= LARGE_TEXT) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                title(Modifier.weight(1f))
-                buttons()
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
-                title(Modifier)
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-                    verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-                ) { buttons() }
-            }
-        }
-    }
-} else {
+) = BoxWithConstraints {
+    // The title with its actions at the right where they fit at the reader's text size (board), else under it. The
+    // quick action first, the page's commit action ("Create task") last (design review D21/D22). Phones create with
+    // the floating button.
+    val beside = wide && maxWidth >= ShifaDimens.Layout.Document && LocalDensity.current.fontScale <= LARGE_TEXT
     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
-        Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S4)) {
-            Text(
-                tr(Res.string.remoteCareTasks),
-                Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                color = ShifaColors.Text.Primary,
-            )
-            Text(
-                tr(Res.string.remoteCareTasksSubtitle),
-                style = ShifaTextStyles.dialogBody(),
-                color = ShifaColors.Text.Secondary,
-            )
+        ShifaPageToolbar(tr(Res.string.remoteCareTasks), subtitle = tr(Res.string.remoteCareTasksSubtitle)) {
+            ShifaToolbarAction(Res.drawable.ic_refresh_22, tr(Res.string.refresh), actions.refresh)
+            if (beside) {
+                ShifaSecondaryButton(tr(Res.string.useTemplate), actions.templates)
+                ShifaPrimaryButton(tr(Res.string.createTask), actions.create, icon = Res.drawable.ic_plus_16)
+            }
         }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ShifaIconButton(
-                Res.drawable.ic_refresh_22,
-                tr(Res.string.refresh),
-                actions.refresh,
-                variant = ShifaIconButtonVariant.Secondary,
-            )
-            ShifaSecondaryButton(tr(Res.string.useTemplate), actions.templates, Modifier.weight(1f))
+        if (!beside) {
+            Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+                ShifaSecondaryButton(tr(Res.string.useTemplate), actions.templates, Modifier.weight(1f))
+                if (wide) {
+                    ShifaPrimaryButton(
+                        tr(Res.string.createTask),
+                        actions.create,
+                        Modifier.weight(1f),
+                        icon = Res.drawable.ic_plus_16,
+                    )
+                }
+            }
         }
     }
 }
