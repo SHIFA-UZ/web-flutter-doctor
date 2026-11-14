@@ -23,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -96,10 +95,10 @@ import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaAvatar
-import shifa.doctor.ui.widgets.ShifaIconButton
-import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaPageToolbar
 import shifa.doctor.ui.widgets.ShifaSkeleton
+import shifa.doctor.ui.widgets.ShifaToolbarAction
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
@@ -269,6 +268,9 @@ fun HomeScreen(
 
 private val TICK = 30.seconds
 
+// Design review D2: one gap between every Home panel, in both directions, so the panels' edges line up.
+private val PANEL_GAP = ShifaSpacing.Stack.Md
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HomeContent(
@@ -342,15 +344,15 @@ internal fun HomeContent(
                             .align(Alignment.CenterHorizontally)
                             .widthIn(max = ShifaDimens.Layout.Page)
                             .padding(ShifaSpacing.Inset.Lg),
-                        horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Inset.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PANEL_GAP),
                     ) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Inset.Lg)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PANEL_GAP)) {
                             main.forEach { it() }
                             analytics()
                         }
                         Column(
                             Modifier.width(ShifaDimens.Layout.DialogSm),
-                            verticalArrangement = Arrangement.spacedBy(ShifaSize.S16),
+                            verticalArrangement = Arrangement.spacedBy(PANEL_GAP),
                         ) { attention() }
                     }
                 }
@@ -365,10 +367,10 @@ internal fun HomeContent(
                             end = ShifaSpacing.Inset.Md,
                             bottom = if (wide) ShifaSpacing.Inset.Lg else ShifaSize.S120,
                         ),
-                    verticalArrangement = Arrangement.spacedBy(ShifaSize.S20),
+                    verticalArrangement = Arrangement.spacedBy(PANEL_GAP),
                 ) {
                     main.forEach { section -> item { section() } }
-                    item { Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S16)) { attention() } }
+                    item { Column(verticalArrangement = Arrangement.spacedBy(PANEL_GAP)) { attention() } }
                     item { analytics() }
                 }
             }
@@ -376,92 +378,61 @@ internal fun HomeContent(
     }
 }
 
-/** The header; [now] set (wide screens, DaHome web) shows the date and a greeting instead of the photo and "Home". */
+/**
+ * The header on the shared [ShifaPageToolbar] (design review D7); [now] set (wide screens, DaHome web) shows the date and
+ * a greeting instead of the photo and "Home".
+ */
 @Composable
 private fun Header(
     shell: HomeShell,
     actions: HomeActions,
     now: LocalDateTime?,
     modifier: Modifier = Modifier,
-) = Row(
-    // Wide: in line with the columns below (DaHome web's 24 page padding).
-    modifier.fillMaxWidth().padding(
-        horizontal = if (now != null) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
-        vertical = ShifaSize.S8,
-    ),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
 ) {
-    if (now != null) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
-            Text(
-                "${dayName(now.dayOfWeek.isoDayNumber)}, ${longDate(now.date)} · ${displayTime(now.time)}",
-                style = ShifaTextStyles.metaSmall(),
-                color = ShifaColors.Text.Secondary,
-            )
-            Text(
-                listOf(tr(greetingFor(now.hour)), shell.name).filter { it.isNotEmpty() }.joinToString(", "),
-                style = MaterialTheme.typography.headlineLarge,
-                color = ShifaColors.Text.Primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    } else {
-        val profile = tr(Res.string.profile)
-        ShifaAvatar(
-            shell.photoUrl,
-            ShifaSize.Touch,
-            Modifier
-                .clip(ShifaRadius.Full)
-                .clickable(role = Role.Button, onClick = actions.openProfile)
-                .semantics { contentDescription = profile },
-        )
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
-            Text(tr(Res.string.home), style = ShifaTextStyles.heroNamePhone(), color = ShifaColors.Text.Primary)
-            Text(
-                shell.name,
-                style = ShifaTextStyles.metaSmall(),
-                color = ShifaColors.Text.Secondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-    ShifaIconButton(
-        Res.drawable.ic_refresh_22,
-        tr(Res.string.refresh),
-        actions.refresh,
-        variant = ShifaIconButtonVariant.Surface,
-    )
-    ShifaIconButton(
-        Res.drawable.ic_search_22,
-        tr(Res.string.searchPatients),
-        actions.search,
-        variant = ShifaIconButtonVariant.Surface,
-    )
-    Box {
-        ShifaIconButton(
+    val unread = (shell.unread ?: 0) > 0
+    ShifaPageToolbar(
+        if (now != null) {
+            listOf(tr(greetingFor(now.hour)), shell.name).filter { it.isNotEmpty() }.joinToString(", ")
+        } else {
+            tr(Res.string.home)
+        },
+        // In line with the columns below and with their inset above (DaHome web's 24 page padding; 16 on phones).
+        modifier.padding(
+            start = if (now != null) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+            end = if (now != null) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+            top = if (now != null) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+        ),
+        overline = now?.let { "${dayName(it.dayOfWeek.isoDayNumber)}, ${longDate(it.date)} · ${displayTime(it.time)}" },
+        subtitle = shell.name.takeIf { now == null && it.isNotEmpty() },
+        leading =
+            if (now == null) {
+                {
+                    val profile = tr(Res.string.profile)
+                    ShifaAvatar(
+                        shell.photoUrl,
+                        ShifaSize.Touch,
+                        Modifier
+                            .clip(ShifaRadius.Full)
+                            .clickable(role = Role.Button, onClick = actions.openProfile)
+                            .semantics { contentDescription = profile },
+                    )
+                }
+            } else {
+                null
+            },
+    ) {
+        ShifaToolbarAction(Res.drawable.ic_refresh_22, tr(Res.string.refresh), actions.refresh)
+        ShifaToolbarAction(Res.drawable.ic_search_22, tr(Res.string.searchPatients), actions.search)
+        ShifaToolbarAction(
             Res.drawable.ic_bell_22,
-            if ((shell.unread ?: 0) > 0) {
-                "${tr(
-                    Res.string.notifications,
-                )}, ${shell.unread} ${tr(Res.string.unreadCountLabel)}"
+            if (unread) {
+                "${tr(Res.string.notifications)}, ${shell.unread} ${tr(Res.string.unreadCountLabel)}"
             } else {
                 tr(Res.string.notifications)
             },
             actions.notifications,
-            variant = ShifaIconButtonVariant.Surface,
+            dot = unread,
         )
-        if ((shell.unread ?: 0) > 0) {
-            Box(
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = ShifaSize.S10, end = ShifaSize.S12)
-                    .size(ShifaSize.S8)
-                    .background(ShifaColors.Interactive.Destructive, ShifaRadius.Full),
-            )
-        }
     }
 }
 
@@ -543,13 +514,13 @@ private fun Metrics(
         )
     if (LocalDensity.current.fontScale >= LARGE_TEXT) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(ShifaSize.S10),
+            verticalArrangement = Arrangement.spacedBy(PANEL_GAP),
         ) { cards.forEach { it(Modifier.fillMaxWidth()) } }
     } else {
         // Equal heights, whatever each card's lines.
         Row(
             Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10),
+            horizontalArrangement = Arrangement.spacedBy(PANEL_GAP),
         ) {
             cards.forEach { it(Modifier.weight(1f).fillMaxHeight()) }
         }

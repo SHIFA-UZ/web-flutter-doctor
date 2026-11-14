@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -41,6 +42,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
@@ -60,6 +62,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
 import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.chat
+import shifa.doctor.generated.resources.chatEmptyHint
 import shifa.doctor.generated.resources.clinicNavClinic
 import shifa.doctor.generated.resources.contactAndClinicAddress
 import shifa.doctor.generated.resources.document
@@ -89,6 +92,7 @@ import shifa.doctor.generated.resources.moreOptions
 import shifa.doctor.generated.resources.navReports
 import shifa.doctor.generated.resources.needsProPlan
 import shifa.doctor.generated.resources.notifications
+import shifa.doctor.generated.resources.openPatients
 import shifa.doctor.generated.resources.patients
 import shifa.doctor.generated.resources.personalInformation
 import shifa.doctor.generated.resources.planPremium
@@ -99,6 +103,7 @@ import shifa.doctor.generated.resources.profile
 import shifa.doctor.generated.resources.schedule
 import shifa.doctor.generated.resources.security
 import shifa.doctor.generated.resources.selectConversation
+import shifa.doctor.generated.resources.selectConversationBody
 import shifa.doctor.generated.resources.servicesPricing
 import shifa.doctor.generated.resources.settings
 import shifa.doctor.generated.resources.shifaIntelligence
@@ -169,12 +174,15 @@ import shifa.doctor.ui.theme.ShifaBreakpoint
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
+import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.visit.VisitScreen
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.LocalWideLayout
+import shifa.doctor.ui.widgets.ShifaButtonSize
+import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.TrackScreenView
 import shifa.doctor.ui.widgets.trackActivity
@@ -616,7 +624,7 @@ private fun RouteContent(
                 )
             } else if (route.tab == ShellTab.Chat) {
                 // CHAT-02: doctors and clinic staff alike (chat has no tier gate).
-                ChatPanes(null, actions) {
+                ChatPanes(null, actions, staff) {
                     ChatListScreen(
                         onOpen = {
                             actions.push(
@@ -714,7 +722,17 @@ private fun RouteContent(
                 )
             }
             // CHAT-07 lands on the Chat tab: beside the list there too.
-            if (shell.tab == ShellTab.Chat) ChatPanes(null, actions, threadOpen = true, single = chat) else chat()
+            if (shell.tab == ShellTab.Chat) {
+                ChatPanes(
+                    null,
+                    actions,
+                    staff,
+                    threadOpen = true,
+                    single = chat,
+                )
+            } else {
+                chat()
+            }
         }
         // CHAT-03 builds the thread.
         is ShellRoute.Conversation -> {
@@ -727,7 +745,7 @@ private fun RouteContent(
                 )
             }
             // Beside the list on the Chat tab only; opened from elsewhere it is the whole screen.
-            if (shell.tab == ShellTab.Chat) ChatPanes(route, actions, single = thread) else thread()
+            if (shell.tab == ShellTab.Chat) ChatPanes(route, actions, staff, single = thread) else thread()
         }
         // REPORT-01: Profile → Reports, Back returns there.
         ShellRoute.Reports -> Reports(shell, actions, onBack = actions.back)
@@ -907,6 +925,8 @@ private fun RouteContent(
 private fun ChatPanes(
     open: ShellRoute.Conversation?,
     actions: ShellActions,
+    // Clinic staff have no Patients tab: no way there from the empty pane.
+    staff: Boolean,
     // A thread is open even when [open] is null: "Send message" (CHAT-07) resolves the conversation itself.
     threadOpen: Boolean = open != null,
     single: @Composable () -> Unit,
@@ -922,16 +942,37 @@ private fun ChatPanes(
                 selectedId = open?.id,
             )
         }
-        VerticalDivider(thickness = ShifaSize.S1, color = ShifaColors.Border.Default)
+        // Design review D14: the panes are layered, not three flat fields side by side: the list lies on the canvas and
+        // the conversation is a white surface raised over it.
         Box(
-            Modifier.weight(1f).fillMaxHeight().background(ShifaColors.Bg.Surface),
+            Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .padding(top = ShifaSpacing.Inset.Md, end = ShifaSpacing.Inset.Md, bottom = ShifaSpacing.Inset.Md)
+                .dropShadow(ShifaRadius.ControlLg, ShifaShadow.Card)
+                .clip(ShifaRadius.ControlLg)
+                .background(ShifaColors.Bg.Surface),
             contentAlignment = Alignment.Center,
         ) {
             if (!threadOpen) {
-                Text(
+                // Design review D15: an empty pane says what to do next.
+                EmptyState(
                     tr(Res.string.selectConversation),
-                    style = ShifaTextStyles.dialogBody(),
-                    color = ShifaColors.Text.Secondary,
+                    Res.drawable.ic_chat_22,
+                    Modifier.widthIn(max = ShifaDimens.Layout.DialogMd),
+                    body = tr(if (staff) Res.string.chatEmptyHint else Res.string.selectConversationBody),
+                    action =
+                        if (staff) {
+                            null
+                        } else {
+                            {
+                                ShifaSecondaryButton(
+                                    tr(Res.string.openPatients),
+                                    { actions.select(ShellTab.Patients) },
+                                    size = ShifaButtonSize.Compact,
+                                )
+                            }
+                        },
                 )
             } else {
                 key(open?.id) { single() }

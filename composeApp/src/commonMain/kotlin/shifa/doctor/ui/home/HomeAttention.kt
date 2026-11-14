@@ -81,7 +81,10 @@ class HomeAttentionActions(
     val retry: () -> Unit = {},
 )
 
-/** The board's card frame: white, rounded, the card shadow, a heading and its line. */
+/**
+ * The board's card frame: white, rounded, the card shadow, a heading and its line. A panel's link ("See all") is always
+ * [trailing], at the right of the heading (design review D3: one tertiary style, one place).
+ */
 @Composable
 private fun HomeCard(
     title: String,
@@ -96,7 +99,7 @@ private fun HomeCard(
         .padding(ShifaSize.S16),
     verticalArrangement = Arrangement.spacedBy(ShifaSize.S12),
 ) {
-    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
             Text(
                 title,
@@ -131,7 +134,11 @@ internal fun AttentionCard(
     state: HomeAttentionUiState,
     clock: PracticeClock,
     actions: HomeAttentionActions,
-) = HomeCard(tr(Res.string.attentionRequired), tr(Res.string.attentionRequiredSubtitle)) {
+) = HomeCard(
+    tr(Res.string.attentionRequired),
+    tr(Res.string.attentionRequiredSubtitle),
+    trailing = { ShifaLink(tr(Res.string.allNotifications), actions.all) },
+) {
     val items = state.attention
     when {
         // The notifications failed: say so, and still show the tasks that came (flow §6: show what loaded).
@@ -180,7 +187,6 @@ internal fun AttentionCard(
                 }
             }
     }
-    ShifaLink(tr(Res.string.allNotifications), actions.all)
 }
 
 @Composable

@@ -140,12 +140,16 @@ private fun Splash(
 
 // Figma's blurred ellipse, rotated 45°. A radial gradient fades the edge over ±2σ instead of a real blur (Figma's blur
 // value is 2σ). index.html draws the same blobs at the start while the app downloads.
+// Design review D1: the blobs are sized for the design's phone frame, so on a larger frame (a tablet, a browser window)
+// they were two ovals adrift in white. They grow with the frame and fill it as they fill the phone's.
 private fun DrawScope.blob(offset: DpOffset) {
     val color = ShifaColors.Raw.SplashBlob
-    val rx = ShifaDimens.SplashBlobWidth.toPx() / 2
-    val fade = ShifaDimens.SplashBlobBlur.toPx()
+    val fill =
+        maxOf(1f, size.width / ShifaDimens.SplashFrameWidth.toPx(), size.height / ShifaDimens.SplashFrameHeight.toPx())
+    val rx = ShifaDimens.SplashBlobWidth.toPx() / 2 * fill
+    val fade = ShifaDimens.SplashBlobBlur.toPx() * fill
     val radius = rx + fade
-    val c = center + Offset(offset.x.toPx(), offset.y.toPx())
+    val c = center + Offset(offset.x.toPx(), offset.y.toPx()) * fill
     rotate(45f, c) {
         scale(1f, ShifaDimens.SplashBlobHeight / ShifaDimens.SplashBlobWidth, c) {
             drawCircle(

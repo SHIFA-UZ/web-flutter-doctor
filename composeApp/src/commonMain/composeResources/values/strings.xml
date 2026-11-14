@@ -314,6 +314,7 @@
     <string name="calendarDayView">Day</string>
     <string name="calendarDayViewCount">Days shown in grid</string>
     <string name="calendarForDoctor">Calendar for</string>
+    <string name="calendarMonthView">Month</string>
     <string name="calendarOccupancyLegend">Dark = fully booked · No fill = open availability</string>
     <string name="calendarStaffCalendars">Staff calendars</string>
     <string name="calendarTimezoneMismatchHint">Your current device timezone does not match the calendar schedule timezone (%1$s). Your slots were defined in one timezone, but you are currently in another. Please keep this in mind while managing appointments.</string>
@@ -1816,6 +1817,7 @@
     <string name="nextAppointment">Next appointment</string>
     <string name="nextAppointmentInMinutes">Next appointment starts in %1$s minutes.</string>
     <string name="nextAvailable">Next available: %1$s</string>
+    <string name="nextDay">Next day</string>
     <string name="nextMonth">Next month</string>
     <string name="nextPatient">Next patient</string>
     <string name="nextWeek">Next week</string>
@@ -1831,6 +1833,7 @@
     <string name="noBookablePeriod">No bookable period yet</string>
     <string name="noCarePartnerships">No care partnerships yet</string>
     <string name="noCertificatesYet">No certificates yet</string>
+    <string name="noChangesYet">No changes yet</string>
     <string name="noCheckInsFound">No check-ins found</string>
     <string name="noCheckInsScheduled">No check-ins scheduled yet</string>
     <string name="noChronicDisease">No chronic disease</string>
@@ -1991,6 +1994,7 @@
     <string name="openDocuments">Documents</string>
     <string name="openForm0252">Open Form 025-2</string>
     <string name="openPatientCard">Open chart</string>
+    <string name="openPatients">Open patients</string>
     <string name="openRoom">Open Room</string>
     <string name="openRoomWhenReady">Open the room when you're ready to start the call</string>
     <string name="openServicesPricing">Open Services &amp; Pricing</string>
@@ -2191,6 +2195,7 @@
     <string name="prescriptions">Prescriptions</string>
     <string name="previous">Previous</string>
     <string name="previousChartUnavailable">The previous chart couldn't be loaded; this form starts empty.</string>
+    <string name="previousDay">Previous day</string>
     <string name="previousMonth">Previous month</string>
     <string name="previousWeek">Previous week</string>
     <string name="pricePerMonth">%1$s / month</string>
@@ -2369,6 +2374,7 @@
     <string name="seePlans">See plans</string>
     <string name="selectChronicDisease">Select Chronic Disease</string>
     <string name="selectConversation">Select a conversation</string>
+    <string name="selectConversationBody">Pick a conversation from the list to read and reply. To start a new one, message a patient from their record.</string>
     <string name="selectDate">Select Date</string>
     <string name="selectDateHint">Select Date of Birth</string>
     <string name="selectDateRange">Select date range</string>
@@ -2795,6 +2801,7 @@
     <string name="unreadCountLabel">unread</string>
     <string name="unreadOnlyNewest">Unread only (newest first)</string>
     <string name="unreadOnlyOldest">Unread only (oldest first)</string>
+    <string name="unsavedChanges">Unsaved changes</string>
     <string name="unsavedChangesMessage">You have unsaved changes. Discard them?</string>
     <string name="unsavedChangesSwitch">You have unsaved changes. Save before switching?</string>
     <string name="unsavedMayBeLost">Some unsaved changes may be lost.</string>

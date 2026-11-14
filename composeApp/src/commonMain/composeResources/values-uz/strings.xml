@@ -314,6 +314,7 @@
     <string name="calendarDayView">Kun</string>
     <string name="calendarDayViewCount">Jadvalda ko'rsatiladigan kunlar</string>
     <string name="calendarForDoctor">Shifokor taqvimi</string>
+    <string name="calendarMonthView">Oy</string>
     <string name="calendarOccupancyLegend">To'q = to'liq band · Bo'sh = ochiq vaqt</string>
     <string name="calendarStaffCalendars">Xodimlar taqvimi</string>
     <string name="calendarTimezoneMismatchHint">Joriy qurilma vaqt zonasi kalendar jadvali vaqt zonasi (%1$s) bilan mos emas. Siz slotlarni bir vaqt zonasida belgilagansiz, hozir esa boshqa vaqt zonasidasiz. Iltimos, uchrashuvlar bilan ishlaganda buni inobatga oling.</string>
@@ -1816,6 +1817,7 @@
     <string name="nextAppointment">Keyingi qabul</string>
     <string name="nextAppointmentInMinutes">Keyingi uchrashuv %1$s daqiqadan keyin boshlanadi.</string>
     <string name="nextAvailable">Keyingi bo'sh kun: %1$s</string>
+    <string name="nextDay">Keyingi kun</string>
     <string name="nextMonth">Keyingi oy</string>
     <string name="nextPatient">Keyingi bemor</string>
     <string name="nextWeek">Keyingi hafta</string>
@@ -1831,6 +1833,7 @@
     <string name="noBookablePeriod">Hali band qilish davri yo'q</string>
     <string name="noCarePartnerships">Hali hamkorlik yo‘q</string>
     <string name="noCertificatesYet">Hali sertifikatlar yo'q</string>
+    <string name="noChangesYet">Hali oʻzgarishlar yoʻq</string>
     <string name="noCheckInsFound">Tekshiruvlar topilmadi</string>
     <string name="noCheckInsScheduled">Hozircha belgilashlar rejalashtirilmagan</string>
     <string name="noChronicDisease">Surunkali kasallik yo'q</string>
@@ -1991,6 +1994,7 @@
     <string name="openDocuments">Hujjatlar</string>
     <string name="openForm0252">025-2 shaklini to'ldirish</string>
     <string name="openPatientCard">Kartani ochish</string>
+    <string name="openPatients">Bemorlarni ochish</string>
     <string name="openRoom">Xonani ochish</string>
     <string name="openRoomWhenReady">Qo'ng'iroqni boshlashga tayyor bo'lganda xonani oching</string>
     <string name="openServicesPricing">Xizmatlar va narxlarni ochish</string>
@@ -2191,6 +2195,7 @@
     <string name="prescriptions">Retseptlar</string>
     <string name="previous">Oldingi</string>
     <string name="previousChartUnavailable">Oldingi karta yuklanmadi; bu forma bo'sh boshlanadi.</string>
+    <string name="previousDay">Oldingi kun</string>
     <string name="previousMonth">Oldingi oy</string>
     <string name="previousWeek">Oldingi hafta</string>
     <string name="pricePerMonth">%1$s / oy</string>
@@ -2369,6 +2374,7 @@
     <string name="seePlans">Tariflarni ko'rish</string>
     <string name="selectChronicDisease">Surunkali kasallikni tanlash</string>
     <string name="selectConversation">Suhbatni tanlash</string>
+    <string name="selectConversationBody">Oʻqish va javob berish uchun roʻyxatdan suhbatni tanlang. Yangisini boshlash uchun bemor kartasidan xabar yuboring.</string>
     <string name="selectDate">Sanani tanlash</string>
     <string name="selectDateHint">Tug'ilgan sanani tanlash</string>
     <string name="selectDateRange">Sana oralig'ini tanlang</string>
@@ -2795,6 +2801,7 @@
     <string name="unreadCountLabel">o'qilmagan</string>
     <string name="unreadOnlyNewest">Faqat O'qilmaganlar (Avval Yangilari)</string>
     <string name="unreadOnlyOldest">Faqat O'qilmaganlar (Avval Eskilari)</string>
+    <string name="unsavedChanges">Saqlanmagan oʻzgarishlar</string>
     <string name="unsavedChangesMessage">Saqlanmagan o'zgarishlar bor. Bekor qilinsinmi?</string>
     <string name="unsavedChangesSwitch">Saqlanmagan o'zgarishlar bor. Almashishdan oldin saqlaysizmi?</string>
     <string name="unsavedMayBeLost">Saqlanmagan ayrim o'zgarishlar yo'qolishi mumkin.</string>

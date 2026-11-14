@@ -58,7 +58,7 @@ import shifa.doctor.generated.resources.heroOpensAtVideo
 import shifa.doctor.generated.resources.hideEarlier
 import shifa.doctor.generated.resources.homeSetTimezone
 import shifa.doctor.generated.resources.ic_block_14
-import shifa.doctor.generated.resources.ic_cal_plus_18
+import shifa.doctor.generated.resources.ic_cal_plus_16
 import shifa.doctor.generated.resources.ic_calendar_24
 import shifa.doctor.generated.resources.ic_clinic_14
 import shifa.doctor.generated.resources.ic_clock_14
@@ -67,6 +67,7 @@ import shifa.doctor.generated.resources.ic_pin_14
 import shifa.doctor.generated.resources.ic_play_14
 import shifa.doctor.generated.resources.ic_play_18
 import shifa.doctor.generated.resources.ic_video_14
+import shifa.doctor.generated.resources.ic_video_16
 import shifa.doctor.generated.resources.ic_video_18
 import shifa.doctor.generated.resources.inClinic
 import shifa.doctor.generated.resources.newAppointment
@@ -319,13 +320,13 @@ internal fun QuickActions(
         ShifaActionButton(
             actions.calendar,
             text = tr(Res.string.newAppointment),
-            icon = Res.drawable.ic_cal_plus_18,
+            icon = Res.drawable.ic_cal_plus_16,
             variant = ShifaActionVariant.Surface,
         )
         ShifaActionButton(
             actions.videoCall,
             text = tr(Res.string.videoCall),
-            icon = Res.drawable.ic_video_18,
+            icon = Res.drawable.ic_video_16,
             variant = ShifaActionVariant.Surface,
             enabled = videoEnabled,
         )

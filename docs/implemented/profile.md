@@ -476,3 +476,12 @@ Built 2026-11-07. Board `DaProfile` legalAbout. `AboutViewModel` + `data/legal/L
   then the pages; a failure with its request id and Retry). Clinic staff never ask.
 - **Demo:** the legal links, contract SHIFA-0461 and a one-page stand-in PDF.
 - **Tests:** `AboutViewModelTest`, `DemoBackendTest`; screenshot `About` re-recorded (Terms, Privacy, the contract).
+
+## Save bar (2026-11-14, the user's report)
+
+`ProfileForm` now ends with the board's `ActionBar` (`DaProfile` `dr-actionbar`): "Unsaved changes" / "No changes yet"
+and a Save button that is always in view and off while nothing changed or a save runs. It replaces the header's Save
+check, which showed only once something changed and was easy to miss. On wide screens the form column and the bar's
+content keep to `layout-form-wide` (760), the note at the left and Save at the right. The earlier notes above that
+mention "the Save check" describe the header as it was before this change.
+

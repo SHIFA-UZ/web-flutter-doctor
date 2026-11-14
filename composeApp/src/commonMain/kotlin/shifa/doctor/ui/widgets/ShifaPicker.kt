@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -120,7 +119,7 @@ fun ShifaPickField(
  * The board's picker sheet (DaAuth picker: timezone, clinic, profession): title and close, a search field, the
  * options (lazy: a timezone search lists hundreds), "No results", and an optional [footer] (Clear, Done). While the
  * list is empty, [loadingText] ("Searching…") or, with [onRetry], "Couldn't load. Retry" replace "No results"; with
- * options (a bundled fallback) the retry link sits above them. Host it in a `ModalBottomSheet`; it only draws.
+ * options (a bundled fallback) the retry link sits above them. Host it in a `ShifaSheetHost`; it only draws.
  */
 @Composable
 fun ShifaPickerSheet(
@@ -136,7 +135,7 @@ fun ShifaPickerSheet(
     onRetry: (() -> Unit)? = null,
     footer: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
-    val shape = RoundedCornerShape(topStart = ShifaSize.S24, topEnd = ShifaSize.S24)
+    val shape = TrayShape
     Column(
         modifier
             .trackActivity()

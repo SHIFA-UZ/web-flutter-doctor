@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,8 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -93,6 +89,7 @@ import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPickField
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.ui.widgets.ShifaSheetHost
 import shifa.doctor.ui.widgets.ShifaTag
 import shifa.doctor.ui.widgets.ShifaTagType
 import shifa.doctor.ui.widgets.ShifaTray
@@ -216,13 +213,7 @@ fun RegisterScreenContent(
         }
     }
     state.picker?.let { picker ->
-        ModalBottomSheet(
-            actions.closePicker,
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            shape = RectangleShape,
-            containerColor = Color.Transparent,
-            dragHandle = null,
-        ) {
+        ShifaSheetHost(actions.closePicker) {
             when (picker) {
                 RegisterPicker.TimeZone -> TimeZonePicker(state, actions)
                 RegisterPicker.Clinic -> ClinicPicker(state, actions)
@@ -232,21 +223,10 @@ fun RegisterScreenContent(
     }
     if (state.pickingDob) DobPicker(state.dob, actions.pickDob)
     state.code?.let { code ->
-        ModalBottomSheet(
-            actions.closeCode,
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            shape = RectangleShape,
-            containerColor = Color.Transparent,
-            dragHandle = null,
-        ) { RegistrationCodeSheet(code, state.loading, actions) }
+        ShifaSheetHost(actions.closeCode) { RegistrationCodeSheet(code, state.loading, actions) }
     }
     if (state.askDiscard) {
-        ModalBottomSheet(
-            actions.keepEditing,
-            shape = RectangleShape,
-            containerColor = Color.Transparent,
-            dragHandle = null,
-        ) {
+        ShifaSheetHost(actions.keepEditing) {
             ShifaDialogSheet(
                 tr(Res.string.discardRegistrationTitle),
                 tr(Res.string.discard),

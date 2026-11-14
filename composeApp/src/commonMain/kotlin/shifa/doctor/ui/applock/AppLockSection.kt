@@ -3,7 +3,6 @@ package shifa.doctor.ui.applock
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,8 +10,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.ViewModel
@@ -57,6 +54,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
+import shifa.doctor.ui.widgets.ShifaSheetHost
 import shifa.doctor.ui.widgets.ShifaSwitch
 import shifa.doctor.utils.rememberBiometrics
 import shifa.doctor.utils.tr
@@ -260,7 +258,7 @@ private fun PinSheetHost(
     onPin: (String) -> Unit,
     onSubmit: () -> Unit,
     onClose: () -> Unit,
-) = ModalBottomSheet(onClose, shape = RectangleShape, containerColor = Color.Transparent, dragHandle = null) {
+) = ShifaSheetHost(onClose) {
     PinSheetContent(sheet, onPin, onSubmit, onClose)
 }
 

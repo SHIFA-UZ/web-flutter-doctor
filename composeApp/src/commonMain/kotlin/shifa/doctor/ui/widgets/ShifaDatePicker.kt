@@ -49,8 +49,21 @@ fun ShifaDatePickerDialog(
         )
     DatePickerDialog(
         onDismissRequest = { onPick(null) },
-        confirmButton = { ShifaLink(tr(Res.string.done), { onPick(state.selectedDateMillis?.toDate()) }) },
-        dismissButton = { ShifaLink(tr(Res.string.cancel), { onPick(null) }) },
+        // Design review D6: a primary and a secondary button, as in every dialog (they were two links).
+        confirmButton = {
+            ShifaPrimaryButton(
+                tr(Res.string.done),
+                { onPick(state.selectedDateMillis?.toDate()) },
+                size = ShifaButtonSize.Compact,
+            )
+        },
+        dismissButton = {
+            ShifaSecondaryButton(
+                tr(Res.string.cancel),
+                { onPick(null) },
+                size = ShifaButtonSize.Compact,
+            )
+        },
         colors = colors,
     ) { DatePicker(state, colors = colors, showModeToggle = false) }
 }

@@ -99,3 +99,31 @@ it deletes generated files nothing uses. The library has no `folder` or `check_s
 - The avatar fallback is the patient app's brand image (`img_avatar_fallback.webp`) until a doctor asset exists.
 - Strings in the kit come from `strings_kit.xml` (kit-only keys) and the doctor JSON keys; CORE-04 regenerates
   `strings.xml` from `docs/kmp-spec/strings/`.
+
+## Design review 12 Nov 2026 (branch `fix/design-review-polish`)
+
+The designer's review ("Doctor app review.pdf", web app, 28 findings; the file received has D1–D18 only). The live
+canvas was compared with `docs/design/` on 2026-11-14 (version `1794642449-c7c4`): the boards, tokens and stylesheet are
+unchanged except `DaApp`, where the "Turn on notifications?" dialog was dragged into the Home branch (a hand edit, not
+a design change), so the vendored copy stays as it is. Fixed at the shared component, not per screen:
+
+| Finding | What changed | Where |
+|---|---|---|
+| D1 splash | The blobs scale with the frame (from the design's 390 × 844) and fill a tablet or a browser window; `index.html`'s loading frame does the same. | `SplashScreen.kt`, `index.html` |
+| D2 Home gaps | One gap (`Stack.Md`, 16) between every Home panel, both directions. | `HomeScreen.kt` |
+| D3 panel links | A panel's link sits at the right of its heading, one style (`ShifaLink`). Clinic performance: the range is a compact secondary, Export a tertiary. | `HomeAttention.kt`, `AnalyticsSection.kt` |
+| D4, D5 shadows | Primary, secondary, AI, icon and action buttons are flat; only the FAB, trays and menus are raised. Quick actions use the neutral action pill with 16 icons. | `ShifaButtons.kt`, `HomeHero.kt` |
+| D6 date range | `ShifaSheetHost` + `ShifaDialogSheet` + the shared `MonthCalendar` (new `ranged` days, `card = false`); Save primary, Cancel secondary. The Material single-date picker stays for birth dates (its year list) with the app's buttons. | `AnalyticsSection.kt`, `ShifaCalendar.kt`, `ShifaDatePicker.kt` |
+| D7, D8, D18 headers | `ShifaPageToolbar` + `ShifaToolbarAction` on Home, Calendar, Patients, Chat, Notifications, Tasks, Reports, Clinic. Rule: quick actions are white 44 discs in the order refresh, search, filter/settings, bell; the page's commit action is a primary button and comes last. "Mark all as read" is a toolbar action. | `ShifaPageHeader.kt` and each screen |
+| D9, D10 calendar | Wide panes: Today, previous / next, the title and a Day / Week / Month switch (`CalendarNav`); `TimeGrid` (hour lines, one separator per day, today as a teal disc) for the day and the week; `MonthGrid` with each day's first visits; no side month card. Phones keep the month card and agenda. | `WeekGrid.kt`, `CalendarScreen.kt` |
+| D11, D12 trays on desktop | `ShifaSheetHost`: a bottom tray below 560, a centred dialog (max 480, four corners, actions side by side) from there. Every sheet in the app goes through it. | `ShifaTray.kt`, `Feedback.kt` |
+| D13 dropdown | The menu floats over the form (Material `DropdownMenu` in the kit's look) and flips above when there is no room. | `ShifaDropdown.kt` |
+| D14, D15 chat panes | The conversation is a raised white surface on the canvas; the empty pane is an `EmptyState` with "Open patients". | `MainScreen.kt` |
+| D16, D17 thread | Messages and composer in a centred 720 column; the composer is the chat tray's attach and send buttons around a bordered field. | `ThreadScreen.kt` |
+
+Not in the design: the month grid's cells and the calendar bar (built from kit parts after the review's "familiar
+calendar" note). Open: D11 asks for an anchored menu for Filters on desktop; it opens as the centred dialog. D19–D28
+(Notifications, Remote-care tasks, Reports, Profile and settings) wait for the rest of the review; the review's open
+questions (D21, D25, D26, the button-shadow token) are the designer's to answer. An expanded dropdown no longer shows in
+a widget screenshot (the menu is its own window).
+

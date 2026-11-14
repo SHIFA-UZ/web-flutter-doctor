@@ -4,31 +4,31 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.datetime.LocalDate
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.ic_refresh_22
 import shifa.doctor.generated.resources.navReports
+import shifa.doctor.generated.resources.refresh
 import shifa.doctor.generated.resources.reportsScreenSubtitle
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.ShifaPageToolbar
 import shifa.doctor.ui.widgets.ShifaSubHeader
+import shifa.doctor.ui.widgets.ShifaToolbarAction
 import shifa.doctor.utils.tr
 
 /**
@@ -81,15 +81,11 @@ internal fun ReportsContent(
                 ),
             verticalArrangement = Arrangement.spacedBy(ShifaSize.S12),
         ) {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(ShifaSize.S4)) {
-                if (onBack == null) {
-                    Text(
-                        tr(Res.string.navReports),
-                        Modifier.semantics { heading() },
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = ShifaColors.Text.Primary,
-                    )
+            if (onBack == null) {
+                ShifaPageToolbar(tr(Res.string.navReports), subtitle = tr(Res.string.reportsScreenSubtitle)) {
+                    ShifaToolbarAction(Res.drawable.ic_refresh_22, tr(Res.string.refresh), onRefresh)
                 }
+            } else {
                 Text(
                     tr(Res.string.reportsScreenSubtitle),
                     style = ShifaTextStyles.dialogBody(),

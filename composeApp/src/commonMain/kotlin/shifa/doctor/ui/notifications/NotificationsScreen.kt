@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -22,7 +21,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -63,7 +61,7 @@ import shifa.doctor.generated.resources.careStatusDeclined
 import shifa.doctor.generated.resources.couldNotLoadRetry
 import shifa.doctor.generated.resources.declineInvite
 import shifa.doctor.generated.resources.ic_bell_22
-import shifa.doctor.generated.resources.ic_check_16
+import shifa.doctor.generated.resources.ic_check_circle_22
 import shifa.doctor.generated.resources.ic_refresh_22
 import shifa.doctor.generated.resources.ic_sliders_22
 import shifa.doctor.generated.resources.markAllAsRead
@@ -102,14 +100,14 @@ import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaChip
-import shifa.doctor.ui.widgets.ShifaIconButton
-import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaLoadError
+import shifa.doctor.ui.widgets.ShifaPageToolbar
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.ShifaTertiaryButton
+import shifa.doctor.ui.widgets.ShifaToolbarAction
 import shifa.doctor.ui.widgets.pressable
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.tr
@@ -188,38 +186,18 @@ internal fun NotificationsContent(
     ) {
         // "Notifications (3)" from the unread count (flow §3), "99+" past 99.
         val count = unread?.takeIf { it > 0 }?.let { if (it > MAX_COUNT) "$MAX_COUNT+" else "$it" }
-        Text(
-            listOfNotNull(tr(Res.string.notifications), count?.let { "($it)" }).joinToString(" "),
-            Modifier.semantics { heading() },
-            style = MaterialTheme.typography.headlineSmall,
-            color = ShifaColors.Text.Primary,
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ShifaTertiaryButton(
+        ShifaPageToolbar(listOfNotNull(tr(Res.string.notifications), count?.let { "($it)" }).joinToString(" ")) {
+            ShifaToolbarAction(Res.drawable.ic_refresh_22, tr(Res.string.refresh), actions.refresh)
+            // Design review D18: "Mark all as read" is an icon action in the header, not a button on its own row.
+            ShifaToolbarAction(
+                Res.drawable.ic_check_circle_22,
                 tr(Res.string.markAllAsRead),
                 actions.markAll,
-                icon = Res.drawable.ic_check_16,
                 // Unread rows may sit on pages not read yet: the count (or not knowing it) also enables it.
                 enabled = (state.anyUnread || unread == null || unread > 0) && !state.markingAll,
-                size = ShifaButtonSize.Compact,
-            )
-            Spacer(Modifier.weight(1f))
-            ShifaIconButton(
-                Res.drawable.ic_refresh_22,
-                tr(Res.string.refresh),
-                actions.refresh,
-                variant = ShifaIconButtonVariant.Secondary,
             )
             // Flutter's gear went to the tab it was on (flow §12); here it opens Settings.
-            ShifaIconButton(
-                Res.drawable.ic_sliders_22,
-                tr(Res.string.notificationSettings),
-                actions.settings,
-                variant = ShifaIconButtonVariant.Secondary,
-            )
+            ShifaToolbarAction(Res.drawable.ic_sliders_22, tr(Res.string.notificationSettings), actions.settings)
         }
         Row(
             Modifier.horizontalScroll(rememberScrollState()),

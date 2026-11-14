@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -69,6 +68,7 @@ import shifa.doctor.generated.resources.filterAllStatuses
 import shifa.doctor.generated.resources.followUps
 import shifa.doctor.generated.resources.gender
 import shifa.doctor.generated.resources.ic_chev_r_16
+import shifa.doctor.generated.resources.ic_plus_16
 import shifa.doctor.generated.resources.ic_sliders_22
 import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.male
@@ -114,6 +114,7 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaOptionList
+import shifa.doctor.ui.widgets.ShifaPageToolbar
 import shifa.doctor.ui.widgets.ShifaPager
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSearchField
@@ -378,14 +379,10 @@ private fun Header(
     state: PatientsUiState,
     actions: PatientsActions,
 ) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
-    Text(tr(Res.string.patients), style = ShifaTextStyles.trayTitle(), color = ShifaColors.Text.Primary)
-    state.patients?.let {
-        ProfileChip(
-            trPlural(Res.plurals.patientsCount, it.size, it.size),
-            ShifaColors.Bg.Surface,
-            ShifaColors.Text.Secondary,
-        )
-    }
+    ShifaPageToolbar(
+        tr(Res.string.patients),
+        subtitle = state.patients?.let { trPlural(Res.plurals.patientsCount, it.size, it.size) },
+    )
     ShifaSearchField(state.typed, actions.type, tr(Res.string.searchPatientsDirectoryHint), Modifier.fillMaxWidth())
     Row(
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
@@ -470,22 +467,11 @@ private fun WideHeader(
     state: PatientsUiState,
     actions: PatientsActions,
 ) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-            Text(
-                tr(Res.string.patients),
-                style = MaterialTheme.typography.headlineLarge,
-                color = ShifaColors.Text.Primary,
-            )
-            state.patients?.let {
-                ProfileChip(
-                    trPlural(Res.plurals.patientsCount, it.size, it.size),
-                    ShifaColors.Bg.Surface,
-                    ShifaColors.Text.Secondary,
-                )
-            }
-        }
-        actions.create?.let { ShifaPrimaryButton(tr(Res.string.newPatient), it) }
+    ShifaPageToolbar(
+        tr(Res.string.patients),
+        subtitle = state.patients?.let { trPlural(Res.plurals.patientsCount, it.size, it.size) },
+    ) {
+        actions.create?.let { ShifaPrimaryButton(tr(Res.string.newPatient), it, icon = Res.drawable.ic_plus_16) }
     }
     Row(
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),

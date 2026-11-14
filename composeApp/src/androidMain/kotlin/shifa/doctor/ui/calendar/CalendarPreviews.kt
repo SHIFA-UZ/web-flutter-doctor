@@ -94,12 +94,12 @@ private fun state(details: Boolean) =
 @Composable
 internal fun CalendarDayPreview() = PreviewTheme { CalendarContent(state(false), CalendarActions()) }
 
-// WEB-07c (DaCalendar web): Day picked: the month card on the left, the chosen day's agenda beside it.
+// Design review D10: Day picked: the day's time grid over the whole width (no side month card).
 @androidx.compose.runtime.Composable
 internal fun CalendarWidePreview() =
     PreviewTheme {
         androidx.compose.runtime.CompositionLocalProvider(shifa.doctor.ui.widgets.LocalWideLayout provides true) {
-            CalendarContent(state(false).copy(week = false), CalendarActions())
+            CalendarContent(state(false).copy(view = CalendarView.Day), CalendarActions())
         }
     }
 
@@ -113,8 +113,20 @@ internal fun CalendarWeekPreview() =
                 weekOf(LocalDate(2026, 11, 4)).associate {
                     shifa.doctor.data.calendar.DayKey(it) to emptyList<shifa.doctor.data.model.CalendarEntry>()
                 }
-            val loaded = state(false).let { it.copy(week = true, cache = it.cache.copy(days = week + it.cache.days)) }
+            val loaded =
+                state(
+                    false,
+                ).let { it.copy(view = CalendarView.Week, cache = it.cache.copy(days = week + it.cache.days)) }
             CalendarContent(loaded, CalendarActions())
+        }
+    }
+
+// Design review D9: the month, a week per row, each day with its first visits.
+@androidx.compose.runtime.Composable
+internal fun CalendarMonthPreview() =
+    PreviewTheme {
+        androidx.compose.runtime.CompositionLocalProvider(shifa.doctor.ui.widgets.LocalWideLayout provides true) {
+            CalendarContent(state(false).copy(view = CalendarView.Month), CalendarActions())
         }
     }
 

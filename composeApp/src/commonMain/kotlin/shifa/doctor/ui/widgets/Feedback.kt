@@ -8,14 +8,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -232,7 +233,8 @@ enum class DialogTone { None, Destructive, Ai }
 /**
  * ResponsiveDialog (`.sh-sheet`, Dialog board) on phones: it docks as a tray, the handle on top, a tone disc, the
  * title and body centred for a question, a [content] slot (a form, a briefing) and the actions stacked with the
- * primary on top. Host it in a `ModalBottomSheet`; it only draws.
+ * primary on top. Host it in a `ShifaSheetHost` (from 560 wide it is a
+ * centred dialog: no handle, the actions side by side); it only draws.
  */
 @Composable
 fun ShifaDialogSheet(
@@ -249,7 +251,8 @@ fun ShifaDialogSheet(
     confirmEnabled: Boolean = true,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
-    val sheetShape = RoundedCornerShape(topStart = ShifaSize.S24, topEnd = ShifaSize.S24)
+    val docked = LocalSheetDocked.current
+    val sheetShape = TrayShape
     val centred = tone == DialogTone.Destructive || content == null
     Column(
         modifier
@@ -267,13 +270,18 @@ fun ShifaDialogSheet(
             .padding(start = ShifaSpacing.Inset.Md, end = ShifaSpacing.Inset.Md, bottom = ShifaSpacing.Inset.Lg),
         verticalArrangement = Arrangement.spacedBy(ShifaSize.S20),
     ) {
-        Box(
-            Modifier
-                .padding(top = ShifaSpacing.Inset.Sm)
-                .align(Alignment.CenterHorizontally)
-                .size(ShifaSize.S36, ShifaSize.S4)
-                .background(ShifaColors.Border.Default, ShifaRadius.Full),
-        )
+        if (docked) {
+            Box(
+                Modifier
+                    .padding(top = ShifaSpacing.Inset.Sm)
+                    .align(Alignment.CenterHorizontally)
+                    .size(ShifaSize.S36, ShifaSize.S4)
+                    .background(ShifaColors.Border.Default, ShifaRadius.Full),
+            )
+        } else {
+            // A dialog has no grab handle: the same space above the title as beside it.
+            Spacer(Modifier.height(ShifaSize.S4))
+        }
         // DialogStates: the body (heading, copy, form) scrolls inside the sheet; the actions below stay put.
         Column(
             Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
@@ -324,16 +332,27 @@ fun ShifaDialogSheet(
             }
             content?.invoke(this)
         }
-        Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm)) {
+        val primary = @Composable { m: Modifier ->
             ShifaPrimaryButton(
                 confirmText,
                 onConfirm,
-                Modifier.fillMaxWidth(),
+                m,
                 destructive = tone == DialogTone.Destructive,
                 loading = confirmLoading,
                 enabled = confirmEnabled,
             )
-            cancelText?.let { ShifaSecondaryButton(it, onCancel, Modifier.fillMaxWidth()) }
+        }
+        if (docked) {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm)) {
+                primary(Modifier.fillMaxWidth())
+                cancelText?.let { ShifaSecondaryButton(it, onCancel, Modifier.fillMaxWidth()) }
+            }
+        } else {
+            // Dialog board, web: the actions side by side, the secondary first and the primary last.
+            Row(horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
+                cancelText?.let { ShifaSecondaryButton(it, onCancel, Modifier.weight(1f)) }
+                primary(Modifier.weight(1f))
+            }
         }
     }
 }

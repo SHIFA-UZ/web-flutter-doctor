@@ -13,15 +13,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,6 +62,7 @@ import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
+import shifa.doctor.ui.widgets.ShifaSheetHost
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.rememberFileSaver
@@ -170,13 +167,7 @@ fun PrivacyContent(
         }
     }
     state.step?.let { step ->
-        ModalBottomSheet(
-            actions.closeDelete,
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            shape = RectangleShape,
-            containerColor = Color.Transparent,
-            dragHandle = null,
-        ) {
+        ShifaSheetHost(actions.closeDelete) {
             when (step) {
                 DeleteStep.Ask ->
                     ShifaDialogSheet(

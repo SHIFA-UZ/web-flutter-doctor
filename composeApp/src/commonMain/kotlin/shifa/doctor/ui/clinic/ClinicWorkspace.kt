@@ -18,7 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -128,6 +127,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaOptionList
+import shifa.doctor.ui.widgets.ShifaPageToolbar
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaTray
@@ -301,7 +301,7 @@ internal fun ClinicWorkspaceContent(
         Modifier.fillMaxWidth().padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSize.S10),
         verticalArrangement = Arrangement.spacedBy(ShifaSize.S10),
     ) {
-        Text(tr(Res.string.clinic), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineSmall)
+        ShifaPageToolbar(tr(Res.string.clinic))
         when {
             clinic != null -> Header(clinic, state, staff, onSection, onSwitcher)
             state.error != null -> ShifaLoadError(tr(state.error.text), onRetry, requestId = state.error.requestId)

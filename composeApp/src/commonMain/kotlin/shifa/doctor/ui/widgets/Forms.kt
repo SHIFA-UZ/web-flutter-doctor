@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +26,7 @@ import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.ic_check_circle_16
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -42,21 +44,15 @@ fun ActionBar(
     secondary: (@Composable (Modifier) -> Unit)? = null,
     primary: @Composable (Modifier) -> Unit,
 ) {
-    Column(modifier.fillMaxWidth().background(ShifaColors.Bg.Surface)) {
+    Column(
+        modifier.fillMaxWidth().background(ShifaColors.Bg.Surface),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         HorizontalDivider(thickness = ShifaSize.S1, color = ShifaColors.Border.Default)
-        Column(
-            Modifier
-                .navigationBarsPadding()
-                .padding(
-                    start = ShifaSpacing.Inset.Md,
-                    end = ShifaSpacing.Inset.Md,
-                    top = ShifaSpacing.Inset.Sm,
-                    bottom = ShifaSpacing.Inset.Md,
-                ),
-            verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
-        ) {
+        val note = @Composable { m: Modifier ->
             state?.let {
                 Row(
+                    m,
                     horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -64,8 +60,34 @@ fun ActionBar(
                     Text(it, style = ShifaTextStyles.kpiLabel(), color = ShifaColors.Text.Secondary)
                 }
             }
-            secondary?.invoke(Modifier.fillMaxWidth())
-            primary(Modifier.fillMaxWidth())
+        }
+        val padding =
+            Modifier
+                .navigationBarsPadding()
+                .padding(
+                    start = ShifaSpacing.Inset.Md,
+                    end = ShifaSpacing.Inset.Md,
+                    top = ShifaSpacing.Inset.Sm,
+                    bottom = ShifaSpacing.Inset.Md,
+                )
+        if (LocalWideLayout.current) {
+            // `.dr-actionbar__inner` on web: at most `layout-form-wide`, the note at the left, the actions (at least
+            // 160 wide) at the right, the primary last.
+            Row(
+                Modifier.widthIn(max = ShifaDimens.Layout.FormWide).fillMaxWidth().then(padding),
+                horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.weight(1f)) { note(Modifier) }
+                secondary?.invoke(Modifier.widthIn(min = ShifaSize.S160))
+                primary(Modifier.widthIn(min = ShifaSize.S160))
+            }
+        } else {
+            Column(padding, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm)) {
+                note(Modifier)
+                secondary?.invoke(Modifier.fillMaxWidth())
+                primary(Modifier.fillMaxWidth())
+            }
         }
     }
 }

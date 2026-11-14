@@ -2,27 +2,25 @@ package shifa.doctor.ui.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.cameraAccessNeeded
 import shifa.doctor.generated.resources.discard
@@ -31,17 +29,23 @@ import shifa.doctor.generated.resources.discardChangesTitle
 import shifa.doctor.generated.resources.ic_alert_circle_16
 import shifa.doctor.generated.resources.ic_trash_22
 import shifa.doctor.generated.resources.keepEditing
+import shifa.doctor.generated.resources.noChangesYet
 import shifa.doctor.generated.resources.openSettings
 import shifa.doctor.generated.resources.save
+import shifa.doctor.generated.resources.unsavedChanges
 import shifa.doctor.ui.navigation.openPermissionSettings
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
+import shifa.doctor.ui.widgets.ActionBar
 import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.ShifaBanner
 import shifa.doctor.ui.widgets.ShifaBannerType
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.ui.widgets.ShifaSheetHost
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.utils.tr
 
@@ -87,7 +91,11 @@ internal fun FormExitEffects(
     BackHandler(onBack = back)
 }
 
-/** A pushed edit form: header with Back and (when [onSave] is set) the Save check, then a scrolling column. */
+/**
+ * A pushed edit form (board `DaProfile`): the header with Back, a scrolling column, and the design's `ActionBar` at the
+ * bottom: "Unsaved changes" / "No changes yet" and Save, always in view. [onSave] is null while there is nothing to
+ * save or a save is running (the button is off). On wide screens the form and the bar keep to `layout-form-wide`.
+ */
 @Composable
 internal fun ProfileForm(
     title: String,
@@ -98,19 +106,18 @@ internal fun ProfileForm(
     onKeep: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
-        ShifaSubHeader(
-            title,
-            Modifier.statusBarsPadding(),
-            onBack = onBack,
-            onCheck = onSave,
-            checkDescription = Res.string.save,
-        )
-        Column(
-            Modifier.weight(1f).imePadding().verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
-            verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
-            content = content,
-        )
+    Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).imePadding()) {
+        ShifaSubHeader(title, Modifier.statusBarsPadding(), onBack = onBack)
+        Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), Alignment.TopCenter) {
+            Column(
+                Modifier.widthIn(max = ShifaDimens.Layout.FormWide).fillMaxWidth().padding(ShifaSpacing.Inset.Md),
+                verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+                content = content,
+            )
+        }
+        ActionBar(state = tr(if (onSave != null) Res.string.unsavedChanges else Res.string.noChangesYet)) { m ->
+            ShifaPrimaryButton(tr(Res.string.save), { onSave?.invoke() }, m, enabled = onSave != null)
+        }
     }
     if (askDiscard) DiscardChangesSheet(onDiscard, onKeep)
 }
@@ -133,41 +140,14 @@ internal fun DiscardChangesSheet(
     )
 }
 
-/**
- * A bottom sheet that only hosts a drawn tray (`ShifaDialogSheet`, `ShifaPickerSheet`). It opens at full height, so a
- * tall tray (the reschedule month) shows its button instead of stopping half way.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+/** The app's sheet host under its first name: a tray on phones, a centred dialog from 560 wide ([ShifaSheetHost]). */
 @Composable
 internal fun ProfileSheet(
     onDismiss: () -> Unit,
     // Asked before a drag or a scrim tap hides the sheet: false keeps it (a form saving, or asking to discard first).
     confirmHide: () -> Boolean = { true },
     content: @Composable () -> Unit,
-) {
-    // The sheet state keeps its first lambda: read the caller's latest check (busy / changed now, not at first show).
-    val confirm by rememberUpdatedState(confirmHide)
-    ProfileSheetHost(onDismiss, { confirm() }, content)
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ProfileSheetHost(
-    onDismiss: () -> Unit,
-    confirmHide: () -> Boolean,
-    content: @Composable () -> Unit,
-) = ModalBottomSheet(
-    onDismiss,
-    sheetState =
-        rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = {
-            it != SheetValue.Hidden || confirmHide()
-        }),
-    shape = RectangleShape,
-    containerColor = Color.Transparent,
-    dragHandle = null,
-) {
-    content()
-}
+) = ShifaSheetHost(onDismiss, confirmHide, content)
 
 /** "Camera access is needed to take a photo" with Open settings, after the camera permission was refused. */
 @Composable

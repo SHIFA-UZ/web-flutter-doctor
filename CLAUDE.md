@@ -255,7 +255,8 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   composition: read in composition it recomposes on every frame, which stutters phones and the web. Errors show inline in a `ShifaBanner`, never a SnackBar. Lists pull to refresh.
 - Avatars without a photo, or whose photo fails to load, show the brand fallback picture (`ShifaAvatar`).
 - Keyboard: `MainActivity` is `adjustResize` and screens pad for the keyboard themselves (`imePadding`).
-- Trays and pop-ups (`ShifaTray`, `ShifaPopUp`) only draw; host them in `ModalBottomSheet` / `Dialog`.
+- Trays and pop-ups (`ShifaTray`, `ShifaDialogSheet`, `ShifaPickerSheet`) only draw; host them in `ShifaSheetHost` (a tray on
+  phones, a centred dialog from 560 wide), never in a `ModalBottomSheet` directly. Page headers are `ShifaPageToolbar`.
 - When the design boards lack a state or component the spec needs (lockout banner, empty state, error), build the
   smallest thing in the existing style and note "not in the design" in `docs/implemented/`.
 
